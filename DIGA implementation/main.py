@@ -1,6 +1,7 @@
 from NeuralNetworks import GAT, Denoising_network, Guiding_classifier
 from NetworkTraining import DIGA_trainer, ego_network_ppr
 import torch
+import torch.nn as nn
 import numpy as np
 
 
@@ -45,11 +46,21 @@ if __name__ == "__main__":
     eval_nodes = None
 
     G_c = ego_network_ppr(eval_data.x, eval_nodes)
-    Z_c_T = torch.sqrt(model_trainer.alpha_bar[T]) * eval_data.x +  torch.sqrt(1 - model_trainer.alpha_bar[T]) * torch.randn((eval_data.x.shape[0], 1))
+    Z_c_t = torch.sqrt(model_trainer.alpha_bar[T]) * eval_data.x +  torch.sqrt(1 - model_trainer.alpha_bar[T]) * torch.randn((eval_data.x.shape[0], 1))
     
     for t in np.linspace(20, 1, 20):
-        gradient = torch.autograd.grad()
-        pred_noise = denoising_network(G_c, Z_c_T, t) - s * torch.sqrt(1 - model_trainer.alpha_bar[t]) * gradient
+        with torch.enable_grad():
+            Z_c_t.requires_grad_(True)
+            classification_output = int(guiding_network(G_c, Z_c_t, t)) # we should get the probability of 0 given the input, but because we do it with Sigmoid this should be enough
+            gradient = torch.autograd.grad(classification_output, Z_c_t, retain_graph=True, create_graph=True)[0] # possibly do classification_output.sum()
+        
+        pred_noise = denoising_network(G_c, Z_c_t, t) - s * torch.sqrt(1 - model_trainer.alpha_bar[t]) * gradient
+        Z_c_t = ( 1 / torch.sqrt(model_trainer.alpha_bar[t]) ) * (Z_c_t - (model_trainer.beta[t] / torch.sqrt(1 - model_trainer.alpha_bar[t])) * pred_noise) + torch.sqrt(model_trainer.beta[t])*torch.randn(1)
 
-
+    anomaly_heat_map = torch.abs(eval_data.x - Z_c_t)
+    anomaly_score = nn.MSEloss(eval_data.x - Z_c_t)
+    
+    """
+        The code above should be updated such that it works for multiple target nodes
+    """
 
