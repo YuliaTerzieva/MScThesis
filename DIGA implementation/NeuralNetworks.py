@@ -77,8 +77,6 @@ class Guiding_classifier(nn.Module):
 
         self.l = l
 
-    def top_N():
-        return 
     
     def forward(self, G_c, Z_c_t, t):
 
