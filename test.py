@@ -30,8 +30,10 @@ import torch
 # print(D.in_degree)
 # print(D.out_degree)
 
-nx_graphs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
-print(nx_graphs[0].edges)
+# nx_graphs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
+nx_graphs = pkl.load(open(f'GeneratedDataset/Ego_Nets_conf3', 'rb'))
+for n in nx_graphs:
+    print(len(n.edges))
 # for nx_graph in nx_graphs[:1]:
 #     print("NEW ----------------------------------- > ")
 #     graph = pyg.utils.from_networkx(nx_graph)

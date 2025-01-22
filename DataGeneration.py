@@ -263,12 +263,14 @@ if __name__ == '__main__':
     node_file = config["node_file"]
     edge_file = config["edge_file"]
     ego_file = config["ego_file"]
+    gray_degree_mu = config["mu"]
+    gray_degree_std = config["std"]
 
     """ Note that connecting patters, which the the function that intorduces anomalies, needs to executed before the InjectRandomNodes. 
     Otherwise it would intorduce anomalies between gray nodes, which would be wrong. """
 
     GeneratePattern1(node_file, edge_file, pattern_number)
     ConnectPatterns(node_file, edge_file, new_connections)
-    InjectRandomNodes(node_file, edge_file, number_random, 3, 2)
-    Visualizegraph(node_file, edge_file)
+    InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
+    # Visualizegraph(node_file, edge_file)
     Ego_Net_Generation(None, 1, ego_file, node_file, edge_file, False)
