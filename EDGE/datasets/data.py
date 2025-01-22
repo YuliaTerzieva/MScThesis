@@ -60,6 +60,11 @@ def get_data_id(args):
     return '{}'.format(args.dataset)
 
 def get_data(args):
+    """
+    Yulia comments : 
+        They load the graphd from pickels, the nodes don't have classes, the edges have two? 
+        For ego and community networks, the test section overlap with the traning and evaluation sections?
+    """
     if args.dataset in ['cora', 'polblogs', 'Homo_sapiens']:
         repeat = 1
         num_node_classes = None
@@ -92,7 +97,7 @@ def get_data(args):
 
         max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
         for nx_graph in train_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
+            pyg_data = preprocess(nx_graph, degree=args.degree) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
             train_pygraphs.append(pyg_data)
 
         for nx_graph in eval_nx_graphs:
@@ -119,7 +124,60 @@ def get_data(args):
         monitoring_statistics = ['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
 
     else:
-        raise NotImplementedError
+        # I will try to implement this:
+        repeat = 64 
+        num_node_classes = None # here I should have 3 (blue, orange and gray)
+        num_edge_classes = 2 # I am not sure if there are two (no edge / edge) or 3 (no edge  / 2 directions)
+        num_node_feat = None 
+        nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}", 'rb'))
+
+        """
+        shuffling for the training purposes is okay because I just want the EDGE to learn how to generate the same ego nets, 
+        but then I would need to have a separate "tasting" ego nets, where i keep the edge id to be able to check the anomaly 
+        """
+        random.shuffle(nx_graphs) 
+        l = len(nx_graphs)
+
+        """
+        ToDo : ask Ioana if this training split if okay. Ther are evaluating on the first 20%, but they also train on the evaluation set!?
+        """
+        train_nx_graphs = nx_graphs[:int(0.8*l)]
+        eval_nx_graphs = nx_graphs[:int(0.2*l)]
+        test_nx_graphs = nx_graphs[int(0.8*l):] 
+
+        train_pygraphs = []
+        eval_pygraphs = []
+        test_pygraphs = []
+
+        max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
+        for nx_graph in train_nx_graphs:
+            pyg_data = preprocess(nx_graph, degree=args.degree) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
+            train_pygraphs.append(pyg_data)
+
+        for nx_graph in eval_nx_graphs:
+            pyg_data = preprocess(nx_graph, degree=args.degree)
+            eval_pygraphs.append(pyg_data)
+
+        for nx_graph in test_nx_graphs:
+            pyg_data = preprocess(nx_graph, degree=args.degree)
+            test_pygraphs.append(pyg_data)
+            
+        train_set = ConcatDataset([GraphDataset(train_pygraphs) for _ in range(repeat)]) # this means that each graph is in the training dataset a few times.
+        eval_set = GraphDataset(eval_pygraphs)
+        test_set = GraphDataset(test_pygraphs)
+
+        if args.empty_graph_sampler == 'empirical':
+            initial_graph_sampler = EmpiricalEmptyGraphGenerator(train_pygraphs, degree=args.degree)
+        elif args.empty_graph_sampler == 'neural':
+            neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
+            initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)
+
+        eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
+        test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
+
+        monitoring_statistics = ['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
+
+
     augmented_feature_dict = {k:FEATURE_EXTRACTOR[k]['data_spec'] for k in args.augmented_features}
 
     # Data Loader
