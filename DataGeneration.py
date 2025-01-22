@@ -1,8 +1,11 @@
+import argparse
 import pandas as pd
 import numpy as np
 import os
 import networkx as nx
 import matplotlib.pyplot as plt
+import pickle
+import json
 
 
 def GeneratePattern1(node_file_name, edge_file_name,  number_of_times=1):
@@ -154,6 +157,7 @@ def InjectRandomNodes(node_file_name, edge_file_name, number_random = 10, mu = 2
 
 def Visualizegraph(node_file_name, edge_file_name):
     """Visualizing the graph from the csv files, retaining the node color and adding red outline for anomaloud nodes
+    Returning the networkx object created in the process
 
     Parameters
     ----------
@@ -162,6 +166,10 @@ def Visualizegraph(node_file_name, edge_file_name):
     edge_file_name : str
         The file name of the csv file with the edges
 
+    Returns
+    -------
+    G : networkx.DiGraph instance
+        The graph created from the csv files used for the visualisation
     """
     G = nx.DiGraph()
     
@@ -186,18 +194,81 @@ def Visualizegraph(node_file_name, edge_file_name):
     plt.title("Generater Mini Graph")
     plt.show()
 
+    return G
+
+def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_file_name, print_subgraphs=False):
+    """Creating k-hop ego networks and saving them as a pickled list of networkx in the file ego_net_file_name. 
+    The subgraph includes 
+        - the central node, 
+        - all the k_hop neighbours,
+        - the connections between the central node the other nodes
+        - the connections between the peripheral nodes as well  !!! 
+
+    Parameters
+    ----------
+    k_hop : int
+        how big thge ego_net to be hop-wise
+    ego_net_file_name : str
+        The directory name where the ego networks files would be stores with name based on the central node_id 
+    """
+
+    if not isinstance(graph, nx.DiGraph):
+        graph = nx.DiGraph()
+        nodes = pd.read_csv(node_file_name)
+        edges = pd.read_csv(edge_file_name)
+        edges = edges[['source', 'target']].apply(tuple, axis=1).tolist()
+
+        # Add nodes with attributes
+        for _, row in nodes.iterrows():
+            graph.add_node(row['node_id'], color=row['color'], anomaly=row['anomaly'])
+        
+        # Add edges
+        graph.add_edges_from(edges)
+    
+    if not os.path.exists(ego_net_file_name):
+        with open(ego_net_file_name, 'x') as file:
+            print(f"File created: {ego_net_file_name}")
+
+    list_of_ego_nets = []
+
+    for node in graph.nodes.items(): # example of node is : (0, {'color': 'blue', 'anomaly': 0})
+        print(node[0])
+        sub_graph = nx.ego_graph(graph, node[0], radius=k_hop, center=True, undirected=True)
+        list_of_ego_nets.append(sub_graph)
+
+        if print_subgraphs : # if you want to test make this True, otherwise False
+            node_colors = [sub_graph.nodes[node]['color'] for node in sub_graph.nodes()]
+            pos = nx.arf_layout(sub_graph)
+            nx.draw(sub_graph, pos, with_labels=True, node_color=node_colors)
+            plt.show()
+
+
+    dbfile = open(ego_net_file_name, 'ab')
+    pickle.dump(list_of_ego_nets, dbfile)                    
+    dbfile.close()
 
 if __name__ == '__main__':
-    pattern_number = 3 # the number of times the pattern would be repeated
-    new_connections = 5 # number of new connections to be added (this would be the anomaly)
-    number_random = 3 # number of nodes that are random/gray/fillers and have random connections
-    node_file = "GeneratedDataset/testnodes.csv"
-    edge_file = "GeneratedDataset/testedges.csv"
+
+    parser = argparse.ArgumentParser(description="Load configuration settings.")
+    parser.add_argument("--config", type=str, default="configurations.json", help="Path to the configuration file")
+    parser.add_argument("--setting", type=str, required=True, help="Name of the setting to load")
+    args = parser.parse_args()
+
+    with open(args.config, 'r') as file:
+        config = json.load(file)[args.setting]
+
+    pattern_number = config["pattern_number"] # the number of times the pattern would be repeated
+    new_connections = config["new_connections"] # number of new connections to be added (this would be the anomaly)
+    number_random = config["number_random"] # number of nodes that are random/gray/fillers and have random connections
+    node_file = config["node_file"]
+    edge_file = config["edge_file"]
+    ego_file = config["ego_file"]
 
     """ Note that connecting patters, which the the function that intorduces anomalies, needs to executed before the InjectRandomNodes. 
     Otherwise it would intorduce anomalies between gray nodes, which would be wrong. """
 
-    # GeneratePattern1(node_file, edge_file, pattern_number)
-    # ConnectPatterns(node_file, edge_file, new_connections)
-    # InjectRandomNodes(node_file, edge_file, number_random, 3, 2)
+    GeneratePattern1(node_file, edge_file, pattern_number)
+    ConnectPatterns(node_file, edge_file, new_connections)
+    InjectRandomNodes(node_file, edge_file, number_random, 3, 2)
     Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, 1, ego_file, node_file, edge_file, False)

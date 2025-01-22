@@ -1,0 +1,18 @@
+{
+    "small_test_graph": {
+        "pattern_number": 10,
+        "new_connections": 5,
+        "number_random": 3,
+        "node_file": "GeneratedDataset/nodes.csv",
+        "edge_file": "GeneratedDataset/edges.csv",
+        "ego_file": "GeneratedDataset/Ego_Nets"
+    },
+    "bigger_test_graph": {
+        "pattern_number": 20,
+        "new_connections": 6,
+        "number_random": 20,
+        "node_file": "GeneratedDataset/nodes_conf2.csv",
+        "edge_file": "GeneratedDataset/edges_conf2.csv",
+        "ego_file": "GeneratedDataset/Ego_Nets_conf2"
+    }
+}
