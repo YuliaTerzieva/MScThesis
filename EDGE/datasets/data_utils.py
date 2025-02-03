@@ -43,7 +43,7 @@ def deg_hist_to_deg_seq(deg_hist):
 def preprocess(g, degree=False, augmented_features=[]):
     if isinstance(g, nx.Graph):
         pyg_data = pyg.utils.from_networkx(g)
-        adj = torch.from_numpy(nx.to_numpy_array(g).astype(np.int)).long()
+        adj = torch.from_numpy(nx.to_numpy_array(g).astype(np.int64)).long() # Yulia : changed "int" to "int64"
     elif isinstance(g, pyg.data.Data):
         pyg_data = g
         adj = to_dense_adj(g.edge_index)[0].long()

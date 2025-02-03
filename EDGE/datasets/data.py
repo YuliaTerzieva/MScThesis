@@ -53,7 +53,7 @@ def add_data_args(parser):
     parser.add_argument('--pin_memory', type=eval, default=True)
 
     parser.add_argument('--empty_graph_sampler', type=str, default='empirical', help='empirical | neural') 
-    parser.add_argument('--degree', action='store_true')
+    parser.add_argument('--degree', action='store_true') # Yulia : this means that if the --degree flag is provided, the argument will be set to True; otherwise False
     parser.add_argument('--augmented_features', type=str, nargs="*", default=[])
 
 def get_data_id(args):

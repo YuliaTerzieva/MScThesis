@@ -1,5 +1,5 @@
 import networkx as nx
-import dgl
+# import dgl
 import numpy as np
 from scipy.linalg import toeplitz
 import pyemd
@@ -56,8 +56,8 @@ class MMDEval():
 
         if isinstance(dataset[0], nx.Graph):
             pass
-        elif isinstance(dataset[0], dgl.DGLGraph):
-            dataset = [nx.Graph(g.cpu().to_networkx()) for g in dataset]
+        # elif isinstance(dataset[0], dgl.DGLGraph):
+        #     dataset = [nx.Graph(g.cpu().to_networkx()) for g in dataset]
         else:
             raise Exception(f'Unsupported element type {type(dataset[0])} for dataset, \
                 expected list of nx.Graph or dgl.DGLGraph')

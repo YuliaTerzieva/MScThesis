@@ -80,7 +80,7 @@ python train.py \
         --loss_type vb_ce_xt_prescribred_st \
         --arch TGNN_degree_guided \
         --parametrization xt_prescribed_st \
-        --degree \
+        --degree \ # -> Yulia : This is a boolean, I found this in EDGE/datasets/data.py line 56 ... is it is added it is set to ...
         --num_heads 8 8 8 8 1 
 ```
 Evaluation is done every `eval_every` epochs. You can also re-evaluate a specific checkpoint using the script below. 

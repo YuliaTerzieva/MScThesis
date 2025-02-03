@@ -1,0 +1,22 @@
+2025-02-02 18:56:06,539 INFO    MainThread:11927 [wandb_setup.py:_flush():68] Current SDK version is 0.19.4
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_setup.py:_flush():68] Configure stats pid to 11927
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_setup.py:_flush():68] Loading settings from /Users/yuliaterzieva/.config/wandb/settings
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_setup.py:_flush():68] Loading settings from /Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/wandb/settings
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_setup.py:_flush():68] Loading settings from environment variables
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_init.py:setup_run_log_directory():624] Logging user logs to ./wandb/Ego/multinomial_diffusion/multistep/2025-02-02_18-56-06/wandb/run-20250202_185606-2025-02-02_18-56-06/logs/debug.log
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_init.py:setup_run_log_directory():625] Logging internal logs to ./wandb/Ego/multinomial_diffusion/multistep/2025-02-02_18-56-06/wandb/run-20250202_185606-2025-02-02_18-56-06/logs/debug-internal.log
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_init.py:init():743] calling init triggers
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_init.py:init():748] wandb.init called with sweep_config: {}
+config: {'dataset': 'Ego', 'batch_size': 8, 'num_iter': 32, 'pin_memory': True, 'empty_graph_sampler': 'empirical', 'degree': False, 'augmented_features': [], 'epochs': 50000, 'seed': 0, 'parallel': None, 'resume': None, 'log_home': './wandb', 'clip_value': 1.0, 'clip_norm': None, 'num_generation': 64, 'loss_type': 'vb_ce_xt_prescribred_st', 'diffusion_steps': 128, 'diffusion_dim': 64, 'dp_rate': 0.1, 'num_heads': [8, 8, 8, 8, 1], 'final_prob_node': [0.999999999999, 1e-12], 'final_prob_edge': [0.999999999999, 1e-12], 'parametrization': 'xt_prescribed_st', 'sample_time_method': 'importance', 'arch': 'TGNN_degree_guided', 'noise_schedule': 'linear', 'norm': 'None', 'optimizer': 'adam', 'lr': 0.0001, 'warmup': None, 'momentum': 0.9, 'momentum_sqr': 0.999, 'milestones': [], 'gamma': 0.1, 'num_edge_classes': 2, 'num_node_classes': 2, 'has_node_feature': False, 'max_degree': 99, 'num_node_feat': None, 'augmented_feature_dict': {}}
+2025-02-02 18:56:06,540 INFO    MainThread:11927 [wandb_init.py:init():776] starting backend
+2025-02-02 18:56:06,548 INFO    MainThread:11927 [wandb_init.py:init():780] sending inform_init request
+2025-02-02 18:56:06,565 INFO    MainThread:11927 [backend.py:_multiprocessing_setup():97] multiprocessing start_methods=spawn,fork,forkserver, using: spawn
+2025-02-02 18:56:06,565 INFO    MainThread:11927 [wandb_init.py:init():795] backend started and connected
+2025-02-02 18:56:06,568 INFO    MainThread:11927 [wandb_init.py:init():888] updated telemetry
+2025-02-02 18:56:06,585 INFO    MainThread:11927 [wandb_init.py:init():915] communicating run to backend with 90.0 second timeout
+2025-02-02 18:56:06,930 INFO    MainThread:11927 [wandb_init.py:init():967] starting run threads in backend
+2025-02-02 18:56:07,001 INFO    MainThread:11927 [wandb_run.py:_console_start():2409] atexit reg
+2025-02-02 18:56:07,001 INFO    MainThread:11927 [wandb_run.py:_redirect():2259] redirect: wrap_raw
+2025-02-02 18:56:07,001 INFO    MainThread:11927 [wandb_run.py:_redirect():2324] Wrapping output streams.
+2025-02-02 18:56:07,001 INFO    MainThread:11927 [wandb_run.py:_redirect():2349] Redirects installed.
+2025-02-02 18:56:07,003 INFO    MainThread:11927 [wandb_init.py:init():1009] run started, returning control to user process

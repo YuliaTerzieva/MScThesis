@@ -1,0 +1,7 @@
+{"time":"2025-02-03T08:49:56.673674+01:00","level":"INFO","msg":"stream: starting","core version":"0.19.4","symlink path":"wandb/Ego/multinomial_diffusion/multistep/2025-02-03_08-49-56/wandb/run-20250203_084956-2025-02-03_08-49-56/logs/debug-core.log"}
+{"time":"2025-02-03T08:49:56.787125+01:00","level":"INFO","msg":"created new stream","id":"2025-02-03_08-49-56"}
+{"time":"2025-02-03T08:49:56.787158+01:00","level":"INFO","msg":"stream: started","id":"2025-02-03_08-49-56"}
+{"time":"2025-02-03T08:49:56.78719+01:00","level":"INFO","msg":"writer: Do: started","stream_id":"2025-02-03_08-49-56"}
+{"time":"2025-02-03T08:49:56.787265+01:00","level":"INFO","msg":"handler: started","stream_id":"2025-02-03_08-49-56"}
+{"time":"2025-02-03T08:49:56.787309+01:00","level":"INFO","msg":"sender: started","stream_id":"2025-02-03_08-49-56"}
+{"time":"2025-02-03T08:49:57.063711+01:00","level":"INFO","msg":"Starting system monitor"}

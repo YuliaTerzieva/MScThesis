@@ -1,0 +1,47 @@
+Traceback (most recent call last):
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/train.py", line 95, in <module>
+    exp.run()
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/experiment.py", line 154, in run
+    super(DiffusionExperiment, self).run(epochs=self.args.epochs)
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/base.py", line 181, in run
+    train_dict = self.train_fn(epoch)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/experiment.py", line 32, in train_fn
+    loss = elbo_bpd(self.model, pyg_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/loss.py", line 29, in elbo_bpd
+    return loglik_bpd(model, x)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/loss.py", line 12, in loglik_bpd
+    return -model.log_prob(x).sum() / (math.log(2) * x.num_entries)
+            ^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_base.py", line 185, in log_prob
+    return self._train_loss(batched_graph)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 248, in _train_loss
+    kl = self._compute_MC_KL_joint(batched_graph, t, t_node, t_edge)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 158, in _compute_MC_KL_joint
+    log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 187, in _p_pred
+    log_model_pred_node, log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 148, in _predict_xtmin1_given_xt_st
+    out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/layers/layers.py", line 331, in forward
+    nodes_0 = pyg_data.degree[..., None] / self.max_degree
+              ^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/data/data.py", line 561, in __getattr__
+    return getattr(self._store, key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/data/storage.py", line 96, in __getattr__
+    raise AttributeError(
+AttributeError: 'GlobalStorage' object has no attribute 'degree'

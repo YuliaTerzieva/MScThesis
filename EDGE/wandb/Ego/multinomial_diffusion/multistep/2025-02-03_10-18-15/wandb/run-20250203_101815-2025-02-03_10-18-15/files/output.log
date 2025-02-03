@@ -1,0 +1,3 @@
+/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/utils/_scatter.py:102: UserWarning: The operator 'aten::scatter_reduce.two_out' is not currently supported on the MPS backend and will fall back to run on the CPU. This may have performance implications. (Triggered internally at /Users/runner/work/pytorch/pytorch/pytorch/aten/src/ATen/mps/MPSFallback.mm:13.)
+  return src.new_zeros(size).scatter_reduce_(
+Training. Epoch: 1/5, Datapoint: 3072/38720, Bits/dim: 0.301

@@ -1,0 +1,63 @@
+Traceback (most recent call last):
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/train.py", line 95, in <module>
+    exp.run()
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/experiment.py", line 154, in run
+    super(DiffusionExperiment, self).run(epochs=self.args.epochs)
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/base.py", line 181, in run
+    train_dict = self.train_fn(epoch)
+                 ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/experiment.py", line 32, in train_fn
+    loss = elbo_bpd(self.model, pyg_data)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/loss.py", line 29, in elbo_bpd
+    return loglik_bpd(model, x)
+           ^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/loss.py", line 12, in loglik_bpd
+    return -model.log_prob(x).sum() / (math.log(2) * x.num_entries)
+            ^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_base.py", line 185, in log_prob
+    return self._train_loss(batched_graph)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 248, in _train_loss
+    kl = self._compute_MC_KL_joint(batched_graph, t, t_node, t_edge)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 158, in _compute_MC_KL_joint
+    log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+                                               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 187, in _p_pred
+    log_model_pred_node, log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge)
+                                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/diffusion/diffusion_binomial_active.py", line 148, in _predict_xtmin1_given_xt_st
+    out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/layers/layers.py", line 354, in forward
+    nodes = self.layers[f'conv{i}'](nodes, edge_index)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1736, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch/nn/modules/module.py", line 1747, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/nn/conv/transformer_conv.py", line 229, in forward
+    out = self.propagate(edge_index, query=query, key=key, value=value,
+          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/var/folders/8l/0r356nxd4s30ctfz5ckszlcm0000gn/T/torch_geometric.nn.conv.transformer_conv_TransformerConv_propagate_094ngj3q.py", line 237, in propagate
+    out = self.message(
+          ^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/nn/conv/transformer_conv.py", line 269, in message
+    alpha = softmax(alpha, index, ptr, size_i)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/utils/_softmax.py", line 75, in softmax
+    src_max = scatter(src.detach(), index, dim, dim_size=N, reduce='max')
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/lib/python3.11/site-packages/torch_geometric/utils/_scatter.py", line 102, in scatter
+    return src.new_zeros(size).scatter_reduce_(
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+NotImplementedError: The operator 'aten::scatter_reduce.two_out' is not currently implemented for the MPS device. If you want this op to be added in priority during the prototype phase of this feature, please comment on https://github.com/pytorch/pytorch/issues/77764. As a temporary fix, you can set the environment variable `PYTORCH_ENABLE_MPS_FALLBACK=1` to use the CPU as a fallback for this op. WARNING: this will be slower than running natively on MPS.

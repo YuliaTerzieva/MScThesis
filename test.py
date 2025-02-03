@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 import torch_geometric as pyg
 import torch
 
+print(torch.backends.mps.is_available()) 
+
 # D = nx.DiGraph([(0, 1), (1, 2), (2, 3)]) # those are edges from 0 to 1, from 1 to 2, from 2 to 3
 # din = list(d for n, d in D.in_degree())
 # dout = list(d for n, d in D.out_degree())

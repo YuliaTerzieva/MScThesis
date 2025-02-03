@@ -1,0 +1,52 @@
++------------------------+---------------------------+
+|          Arg           |           Value           |
++------------------------+---------------------------+
+|        dataset         |            Ego            |
+|       batch_size       |             4             |
+|        num_iter        |             32            |
+|      num_workers       |             8             |
+|       pin_memory       |            True           |
+|  empty_graph_sampler   |         empirical         |
+|         degree         |            True           |
+|   augmented_features   |             []            |
+|         epochs         |             1             |
+|          seed          |             0             |
+|         device         |            mps            |
+|        parallel        |            None           |
+|         resume         |            None           |
+|          name          |    2025-02-03_10-31-47    |
+|        project         | Ego_multinomial_diffusion |
+|       eval_every       |             1             |
+|      check_every       |             1             |
+|         log_tb         |            True           |
+|       log_wandb        |            True           |
+|        log_home        |          ./wandb          |
+|       clip_value       |            1.0            |
+|       clip_norm        |            None           |
+|     num_generation     |             64            |
+|       loss_type        |  vb_ce_xt_prescribred_st  |
+|    diffusion_steps     |             32            |
+|     diffusion_dim      |             64            |
+|        dp_rate         |            0.1            |
+|       num_heads        |      [8, 8, 8, 8, 1]      |
+|    final_prob_node     |  [0.999999999999, 1e-12]  |
+|    final_prob_edge     |  [0.999999999999, 1e-12]  |
+|    parametrization     |      xt_prescribed_st     |
+|   sample_time_method   |         importance        |
+|          arch          |     TGNN_degree_guided    |
+|     noise_schedule     |           linear          |
+|          norm          |            None           |
+|       optimizer        |            adam           |
+|           lr           |           0.0001          |
+|         warmup         |            None           |
+|        momentum        |            0.9            |
+|      momentum_sqr      |           0.999           |
+|       milestones       |             []            |
+|         gamma          |            0.1            |
+|    num_edge_classes    |             2             |
+|    num_node_classes    |             2             |
+|    has_node_feature    |           False           |
+|       max_degree       |             99            |
+|     num_node_feat      |            None           |
+| augmented_feature_dict |             {}            |
++------------------------+---------------------------+

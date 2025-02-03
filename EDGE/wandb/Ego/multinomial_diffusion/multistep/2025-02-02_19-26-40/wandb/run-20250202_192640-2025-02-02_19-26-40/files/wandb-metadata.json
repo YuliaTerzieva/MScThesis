@@ -1,0 +1,91 @@
+{
+  "os":  "macOS-15.2-arm64-arm-64bit",
+  "python":  "CPython 3.11.11",
+  "startedAt":  "2025-02-02T18:26:40.989318Z",
+  "args":  [
+    "--epochs",
+    "1",
+    "--num_generation",
+    "64",
+    "--diffusion_dim",
+    "64",
+    "--diffusion_steps",
+    "128",
+    "--device",
+    "mps",
+    "--dataset",
+    "Ego",
+    "--batch_size",
+    "8",
+    "--clip_value",
+    "1",
+    "--lr",
+    "1e-4",
+    "--optimizer",
+    "adam",
+    "--final_prob_edge",
+    "1",
+    "0",
+    "--sample_time_method",
+    "importance",
+    "--check_every",
+    "500",
+    "--eval_every",
+    "500",
+    "--noise_schedule",
+    "linear",
+    "--dp_rate",
+    "0.1",
+    "--loss_type",
+    "vb_ce_xt_prescribred_st",
+    "--arch",
+    "TGNN_degree_guided",
+    "--parametrization",
+    "xt_prescribed_st",
+    "--empty_graph_sampler",
+    "empirical",
+    "--num_heads",
+    "8",
+    "8",
+    "8",
+    "8",
+    "1"
+  ],
+  "program":  "<python with no main file>",
+  "git":  {
+    "remote":  "https://github.com/YuliaTerzieva/MScThesis.git",
+    "commit":  "875f221fa92099b3d03fa2777567fc49eda4e964"
+  },
+  "email":  "yulia.terzieva@gmail.com",
+  "root":  "./wandb/Ego/multinomial_diffusion/multistep/2025-02-02_19-26-40",
+  "host":  "Yulias-MacBook-Pro.local",
+  "executable":  "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/bin/python",
+  "cpu_count":  8,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "421239336960"
+    },
+    "/System/Volumes/Data":  {
+      "total":  "494384795648",
+      "used":  "421239336960"
+    }
+  },
+  "memory":  {
+    "total":  "8589934592"
+  },
+  "cpu":  {
+    "count":  8,
+    "countLogical":  8
+  },
+  "apple":  {
+    "name":  "Apple M3",
+    "ecpuCores":  4,
+    "pcpuCores":  4,
+    "gpuCores":  10,
+    "memoryGb":  8,
+    "swapTotalBytes":  "3221225472",
+    "ramTotalBytes":  "8589934592"
+  }
+}

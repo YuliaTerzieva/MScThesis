@@ -4,7 +4,7 @@ import numpy as np
 import time
 from scipy import linalg
 import sklearn
-import dgl
+# import dgl
 from sklearn.preprocessing import StandardScaler
 
 from eval_utils.evaluation.models.gin.gin import GIN
