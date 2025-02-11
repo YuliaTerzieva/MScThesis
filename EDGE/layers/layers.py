@@ -315,6 +315,7 @@ class TGNN_degree_guided(torch.nn.Module):
     def forward(self, pyg_data, t_node, t_edge):
         if hasattr(pyg_data, 'edge_index_t'):
             edge_index = pyg_data.edge_index_t
+            # print("check 1")
 
         else: 
             edge_attr_t = pyg_data.log_full_edge_attr_t.argmax(-1)
@@ -322,16 +323,45 @@ class TGNN_degree_guided(torch.nn.Module):
 
             edge_index = pyg_data.full_edge_index[:, is_edge_indices]
             edge_index = torch.cat([edge_index, edge_index.flip(0)],dim=-1)
+            # print("check 2") # both EGO and mine pass through here, so it is not how the edge index is created
 
-        nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long()
+
+        # print(pyg_data) 
+        """
+        DataBatch(edge_index=[2, 977], color=[256], anomaly=[1217], num_nodes=1217, full_edge_index=[2, 2925], full_edge_attr=[2925], 
+        node_attr=[1217], degree=[1059], batch=[1217], ptr=[257], nodes_per_graph=[256], edges_per_graph=[256], log_node_attr=[1217, 2], 
+        log_full_edge_attr=[2925, 2], log_node_attr_tmin1=[1217, 2], log_full_edge_attr_tmin1=[2925, 2], log_node_attr_t=[1217, 2], 
+        log_full_edge_attr_t=[2925, 2], active_node_indices=[31], active_edge_indices=[17], edge_predict_masks=[2925])
+        """
+        # print(pyg_data.edge_index)
+
+        # print(pyg_data.degree) # it seems that the problem is that i have degrees that are zero, whereas they somehow don't?
+
+        # print("######## edge index")
+        # print(edge_index)
+        nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long() # this is just 0s ?
+        # print("######## nodes_T")
+        # print(nodes_t)
         node_selection = torch.zeros_like(nodes_t)
 
 
+        # Yulia : nodes_t[..., None] this is done to add on edimention to the object. for example from (1, 2, 3) to have shape (1, 2, 3, 1)
         nodes_t = nodes_t[..., None] / self.max_degree  # I prefer to make it embedding later
+        # print("nodes shape : ", nodes_t.shape)
         nodes_0 = pyg_data.degree[..., None] / self.max_degree
+        # print("pyg_data.degree:", pyg_data.degree)
+        # print("nodes 0 shape", nodes_0.shape)
+        # print(nodes_0)
+    
         node_selection[pyg_data.active_node_indices] = 1
         node_selection = node_selection.long()
         
+        # Yulia
+        # print("the dimention is", self.dim)
+        # print("the concatenation in layers")
+        # print(self.embedding_t(nodes_t).shape) # with params 32, 32, 32 I get torch.Size([1171, 32])         / 64 64 32 -> torch.Size([1217, 64]) / with 32 64 32 -> torch.Size([1187, 64])
+        # print(self.embedding_0(nodes_0).shape) # with parameters 32, 32, 32 I get torch.Size([1014, 32])     / 64 64 32 -> torch.Size([1059, 64]) / with 32 64 32 -> torch.Size([1037, 64])
+        # print(self.embedding_sel(node_selection).shape) # with params 32, 32, 32 I get torch.Size([1171, 32])/ 64 64 32 -> torch.Size([1217, 64]) / with 32 64 32 -> torch.Size([1187, 64])
         nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection)], dim=-1)
         nodes = self.node_in(nodes)
 

@@ -32,5 +32,16 @@
         "ego_file": "GeneratedDataset/Ego_Nets_conf3",
         "mu": 3, 
         "std": 2
+    },
+
+    "big_graph_non_directional": {
+        "pattern_number": 40,
+        "new_connections": 12,
+        "number_random": 200,
+        "node_file": "GeneratedDataset/non_dir_nodes.csv",
+        "edge_file": "GeneratedDataset/non_dir_edges.csv",
+        "ego_file": "GeneratedDataset/Ego_Nets_non_dir",
+        "mu": 3, 
+        "std": 2
     }
 }

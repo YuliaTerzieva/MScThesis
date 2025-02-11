@@ -6,6 +6,9 @@ import torch
 
 print(torch.backends.mps.is_available()) 
 
+# row = torch.tensor([0, 1, 0, 2, 0, 0])
+# print(pyg.utils.degree(row))
+
 # D = nx.DiGraph([(0, 1), (1, 2), (2, 3)]) # those are edges from 0 to 1, from 1 to 2, from 2 to 3
 # din = list(d for n, d in D.in_degree())
 # dout = list(d for n, d in D.out_degree())
@@ -32,10 +35,13 @@ print(torch.backends.mps.is_available())
 # print(D.in_degree)
 # print(D.out_degree)
 
-# nx_graphs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
-nx_graphs = pkl.load(open(f'GeneratedDataset/Ego_Nets_conf3', 'rb'))
+nx_graphs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
+nx_graphs = pkl.load(open(f'GeneratedDataset/Ego_Nets_non_dir', 'rb'))
+print(len(nx_graphs))
 for n in nx_graphs:
-    print(len(n.edges))
+    print(n)
+    # print(n.nodes[:3])
+    # print(n.edges[:3])
 # for nx_graph in nx_graphs[:1]:
 #     print("NEW ----------------------------------- > ")
 #     graph = pyg.utils.from_networkx(nx_graph)

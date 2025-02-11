@@ -99,13 +99,15 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     To run : 
     
     PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 64 --diffusion_dim 64 --diffusion_steps 32 --device mps --dataset Ego --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-    
-    
-    PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 64 --diffusion_dim 64 --diffusion_steps 32 --device mps --dataset Ego_Nets_conf3 --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-
     """
 
     """
-    I am staeting to hate mac books ... NotImplementedError: The operator 'aten::scatter_reduce.two_out' is not currently implemented for the MPS device. If you want this op to be added in priority during the prototype phase of this feature, please comment on https://github.com/pytorch/pytorch/issues/77764. As a temporary fix, you can set the environment variable `PYTORCH_ENABLE_MPS_FALLBACK=1` to use the CPU as a fallback for this op. WARNING: this will be slower than running natively on MPS.
+    To run with my dataset: 
+    
+    PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 5 --num_generation 32 --diffusion_dim 32 --diffusion_steps 8 --device mps --dataset Ego_Nets_non_dir --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
+    """
+
+    """
+    I am starting to hate mac books ... NotImplementedError: The operator 'aten::scatter_reduce.two_out' is not currently implemented for the MPS device. If you want this op to be added in priority during the prototype phase of this feature, please comment on https://github.com/pytorch/pytorch/issues/77764. As a temporary fix, you can set the environment variable `PYTORCH_ENABLE_MPS_FALLBACK=1` to use the CPU as a fallback for this op. WARNING: this will be slower than running natively on MPS.
     
     """

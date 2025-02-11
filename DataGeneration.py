@@ -4,6 +4,7 @@ import numpy as np
 import os
 import networkx as nx
 import matplotlib.pyplot as plt
+import torch_geometric as pyg
 import pickle
 import json
 
@@ -197,7 +198,7 @@ def Visualizegraph(node_file_name, edge_file_name):
     return G
 
 def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_file_name, print_subgraphs=False):
-    """Creating k-hop ego networks and saving them as a pickled list of networkx in the file ego_net_file_name. 
+    """Creating k-hop ego networks and saving them as a pickled list of networkx objects in the file ego_net_file_name. 
     The subgraph includes 
         - the central node, 
         - all the k_hop neighbours,
@@ -212,8 +213,8 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
         The directory name where the ego networks files would be stores with name based on the central node_id 
     """
 
-    if not isinstance(graph, nx.DiGraph):
-        graph = nx.DiGraph()
+    if not isinstance(graph, nx.Graph):
+        graph = nx.Graph()
         nodes = pd.read_csv(node_file_name)
         edges = pd.read_csv(edge_file_name)
         edges = edges[['source', 'target']].apply(tuple, axis=1).tolist()
@@ -246,6 +247,7 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
     dbfile = open(ego_net_file_name, 'ab')
     pickle.dump(list_of_ego_nets, dbfile)                    
     dbfile.close()
+
 
 if __name__ == '__main__':
 

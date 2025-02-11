@@ -29,6 +29,10 @@ class GraphExperiment(DiffusionExperiment):
             self.optimizer.zero_grad()
             pyg_data = pyg_data.to(self.args.device)
             # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
+
+            # Yulia : checking pyg_data
+            # print(type(pyg_data)) # <class 'abc.DataBatch'>
+
             loss = elbo_bpd(self.model, pyg_data)
             loss.backward()
             
