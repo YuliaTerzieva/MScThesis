@@ -1,5 +1,5 @@
 import networkx as nx
-# import dgl
+import dgl
 import numpy as np
 from scipy.linalg import toeplitz
 import pyemd
@@ -56,8 +56,8 @@ class MMDEval():
 
         if isinstance(dataset[0], nx.Graph):
             pass
-        # elif isinstance(dataset[0], dgl.DGLGraph):
-        #     dataset = [nx.Graph(g.cpu().to_networkx()) for g in dataset]
+        elif isinstance(dataset[0], dgl.DGLGraph):
+            dataset = [nx.Graph(g.cpu().to_networkx()) for g in dataset]
         else:
             raise Exception(f'Unsupported element type {type(dataset[0])} for dataset, \
                 expected list of nx.Graph or dgl.DGLGraph')
@@ -132,8 +132,8 @@ class Descriptor():
     def pad_histogram(self, x, y):
         support_size = max(len(x), len(y))
         # convert histogram values x and y to float, and make them equal len
-        x = x.astype(np.float)
-        y = y.astype(np.float)
+        x = x.astype(np.float64)# Yulia changed this. After numpy 1.24 the float data type doesn't exist!
+        y = y.astype(np.float64)
         if len(x) < len(y):
             x = np.hstack((x, [0.0] * (support_size - len(x))))
         elif len(y) < len(x):
@@ -146,7 +146,7 @@ class Descriptor():
         support_size = max(len(x), len(y))
         x, y = self.pad_histogram(x, y)
 
-        d_mat = toeplitz(range(support_size)).astype(np.float)
+        d_mat = toeplitz(range(support_size)).astype(np.float64)# yulia changed that since np 1.24 there is no more float datatype
         distance_mat = d_mat / distance_scaling
 
         dist = pyemd.emd(x, y, distance_mat)

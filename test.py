@@ -3,8 +3,11 @@ import pickle as pkl
 import matplotlib.pyplot as plt
 import torch_geometric as pyg
 import torch
+import numpy as np
+from DataGeneration import *
 
-print(torch.backends.mps.is_available()) 
+# print(torch.backends.mps.is_available()) 
+# print(np.__version__)
 
 # row = torch.tensor([0, 1, 0, 2, 0, 0])
 # print(pyg.utils.degree(row))
@@ -35,11 +38,30 @@ print(torch.backends.mps.is_available())
 # print(D.in_degree)
 # print(D.out_degree)
 
-nx_graphs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
-nx_graphs = pkl.load(open(f'GeneratedDataset/Ego_Nets_non_dir', 'rb'))
-print(len(nx_graphs))
-for n in nx_graphs:
+nx_graphs_theirs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
+print(len(nx_graphs_theirs))
+for n in nx_graphs_theirs[:3]:
     print(n)
+    print(n.nodes[0])
+
+# Draw the graph
+pos = nx.arf_layout(nx_graphs_theirs[0])
+nx.draw(nx_graphs_theirs[0], pos, with_labels=True, node_size=500)
+plt.title("Generater Mini Graph")
+plt.show()
+
+nx_graphs = pkl.load(open(f'GeneratedDataset/Big_Ego_Nets_non_dir', 'rb'))
+print(len(nx_graphs))
+for n in nx_graphs[:3]:
+    print(n)
+    print(n.nodes[0])
+
+# Draw the graph
+pos = nx.arf_layout(nx_graphs[0])
+nx.draw(nx_graphs[0], pos, with_labels=True, node_size=500)
+plt.title("Generater Mini Graph")
+plt.show()
+
     # print(n.nodes[:3])
     # print(n.edges[:3])
 # for nx_graph in nx_graphs[:1]:
@@ -65,6 +87,31 @@ for n in nx_graphs:
 
 
 
-    
+"""Here i am starting the alligator
 
+test_graphs, central_nodes = Ego_Net_Generation(None, 1, ego_file, node_file, edge_file, False)
 
+for graph, target in zip(test_graphs, central_nodes):
+    # Step 1 is remove all the edges from the graph:
+    empty_graph = graph.copy()
+    empty_graph.remove_edges_from(empty_graph.edges())
+
+    # step 2 is reconstruct the graph edges
+    reconstructed = model(empty_graph)
+
+    # do a similarity measure / check how different the graphs are
+    anomaly = graph - reconstructed
+
+    # check if you were correct
+    if anomaly > 0.5:
+        if target.anomaly == 1 : 
+            TP +=1 
+        else:
+            FP +=1
+    else:
+        if target.anomaly == 1 : 
+            FN +=1 
+        else:
+            TN +=1
+
+"""

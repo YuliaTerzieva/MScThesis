@@ -42,8 +42,9 @@ class GraphExperiment(DiffusionExperiment):
 
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs
+            print("training loss:", loss.detach().cpu().item())
             loss_count += pyg_data.num_graphs
-            data_count += pyg_data.num_graphs#pyg_data.num_graphs
+            data_count += pyg_data.num_graphs #pyg_data.num_graphs
             print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')
             # self.model.complex_data = None
         if self.scheduler_epoch: self.scheduler_epoch.step()
@@ -66,6 +67,7 @@ class GraphExperiment(DiffusionExperiment):
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs
 
             print('Train evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
+            print("loss_sum: ", loss_sum, "; loss_count: ", loss_count)
             eval_dict['bpd'] = loss_sum/loss_count
 
             generated_pyg_datas = self.model.sample(self.args.num_generation)
@@ -104,6 +106,7 @@ class GraphExperiment(DiffusionExperiment):
                 pyg_data = pyg_data.to(self.args.device)
                 # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
                 loss = elbo_bpd(self.model, pyg_data) 
+                print(loss.detach().cpu().item())
                 loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs#len(x)
                 loss_count += pyg_data.num_graphs #len(x)
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs

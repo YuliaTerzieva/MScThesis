@@ -233,7 +233,6 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
     list_of_ego_nets = []
 
     for node in graph.nodes.items(): # example of node is : (0, {'color': 'blue', 'anomaly': 0})
-        print(node[0])
         sub_graph = nx.ego_graph(graph, node[0], radius=k_hop, center=True, undirected=True)
         list_of_ego_nets.append(sub_graph)
 
@@ -247,6 +246,8 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
     dbfile = open(ego_net_file_name, 'ab')
     pickle.dump(list_of_ego_nets, dbfile)                    
     dbfile.close()
+
+    return list_of_ego_nets, graph.nodes.items()
 
 
 if __name__ == '__main__':
@@ -275,4 +276,4 @@ if __name__ == '__main__':
     ConnectPatterns(node_file, edge_file, new_connections)
     InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
     # Visualizegraph(node_file, edge_file)
-    Ego_Net_Generation(None, 1, ego_file, node_file, edge_file, False)
+    Ego_Net_Generation(None, 2, ego_file, node_file, edge_file, False)
