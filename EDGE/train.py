@@ -39,7 +39,8 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     ## Specify data ##
     ##################
 
-    train_loader, eval_loader, test_loader, num_node_feat, num_node_classes, num_edge_classes, max_degree, augmented_feature_dict, initial_graph_sampler, eval_evaluator, test_evaluator, monitoring_statistics = get_data(args)
+    train_loader, eval_loader, test_loader, num_node_feat, num_node_classes, num_edge_classes, \
+        max_degree, augmented_feature_dict, initial_graph_sampler, eval_evaluator, test_evaluator, monitoring_statistics = get_data(args)
 
     args.num_edge_classes = num_edge_classes
     args.num_node_classes = num_node_classes
@@ -104,14 +105,5 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     """
     To run with my dataset: 
     
-    PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 32 --diffusion_dim 32 --diffusion_steps 32 --device cpu --dataset Big_Ego_Nets_non_dir --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-    """
-
-
-    """
-    ToDo : 
-
-    run it on the server, see if it works, 
-    same the model parameters on the laptop
-    load the model and try alligator
+    PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_steps 32 --device cuda:1 --dataset Big_Ego_Nets_non_dir --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
     """

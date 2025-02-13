@@ -28,5 +28,19 @@ python3 train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_
 
 **Note**: don't forget to cd to the EDGE foulder. 
 
+### To do:
+- discuss with Vahid and Ramon how to add the node attributes (in our case color) to the model, as the model creates node embeddings only using the relation between nodes. Maybe I can add it there?
+    - check the last paragraph of section 2.5 in the paper; they use MPNN to compute node representations Zt, I can alter that to take the node color into account! 
+    - discuss solution with Salvatore
+- save the trained model and try to generate edges in an empty graph
+- train the model for smaller graphs (possbly won't work as the authors don't answer my email)
+- consider making it directional (possibly impossible :D)
+- set up a pipeline for checking for anomaly
+- work on similarity measure/scoring mechanism for anomaly score
+- minimal vaible product alliGATOR
+
+- generate the two other datasets
+    - simpler pattern only
+    - more complex relation based one
 
 
