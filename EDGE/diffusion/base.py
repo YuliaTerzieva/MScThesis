@@ -160,6 +160,7 @@ class BaseExperiment(object):
                       'scheduler_iter': self.scheduler_iter.state_dict() if self.scheduler_iter else None,
                       'scheduler_epoch': self.scheduler_epoch.state_dict() if self.scheduler_epoch else None}
         torch.save(checkpoint, os.path.join(self.check_path, name))
+        print("############################################### \n I just saved the model here : ", os.path.join(self.check_path, name))
 
     def checkpoint_load(self, check_path, name='checkpoint.pt'):
         checkpoint = torch.load(os.path.join(check_path, name))

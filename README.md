@@ -32,6 +32,7 @@ python3 train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_
 - discuss with Vahid and Ramon how to add the node attributes (in our case color) to the model, as the model creates node embeddings only using the relation between nodes. Maybe I can add it there?
     - check the last paragraph of section 2.5 in the paper; they use MPNN to compute node representations Zt, I can alter that to take the node color into account! 
     - discuss solution with Salvatore
+    - maybe do it in data_utila somewhere in lines 58 to 61 :) 
 - save the trained model and try to generate edges in an empty graph
 - train the model for smaller graphs (possbly won't work as the authors don't answer my email)
 - consider making it directional (possibly impossible :D)
@@ -43,4 +44,10 @@ python3 train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_
     - simpler pattern only
     - more complex relation based one
 
+- set seed when passing arguments 
+- check number of nodde classes and features in datasets/data.py
+- check final_prob_node + edge ??? 
+    - My understanding : in the exmaple call the argument --final_prob_edge 1 0 is present. from my understanding that means there are two types of edges : "there is no edge", "there is edge". 
+    the probability of the two classes should some to one and the ones given are at time step T "empty graph", which here is probability of 1 for there to be no edges and 0 of there being edges.
 
+- check in model.py line 50 : num_edge_classes=args.num_node_classes ??? why, is this a mistake?

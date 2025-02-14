@@ -56,6 +56,8 @@ def preprocess(g, degree=False, augmented_features=[]):
     pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
 
     if not hasattr(pyg_data, 'node_attr'):
+        # print("the data does not have node attribute data!")
+        # Yulia todo: maybe add the node attribute here?? 
         pyg_data.node_attr = torch.zeros(pyg_data.num_nodes, dtype=torch.long)
 
     if degree:

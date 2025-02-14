@@ -17,7 +17,7 @@ def add_exp_args(parser):
     add_exp_args_parent(parser)
     parser.add_argument('--clip_value', type=float, default=None)
     parser.add_argument('--clip_norm', type=float, default=None)
-    parser.add_argument('--num_generation', type=int, default=64)
+    parser.add_argument('--num_generation', type=int, default=64) # Yulia : I think this is how many graphs to be generated at the end and saved in EDGE/wandb/Ego/multinomial_diffusion/multistep/.../eval/sample0.png
 
 class GraphExperiment(DiffusionExperiment):
     def train_fn(self, epoch):
@@ -42,7 +42,7 @@ class GraphExperiment(DiffusionExperiment):
 
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs
-            print("training loss:", loss.detach().cpu().item())
+            # print("training loss:", loss.detach().cpu().item()) #Yulia ToDo remove
             loss_count += pyg_data.num_graphs
             data_count += pyg_data.num_graphs #pyg_data.num_graphs
             print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')
@@ -106,11 +106,11 @@ class GraphExperiment(DiffusionExperiment):
                 pyg_data = pyg_data.to(self.args.device)
                 # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
                 loss = elbo_bpd(self.model, pyg_data) 
-                print(loss.detach().cpu().item())
+                # print(loss.detach().cpu().item())
                 loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs#len(x)
                 loss_count += pyg_data.num_graphs #len(x)
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs
-            print('Train evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
+            print('Test evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r') # yulia todo check with salvatore, this should be test not train           
             test_dict['bpd'] = loss_sum/loss_count
             generated_pyg_datas = self.model.sample(self.args.num_generation)
             generated_graphs = []

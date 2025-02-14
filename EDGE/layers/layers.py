@@ -255,12 +255,12 @@ class TGNN_degree_guided(torch.nn.Module):
         self.dim = dim
         self.num_steps = num_steps
         self.embedding_t = torch.nn.Linear(1, dim)
-        self.embedding_0 = torch.nn.Linear(1, dim)
-        self.embedding_sel = torch.nn.Embedding(2, dim)
+        self.embedding_0 = torch.nn.Linear(1, dim)      # new wrt TGNN
+        self.embedding_sel = torch.nn.Embedding(2, dim) # new wrt TGNN
         self.node_in = torch.torch.nn.Sequential(
             torch.nn.Linear(dim * 3, dim),
             torch.nn.SiLU()
-        )
+        )                                               # new wrt TGNN
         self.time_pos_emb = SinusoidalPosEmb(dim, num_steps=num_steps)
         self.layers = torch.nn.ModuleDict()
         self.norm = norm
@@ -295,8 +295,9 @@ class TGNN_degree_guided(torch.nn.Module):
             self.layers[f'act{i}'] = torch.nn.SiLU()
 
         self.dummy_edge_feats = torch.nn.parameter.Parameter(torch.randn(dim))
+        
 
-        self.node_out_mlp = torch.nn.Sequential(
+        self.node_out_mlp = torch.nn.Sequential( # missibng node_interaction wrt TGNN (that was the miniattention layer) and this is new/ this is the replacement?
             torch.nn.Linear(dim*4, dim * 2),
             torch.nn.SiLU(),
             torch.nn.Linear(dim * 2, dim*2),
@@ -374,7 +375,7 @@ class TGNN_degree_guided(torch.nn.Module):
 
         contexts = contexts.repeat_interleave(pyg_data.nodes_per_graph,dim=0)
 
-        for i in range(len(self.num_heads)):
+        for i in range(len(self.num_heads)): # the loop is the same as TGNN
             ### add time embedding ###
             t_emb = self.layers[f'time{i}'](t)
 

@@ -125,7 +125,7 @@ def get_data(args):
 
     else:
         # I will try to implement this:
-        repeat = 64 
+        repeat = 1 
         num_node_classes = None # here I should have 3 (blue, orange and gray)
         num_edge_classes = 2 # I am not sure if there are two (no edge / edge) or 3 (no edge  / 2 directions)
         num_node_feat = None 
@@ -139,10 +139,10 @@ def get_data(args):
         l = len(nx_graphs)
 
         """
-        ToDo : ask Ioana if this training split if okay. Ther are evaluating on the first 20%, but they also train on the evaluation set!?
+        ToDo : ask Ioana if this training split if okay. They are evaluating on the first 20%, but they also train on the evaluation set!?
         """
-        train_nx_graphs = nx_graphs[:int(0.8*l)]
-        eval_nx_graphs = nx_graphs[:int(0.2*l)]
+        train_nx_graphs = nx_graphs[:int(0.6*l)]
+        eval_nx_graphs = nx_graphs[int(0.6*l):int(0.8*l)]
         test_nx_graphs = nx_graphs[int(0.8*l):] 
 
         train_pygraphs = []
