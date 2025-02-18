@@ -1,0 +1,92 @@
+{
+  "os":  "Linux-5.15.0-125-generic-x86_64-with-glibc2.35",
+  "python":  "CPython 3.11.5",
+  "startedAt":  "2025-02-14T13:22:09.292243Z",
+  "args":  [
+    "--epochs",
+    "50",
+    "--num_generation",
+    "64",
+    "--diffusion_dim",
+    "32",
+    "--diffusion_steps",
+    "32",
+    "--device",
+    "cuda:0",
+    "--dataset",
+    "Big_Ego_Nets_non_dir",
+    "--batch_size",
+    "4",
+    "--clip_value",
+    "1",
+    "--lr",
+    "1e-4",
+    "--optimizer",
+    "adam",
+    "--final_prob_edge",
+    "1",
+    "0",
+    "--sample_time_method",
+    "importance",
+    "--check_every",
+    "10",
+    "--eval_every",
+    "10",
+    "--noise_schedule",
+    "linear",
+    "--dp_rate",
+    "0.1",
+    "--loss_type",
+    "vb_ce_xt_prescribred_st",
+    "--arch",
+    "TGNN_degree_guided",
+    "--parametrization",
+    "xt_prescribed_st",
+    "--empty_graph_sampler",
+    "empirical",
+    "--degree",
+    "--num_heads",
+    "8",
+    "8",
+    "8",
+    "8",
+    "1"
+  ],
+  "program":  "/home/servers/yulia/MScThesis/EDGE/train.py",
+  "codePath":  "EDGE/train.py",
+  "git":  {
+    "remote":  "https://github.com/YuliaTerzieva/MScThesis.git",
+    "commit":  "73f46ef5b0ba79b756ebc328357e814e637cc4e8"
+  },
+  "email":  "yulia.terzieva@gmail.com",
+  "root":  "./wandb/Big_Ego_Nets_non_dir/multinomial_diffusion/multistep/2025-02-14_14-22-08",
+  "host":  "disi-beauty",
+  "executable":  "/home/servers/.cache/pypoetry/virtualenvs/mscthesis-b12yRS2H-py3.11/bin/python3",
+  "codePathLocal":  "train.py",
+  "cpu_count":  56,
+  "cpu_count_logical":  112,
+  "gpu":  "NVIDIA A100-PCIE-40GB",
+  "gpu_count":  1,
+  "disk":  {
+    "/":  {
+      "total":  "210241560576",
+      "used":  "90076631040"
+    }
+  },
+  "memory":  {
+    "total":  "270030815232"
+  },
+  "cpu":  {
+    "count":  56,
+    "countLogical":  112
+  },
+  "gpu_nvidia":  [
+    {
+      "name":  "NVIDIA A100-PCIE-40GB",
+      "memoryTotal":  "42949672960",
+      "cudaCores":  6912,
+      "architecture":  "Ampere"
+    }
+  ],
+  "cudaVersion":  "12.7"
+}
