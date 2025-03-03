@@ -71,10 +71,13 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
          
     @torch.no_grad()
     def p_sample(self, batched_graph, t_node, t_edge):
+        # print("I am in diffusion/diffusion_binomial_active p_sample")
+        # breakpoint()
         self._p_sample_and_set_actives(batched_graph, t_node)
         assert hasattr(batched_graph, 'active_node_indices')
         assert hasattr(batched_graph, 'active_edge_indices')
         if batched_graph.active_edge_indices.size(0) == 0:
+            # print("There are no active edge indices ...")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
         log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge)
 
@@ -145,8 +148,11 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             active_node_masks[batched_graph.full_edge_index[1]])
 
     def _predict_xtmin1_given_xt_st(self, batched_graph, t_node, t_edge):
-        out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        # print("I'm in diffusion/diffusion_binomial_active _predict_xtmin1_given_xt_st")
 
+        # breakpoint() # i remove this last! 26 of Feb
+        out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        
         assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes
 
@@ -237,6 +243,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
                 pass # TODO
             
             elif self.loss_type == 'vb_ce_xt_prescribred_st':
+                # breakpoint()
                 t, pt =  self._sample_time(b, self.device, self.sample_time_method)
 
                 t_node = t.repeat_interleave(batched_graph.nodes_per_graph)

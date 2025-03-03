@@ -46,9 +46,12 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     args.num_node_classes = num_node_classes
 
     if args.final_prob_node is None:
+        # breakpoint()
         args.final_prob_node = [1-1e-12, 1e-12]
         args.num_node_classes = 2
         args.has_node_feature = False
+    else: # added by Yulia
+        args.has_node_feature = True
 
     if 0 in args.final_prob_edge:
         args.final_prob_edge[np.argmax(args.final_prob_edge)] = args.final_prob_edge[np.argmax(args.final_prob_edge)]-1e-12
@@ -59,6 +62,8 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     args.augmented_feature_dict = augmented_feature_dict
 
 
+    # print(args)
+    
 
     data_id = get_data_id(args)
     ###################
@@ -77,6 +82,7 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     ##############
     ## Training ##
     ##############
+    # breakpoint()
     exp = GraphExperiment(args=args,
                     data_id=data_id,
                     model_id=model_id,
@@ -94,18 +100,16 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
                     n_patient=50)
 
     exp.run()
-
-
-    """
-    To run : 
     
-    PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 64 --diffusion_dim 64 --diffusion_steps 32 --device cpu --dataset Ego --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-    """
 
-    """
-    To run with my dataset: 
-    
-    PYTORCH_ENABLE_MPS_FALLBACK=1 
+"""
+To run : 
 
-    python3 train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_steps 32 --device cuda:0 --dataset Big_Ego_Nets_non_dir --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-    """
+PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 64 --diffusion_dim 64 --diffusion_steps 32 --device cpu --dataset Ego --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
+"""
+
+"""
+To run with my dataset:  
+
+python3 train.py --epochs 50 --num_generation 5 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset 140_nodes_graph --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method importance --check_every 10 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
+"""

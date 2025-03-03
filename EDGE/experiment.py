@@ -26,6 +26,9 @@ class GraphExperiment(DiffusionExperiment):
         loss_count = 0
         data_count = 0
         for pyg_data in self.train_loader:
+            # print("in experiment.py printing pyg_data")
+            # print(pyg_data)
+            # print("and the model is : ", self.model)
             self.optimizer.zero_grad()
             pyg_data = pyg_data.to(self.args.device)
             # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
@@ -33,6 +36,7 @@ class GraphExperiment(DiffusionExperiment):
             # Yulia : checking pyg_data
             # print(type(pyg_data)) # <class 'abc.DataBatch'>
 
+            # breakpoint()
             loss = elbo_bpd(self.model, pyg_data)
             loss.backward()
             
@@ -67,7 +71,7 @@ class GraphExperiment(DiffusionExperiment):
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs
 
             print('Train evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
-            print("loss_sum: ", loss_sum, "; loss_count: ", loss_count)
+            # print("loss_sum: ", loss_sum, "; loss_count: ", loss_count)
             eval_dict['bpd'] = loss_sum/loss_count
 
             generated_pyg_datas = self.model.sample(self.args.num_generation)

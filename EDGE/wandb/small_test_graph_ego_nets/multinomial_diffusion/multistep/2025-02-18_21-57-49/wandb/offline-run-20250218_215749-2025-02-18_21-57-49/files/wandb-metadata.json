@@ -1,0 +1,93 @@
+{
+  "os":  "macOS-15.2-arm64-arm-64bit",
+  "python":  "CPython 3.11.11",
+  "startedAt":  "2025-02-18T20:57:49.402552Z",
+  "args":  [
+    "--epochs",
+    "1",
+    "--num_generation",
+    "1",
+    "--diffusion_dim",
+    "32",
+    "--diffusion_steps",
+    "32",
+    "--device",
+    "cpu",
+    "--dataset",
+    "small_test_graph_ego_nets",
+    "--batch_size",
+    "4",
+    "--clip_value",
+    "1",
+    "--lr",
+    "1e-4",
+    "--optimizer",
+    "adam",
+    "--final_prob_edge",
+    "1",
+    "0",
+    "--sample_time_method",
+    "importance",
+    "--check_every",
+    "1",
+    "--eval_every",
+    "1",
+    "--noise_schedule",
+    "linear",
+    "--dp_rate",
+    "0.1",
+    "--loss_type",
+    "vb_ce_xt_prescribred_st",
+    "--arch",
+    "TGNN_degree_guided",
+    "--parametrization",
+    "xt_prescribed_st",
+    "--empty_graph_sampler",
+    "empirical",
+    "--degree",
+    "--num_heads",
+    "8",
+    "8",
+    "8",
+    "8",
+    "1"
+  ],
+  "program":  "/Users/yuliaterzieva/Desktop/Thesis - Diffusion/Code/MScThesis/EDGE/train.py",
+  "codePath":  "EDGE/train.py",
+  "git":  {
+    "remote":  "https://github.com/YuliaTerzieva/MScThesis.git",
+    "commit":  "a3110041c9b3b03d4e90973d7e0c81f719ecebeb"
+  },
+  "root":  "./wandb/small_test_graph_ego_nets/multinomial_diffusion/multistep/2025-02-18_21-57-49",
+  "host":  "mac.home",
+  "executable":  "/Users/yuliaterzieva/anaconda3/envs/MSCThesis/bin/python3",
+  "codePathLocal":  "train.py",
+  "cpu_count":  8,
+  "cpu_count_logical":  8,
+  "disk":  {
+    "/":  {
+      "total":  "494384795648",
+      "used":  "441809137664"
+    },
+    "/System/Volumes/Data":  {
+      "total":  "494384795648",
+      "used":  "441809137664"
+    }
+  },
+  "memory":  {
+    "total":  "8589934592"
+  },
+  "cpu":  {
+    "count":  8,
+    "countLogical":  8
+  },
+  "apple":  {
+    "name":  "Apple M3",
+    "ecpuCores":  4,
+    "pcpuCores":  4,
+    "gpuCores":  10,
+    "memoryGb":  8,
+    "swapTotalBytes":  "8589934592",
+    "ramTotalBytes":  "8589934592"
+  }
+}

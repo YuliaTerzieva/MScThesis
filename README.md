@@ -51,3 +51,27 @@ python3 train.py --epochs 50 --num_generation 32 --diffusion_dim 32 --diffusion_
     the probability of the two classes should some to one and the ones given are at time step T "empty graph", which here is probability of 1 for there to be no edges and 0 of there being edges.
 
 - check in model.py line 50 : num_edge_classes=args.num_node_classes ??? why, is this a mistake?
+
+
+---- 
+ToDo from 24th :
+- Why the number of forward passes are less than the diffusion steps? what is the early quitting queteria? -> Answer : it is dependent on the active edge indices in p_sample in diffusion/diffusion_binomial_active.py
+- I need to change the _sample_graph_size_and_features, instead of having a random empty graph, I need to pass my nodes and node attriutes. However, i need to figure out how to match them...
+- In diffusion_base.py sample -> t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long) # Yulia: FYI this is not used at all, why do we have it
+
+full edge index are all the possible undirected edges without self-loops that can exist in a graph with number_of_nodes nodes!!!
+
+---- end of day recap : I figured what the problem was with the diffusion steps - the linear noise schedule scaling, i changed it to cosine instead of fixing their linear function, because cosine is better either way. The other big thing is that i used pbd and i finally know where the model is being called!
+
+Now on the todo list is to train the model with node features and try to test call it to generate edges on empthy graphs of your choice!
+----
+ToDo from the 25th : 
+- how do they decide which are the active nodes? -> check paper
+    -> testing the code with pdb it seems that you have can the same node active twice in a row
+
+- make the the color attribute be node_attr and possibly one-hot encoding?
+- Question for Ioana : how big are the working graphs (egonetworks) in the bank actually? are we talking tens, hungreds or thousands of nodes? how many edges?
+
+---
+ToDO fom 26 of Feb:
+- check if p in formula 1 form the paper -> check if p is the same or they are distinct

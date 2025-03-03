@@ -126,9 +126,9 @@ def get_data(args):
     else:
         # I will try to implement this:
         repeat = 1 
-        num_node_classes = None # here I should have 3 (blue, orange and gray)
-        num_edge_classes = 2 # I am not sure if there are two (no edge / edge) or 3 (no edge  / 2 directions)
-        num_node_feat = None 
+        num_node_classes = 3 # here I should have 3 (blue, orange and gray)
+        num_edge_classes = 2 # I am not sure if there are two (no edge / edge)
+        num_node_feat = 1 
         nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}", 'rb'))
 
         """

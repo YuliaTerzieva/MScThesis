@@ -213,6 +213,14 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
         The directory name where the ego networks files would be stores with name based on the central node_id 
     """
 
+    mapping = {'blue': 0, 'orange': 1, 'grey': 2} # the reason why i have this and not one-hot-encoming is
+    # because in the code, when calling the training funtions, they make the node attribute one-hot encoded :
+    # -> diffusion/diffusion_bimonial_active.py _train_loss
+    # -> diffusion/diffusion_binomial_vanilla.py _q_sample_and_set_xtmin1_xt_given_x0
+    # -> diffusion/diffusion_base.py index_to_log_onehot
+    map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
+
+
     if not isinstance(graph, nx.Graph):
         graph = nx.Graph()
         nodes = pd.read_csv(node_file_name)
@@ -221,7 +229,7 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
 
         # Add nodes with attributes
         for _, row in nodes.iterrows():
-            graph.add_node(row['node_id'], color=row['color'], anomaly=row['anomaly'])
+            graph.add_node(row['node_id'], node_attr=map_color(row['color']), anomaly=row['anomaly'])
         
         # Add edges
         graph.add_edges_from(edges)
@@ -275,5 +283,5 @@ if __name__ == '__main__':
     GeneratePattern1(node_file, edge_file, pattern_number)
     ConnectPatterns(node_file, edge_file, new_connections)
     InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
-    # Visualizegraph(node_file, edge_file)
+    Visualizegraph(node_file, edge_file)
     Ego_Net_Generation(None, 2, ego_file, node_file, edge_file, False)

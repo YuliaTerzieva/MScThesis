@@ -4,7 +4,8 @@ import matplotlib.pyplot as plt
 import torch_geometric as pyg
 import torch
 import numpy as np
-from DataGeneration import *
+# from DataGeneration import *
+from datasets.data_utils import preprocess
 
 # print(torch.backends.mps.is_available()) 
 # print(np.__version__)
@@ -38,29 +39,30 @@ from DataGeneration import *
 # print(D.in_degree)
 # print(D.out_degree)
 
-nx_graphs_theirs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
-print(len(nx_graphs_theirs))
-for n in nx_graphs_theirs[:3]:
-    print(n)
-    print(n.nodes[0])
+# nx_graphs_theirs = pkl.load(open(f'EDGE/graphs/Ego.pkl','rb')) # -> this is a list of networkx graph object 
+# print(len(nx_graphs_theirs))
+# for n in nx_graphs_theirs[:3]:
+#     print(n)
+#     print(n.nodes[0])
 
-# Draw the graph
-pos = nx.arf_layout(nx_graphs_theirs[0])
-nx.draw(nx_graphs_theirs[0], pos, with_labels=True, node_size=500)
-plt.title("Generater Mini Graph")
-plt.show()
+# # Draw the graph
+# pos = nx.arf_layout(nx_graphs_theirs[0])
+# nx.draw(nx_graphs_theirs[0], pos, with_labels=True, node_size=500)
+# plt.title("Generater Mini Graph")
+# plt.show()
 
-nx_graphs = pkl.load(open(f'GeneratedDataset/Big_Ego_Nets_non_dir', 'rb'))
+nx_graphs = pkl.load(open(f'../GeneratedDataset/140_nodes_graph', 'rb'))
 print(len(nx_graphs))
 for n in nx_graphs[:3]:
     print(n)
-    print(n.nodes[0])
+    # breakpoint()
+    pyg_graph = preprocess(n, True)
 
 # Draw the graph
-pos = nx.arf_layout(nx_graphs[0])
-nx.draw(nx_graphs[0], pos, with_labels=True, node_size=500)
-plt.title("Generater Mini Graph")
-plt.show()
+# pos = nx.arf_layout(nx_graphs[0])
+# nx.draw(nx_graphs[0], pos, with_labels=True, node_size=500)
+# plt.title("Generater Mini Graph")
+# plt.show()
 
     # print(n.nodes[:3])
     # print(n.edges[:3])
@@ -115,3 +117,10 @@ for graph, target in zip(test_graphs, central_nodes):
             TN +=1
 
 """
+
+# summ = np.sum([ 1.,  2.,  1.,  2.,  1.,  1., 22.,  1.,  1.,  2.,  2.,  2.,  2.,  1.,
+#          2.,  1.,  1.,  1.,  1.,  2.,  1.,  1.,  1.,  1.,  1.,  3.,  8.,  1.,
+#          2.,  3.,  1.,  2.,  1.,  2.,  3.,  2.,  1.,  1.,  1.,  1.,  1.,  2.,
+#          2.,  1.,  3.,  2.,  1.,  2.,  1.,  1., 29.,  1.,  2.,  1.,  1.,  1.,
+#          1.,  2.,  2.])
+# print(summ)

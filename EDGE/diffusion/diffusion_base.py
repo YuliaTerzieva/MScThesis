@@ -58,6 +58,9 @@ def log_categorical(log_x_start, log_prob):
 
 
 def index_to_log_onehot(x, num_classes):
+
+    # breakpoint()
+
     assert x.max().item() < num_classes, \
         f'Error: {x.max().item()} >= {num_classes}'
     x_onehot = F.one_hot(x, num_classes)
@@ -173,6 +176,8 @@ class DiffusionBase(torch.nn.Module):
         return log_out_node, log_out_edge
 
     def log_sample_categorical(self, logits, num_classes):
+        # print("in diffusion/diffusion_base.py log_sample_categorical, the logits are: ", type(logits), logits)
+        # <class 'torch.Tensor'> tensor([[-1.7414e-03, -6.3539e+00],[-5.8050e-04, -7.4519e+00],[-5.8050e-04, -7.4519e+00], ...
         uniform = torch.rand_like(logits)
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
         sample = (gumbel_noise + logits).argmax(dim=1)
@@ -188,7 +193,8 @@ class DiffusionBase(torch.nn.Module):
 
 
     def sample(self, num_samples):
-        batched_graph = self.initial_graph_sampler.sample(num_samples)
+        breakpoint()
+        batched_graph = self.initial_graph_sampler.sample(num_samples) # here we can change it so it gets our graph and not an empty one. 
         batched_graph.to(self.device)
 
         num_nodes = batched_graph.nodes_per_graph.sum()
@@ -199,7 +205,7 @@ class DiffusionBase(torch.nn.Module):
         for t in reversed(range(0, self.num_timesteps)):
             print(f'Sample timestep {t:4d}', end='\r')
             t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
-            t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
+            t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long) # Yulia: FYI this is not used at all, why do we have it
 
             log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
             batched_graph.log_full_edge_attr_t = log_full_edge_attr_tmin1

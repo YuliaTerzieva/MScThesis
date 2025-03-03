@@ -35,7 +35,7 @@ path_check = '{}/check/checkpoint_{}.pt'.format(log_dir, eval_args.checkpoint-1)
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
-args.device = 'cuda:0'
+args.device = 'cpu' #'cuda:0'
 train_loader, eval_loader, test_loader, num_node_feat, num_node_classes, num_edge_classes, max_degree, augmented_feature_dict, initial_graph_sampler, eval_evaluator, test_evaluator, monitoring_statistics = get_data(args)
 
 model = get_model(args, initial_graph_sampler=initial_graph_sampler)
@@ -48,6 +48,7 @@ model.eval()
 
 # sample 
 sampled_pygraph = model.sample(eval_args.num_samples)
+print(type(sampled_pygraph))
 pyg_datas = sampled_pygraph.to_data_list()
 generated_nxgraphs = []
 

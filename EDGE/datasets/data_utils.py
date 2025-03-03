@@ -120,6 +120,11 @@ class EmpiricalEmptyGraphGenerator:
         return ret, xT_feats
 
     def _generate_empty_data(self, num_node_per_graphs, xT_feats):
+        """
+        this funcition receives a list of integers num_node_per_graphs and 
+        a list of dictionary, with degree key showing the degree of each node
+        """
+        # breakpoint()
         return_data_list = []
 
         for num_node, xT_feat in zip(num_node_per_graphs, xT_feats):
@@ -143,9 +148,12 @@ class EmpiricalEmptyGraphGenerator:
         batched_data = collate_fn(return_data_list)
         return batched_data
 
-    def sample(self, num_samples):
+    def sample(self, num_samples): # return type is -> class 'abc.DataBatch'
+        
         num_node_per_graphs, xT_feats = self._sample_graph_size_and_features(num_samples)
+        print(f"I made a graph with the following numbers of nodes {num_node_per_graphs} with features {xT_feats}")
         empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
+
         return empty_pyg_datas
 
 class NeuralEmptyGraphGenerator:

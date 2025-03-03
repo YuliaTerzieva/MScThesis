@@ -11,15 +11,15 @@
     },
 
 
-    "bigger_test_graph": {
+    "140_nodes_graph": {
         "pattern_number": 20,
         "new_connections": 6,
         "number_random": 20,
-        "node_file": "GeneratedDataset/nodes_conf2.csv",
-        "edge_file": "GeneratedDataset/edges_conf2.csv",
-        "ego_file": "GeneratedDataset/Ego_Nets_conf2",
-        "mu": 3, 
-        "std": 2
+        "node_file": "GeneratedDataset/140_nodes_graph_nodes.csv",
+        "edge_file": "GeneratedDataset/140_nodes_graph_edges.csv",
+        "ego_file": "GeneratedDataset/140_nodes_graph",
+        "mu": 10, 
+        "std": 3
     },
 
 
@@ -54,5 +54,16 @@
         "ego_file": "GeneratedDataset/Big_Ego_Nets_non_dir",
         "mu": 15, 
         "std": 6
+    },
+
+    "very_small_test_graph": {
+        "pattern_number": 1,
+        "new_connections": 1,
+        "number_random": 2,
+        "node_file": "GeneratedDataset/small_test_graph_nodes.csv",
+        "edge_file": "GeneratedDataset/small_test_graph_edges.csv",
+        "ego_file": "GeneratedDataset/small_test_graph_ego_nets",
+        "mu": 3, 
+        "std": 1
     }
 }

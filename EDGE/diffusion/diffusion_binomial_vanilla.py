@@ -83,6 +83,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
 
     def _predict_x0_or_xtmin1(self, batched_graph, t_node, t_edge):
+        print("I'm in diffusion/diffusion_binomial_vanilla _predict_x0_or_xtmin1")
         out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
 
         assert out_node.size(1) == self.num_node_classes
@@ -190,6 +191,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         
 
     def _q_sample_and_set_xtmin1_xt_given_x0(self, batched_graph, t_node, t_edge):
+        # breakpoint()
         batched_graph.log_node_attr = index_to_log_onehot(batched_graph.node_attr, self.num_node_classes)
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
         
@@ -270,6 +272,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
     
 
     def _q_pred(self, batched_graph, t_node, t_edge):
+        # breakpoint()
         # nodes prob
         log_cumprod_alpha_t_node = extract(self.log_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
         log_1_min_cumprod_alpha_node = extract(self.log_1_min_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
@@ -359,6 +362,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
 
     def _train_loss(self, batched_graph):
+        # breakpoint()
         b = batched_graph.num_graphs
         batched_graph.num_entries = self._calc_num_entries(batched_graph) 
         if self.loss_type == 'vb_kl':             
@@ -367,7 +371,8 @@ class BinomialDiffusionVanilla(DiffusionBase):
             # sample t for each graph
             t, pt = self._sample_time(b, self.device, self.sample_time_method)
 
-            t_node = t.repeat_interleave(batched_graph.nodes_per_graph)
+            # Yulia : this is how they make t_node and t_edge! 
+            t_node = t.repeat_interleave(batched_graph.nodes_per_graph) 
             t_edge = t.repeat_interleave(batched_graph.edges_per_graph)
             
             self._q_sample_and_set_xt_given_x0(batched_graph, t_node, t_edge)
