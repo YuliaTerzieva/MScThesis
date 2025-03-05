@@ -42,6 +42,10 @@ def get_model(args, initial_graph_sampler):
         assert args.parametrization in ('xt_prescribed_st')
         dynamics_fn = TGNN_degree_guided
         diffusion_fn = BinomialDiffusionActive
+    elif args.arch == 'TGNN_degree_and_node_guided':
+        assert args.parametrization in ('xt_prescribed_st')
+        dynamics_fn = TGNN_degree_and_node_guided
+        diffusion_fn = BinomialDiffusionActive
     else:
         raise NotImplementedError()
         

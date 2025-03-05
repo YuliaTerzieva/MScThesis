@@ -65,5 +65,16 @@
         "ego_file": "GeneratedDataset/small_test_graph_ego_nets",
         "mu": 3, 
         "std": 1
+    },
+
+    "Small_test_no_anomaly": {
+        "pattern_number": 50,
+        "new_connections": 0,
+        "number_random": 70,
+        "node_file": "GeneratedDataset/Small_test_no_anomaly_nodes.csv",
+        "edge_file": "GeneratedDataset/Small_test_no_anomaly_edges.csv",
+        "ego_file": "GeneratedDataset/Small_test_no_anomaly",
+        "mu": 10, 
+        "std": 3
     }
 }

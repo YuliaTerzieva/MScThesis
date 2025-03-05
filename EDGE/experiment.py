@@ -81,13 +81,18 @@ class GraphExperiment(DiffusionExperiment):
             for pyg_data in pyg_data_list:
                 # assert pyg_data.edge_index.shape[1]%2==0
                 # assert pyg_data.edge_index.shape[0]%2==0
-                g_gen = pyg.utils.to_networkx(pyg_data, to_undirected=True)
+                g_gen = pyg.utils.to_networkx(pyg_data, node_attrs = ["node_attr"], to_undirected=True)
                 generated_graphs.append(g_gen)
 
             w = 8 if self.args.num_generation >= 64 else 2
             fig, axes = plt.subplots(w, w, figsize=(17,17))
+
+            mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+
             for i, g_gen in enumerate(generated_graphs[:w**2]):
-                nx.draw(g_gen, ax=axes[i%w][i//w], node_size=30)
+                # Assume each node has an attribute called 'node_attr'
+                node_colors = [mapping[g_gen.nodes[node].get('node_attr', 0)] for node in g_gen.nodes]
+                nx.draw(g_gen, ax=axes[i%w][i//w], node_color=node_colors,node_size=30)
 
             plt.savefig(os.path.join(self.log_path, f"eval/sample{epoch}.png"))
             plt.close()
@@ -121,13 +126,17 @@ class GraphExperiment(DiffusionExperiment):
             
             pyg_data_list = generated_pyg_datas.to_data_list()
             for pyg_data in pyg_data_list:
-                g_gen = pyg.utils.to_networkx(pyg_data, to_undirected=True)
+                g_gen = pyg.utils.to_networkx(pyg_data, node_attrs = ["node_attr"], to_undirected=True)
                 generated_graphs.append(g_gen)
 
             w = 8 if self.args.num_generation >= 64 else 2
             fig, axes = plt.subplots(w, w, figsize=(17,17))
+
+            mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+
             for i, g_gen in enumerate(generated_graphs[:w**2]):
-                nx.draw(g_gen, ax=axes[i%w][i//w], node_size=30)
+                node_colors = [mapping[g_gen.nodes[node].get('node_attr', 0)] for node in g_gen.nodes]
+                nx.draw(g_gen, ax=axes[i%w][i//w], node_color=node_colors,node_size=30)
 
             plt.savefig(os.path.join(self.log_path, f"test/sample{epoch}.png"))
             plt.close()

@@ -312,7 +312,7 @@ class TGNN_degree_guided(torch.nn.Module):
             torch.nn.SiLU(),
             torch.nn.Linear(dim * 2, dim),
             torch.nn.SiLU(),
-            torch.nn.Linear(dim, self.num_classes)
+            torch.nn.Linear(dim, self.num_classes) # change this
         )
         
     def forward(self, pyg_data, t_node, t_edge):
@@ -353,6 +353,161 @@ class TGNN_degree_guided(torch.nn.Module):
         node_selection = node_selection.long()
         
         nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection)], dim=-1)
+        nodes = self.node_in(nodes)
+
+        t = self.time_pos_emb(t_node)
+        t = self.mlp(t)
+        
+        h = nodes.unsqueeze(0)
+        contexts = torch_scatter.scatter(nodes, pyg_data.batch, reduce='mean', dim=0)
+        contexts = self.global_mlp(contexts)
+
+        contexts = contexts.repeat_interleave(pyg_data.nodes_per_graph,dim=0)
+
+        for i in range(len(self.num_heads)): # the loop is the same as TGNN
+            ### add time embedding ###
+            t_emb = self.layers[f'time{i}'](t)
+
+            nodes = torch.cat([nodes, t_emb], dim=-1)
+            
+            ### message passing on graph ###
+            nodes = self.layers[f'conv{i}'](nodes, edge_index)
+            nodes = self.layers[f'norm{i}'](nodes)
+            nodes = self.layers[f'act{i}'](nodes)
+            nodes = self.dropout(nodes)
+
+            ### gru update ###
+            nodes, h = self.gru(nodes.unsqueeze(0).contiguous(), h.contiguous())
+            h = self.dropout(h)
+            nodes = nodes.squeeze(0)
+            
+            ### global context aggregation ###
+            # aggregate locals to global
+            node_contexts = self.context_mlp(torch.cat([nodes, contexts], dim=-1))
+            contexts = torch_scatter.scatter(contexts + node_contexts, pyg_data.batch, reduce='mean', dim=0)
+            contexts = self.global_mlp(contexts)
+            contexts = contexts.repeat_interleave(pyg_data.nodes_per_graph,dim=0)
+            # spread global to locals
+            nodes = nodes + contexts
+
+        # mlp add
+        row = pyg_data.full_edge_index[0].index_select(0, pyg_data.active_edge_indices)
+        col = pyg_data.full_edge_index[1].index_select(0, pyg_data.active_edge_indices)
+
+        nodes = torch.cat([nodes, self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection)], dim=-1)
+        nodes = self.node_out_mlp(nodes)
+
+        edge_emb = nodes[row] + nodes[col]
+        edge_class = self.final_out(edge_emb)
+        
+        # breakpoint()
+        return pyg_data.log_node_attr, edge_class
+    
+class TGNN_degree_and_node_guided(torch.nn.Module):
+    def __init__(self, max_degree, num_node_classes, num_edge_classes, dim, num_steps, num_heads=[4, 4, 4, 1], dropout=0., norm='None', degree=False, augmented_features={}, **kwargs) -> None:
+        super().__init__()
+        self.max_degree = max_degree
+        self.num_edge_classes = num_edge_classes
+        self.num_node_classes = num_node_classes
+        self.num_heads = num_heads 
+        self.dim = dim
+        self.num_steps = num_steps
+        self.embedding_t = torch.nn.Linear(1, dim)
+        self.embedding_0 = torch.nn.Linear(1, dim)      # new wrt TGNN
+        self.embedding_sel = torch.nn.Embedding(2, dim) # new wrt TGNN
+        self.embedding_node_class = torch.nn.Linear(num_node_classes, dim)      # new wrt TGNN_degree_guided
+        self.node_in = torch.torch.nn.Sequential(
+            torch.nn.Linear(dim * 4, dim), # 4 = embedding_t + embedding_0 + embedding_sel + embedding_node_class
+            torch.nn.SiLU()
+        )                                               # new wrt TGNN
+        self.time_pos_emb = SinusoidalPosEmb(dim, num_steps=num_steps)
+        self.layers = torch.nn.ModuleDict()
+        self.norm = norm
+        self.gru = torch.nn.Identity()
+        self.global_mlp = torch.nn.Sequential(
+            torch.nn.Linear(dim, dim * 4),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim * 4, dim)
+            )
+
+        self.context_mlp = torch.nn.Sequential(
+            torch.nn.Linear(dim*2, dim * 4),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim * 4, dim)
+            )  
+
+        self.mlp = torch.nn.Sequential(
+            torch.nn.Linear(dim, dim * 4),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim * 4, dim)
+            )
+
+        self.dropout = torch.nn.Dropout(p=dropout)
+        if 'gru' in kwargs.keys():
+            if kwargs['gru']:
+                self.gru = torch.nn.GRU(dim, dim)
+
+        for i, num_head in enumerate(num_heads):
+            self.layers[f'time{i}'] = TimeEmb(dim, dim, Mish())
+            self.layers[f'conv{i}'] = pyg.nn.TransformerConv(in_channels=dim*2, out_channels=dim, heads=num_head, concat=False)
+            self.layers[f'norm{i}'] = norm_dict[self.norm](dim)
+            self.layers[f'act{i}'] = torch.nn.SiLU()
+
+        self.dummy_edge_feats = torch.nn.parameter.Parameter(torch.randn(dim))
+        
+
+        self.node_out_mlp = torch.nn.Sequential( # missibng node_interaction wrt TGNN (that was the miniattention layer) and this is new/ this is the replacement?
+            torch.nn.Linear(dim*4, dim * 2),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim * 2, dim*2),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim*2, dim*2)
+        )
+        
+        self.final_out = torch.nn.Sequential(
+            torch.nn.Linear(dim*2, dim * 2),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim * 2, dim),
+            torch.nn.SiLU(),
+            torch.nn.Linear(dim, self.num_edge_classes) # I changed this check if it is correct!
+        )
+        
+    def forward(self, pyg_data, t_node, t_edge):
+        """
+        type of pyg_data is  <class 'abc.DataBatch'>
+        type of t_node is <class 'torch.Tensor'>
+        type of t_edge is <class 'torch.Tensor'>
+        """
+
+        if hasattr(pyg_data, 'edge_index_t'):
+            edge_index = pyg_data.edge_index_t
+
+        else: 
+            edge_attr_t = pyg_data.log_full_edge_attr_t.argmax(-1)
+            is_edge_indices = edge_attr_t.nonzero(as_tuple=True)[0]
+
+            edge_index = pyg_data.full_edge_index[:, is_edge_indices]
+            edge_index = torch.cat([edge_index, edge_index.flip(0)],dim=-1)
+
+        
+        nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long() # this is just 0s ?
+        node_selection = torch.zeros_like(nodes_t)
+
+        # Yulia : nodes_t[..., None] this is done to add on edimention to the object. for example from (1, 2, 3) to have shape (1, 2, 3, 1)
+        nodes_t = nodes_t[..., None] / self.max_degree  # I prefer to make it embedding later
+        nodes_0 = pyg_data.degree[..., None] / self.max_degree
+
+        node_selection[pyg_data.active_node_indices] = 1
+        node_selection = node_selection.long()
+
+        '''
+        I'm adding here the node_class embedding
+        the node class has to be saved in pyg_data['node_attr'] NOT as one hot embedding, but with class (0 to num_node_classes-1)
+        '''
+        node_attr_one_hot = F.one_hot(pyg_data.node_attr, self.num_node_classes)
+        node_attr_one_hot = node_attr_one_hot.to(torch.float32)
+        # breakpoint()
+        nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr_one_hot)], dim=-1)
         nodes = self.node_in(nodes)
 
         t = self.time_pos_emb(t_node)

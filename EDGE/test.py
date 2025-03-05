@@ -7,6 +7,9 @@ import numpy as np
 # from DataGeneration import *
 from datasets.data_utils import preprocess
 
+# m = torch.distributions.categorical.Categorical(torch.tensor([ 0.25, 0.25, 0.25, 0.25 ]))
+# print(m.sample((4,)))
+
 # print(torch.backends.mps.is_available()) 
 # print(np.__version__)
 
@@ -51,18 +54,23 @@ from datasets.data_utils import preprocess
 # plt.title("Generater Mini Graph")
 # plt.show()
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/140_nodes_graph', 'rb'))
+mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
+map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
+
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly', 'rb'))
 print(len(nx_graphs))
 for n in nx_graphs[:3]:
-    print(n)
-    # breakpoint()
-    pyg_graph = preprocess(n, True)
+    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+    pos = nx.arf_layout(n)
+    nx.draw(n, pos, with_labels=True, node_color=node_colors)
+    plt.title("Generated Mini Graph")
+    plt.show()
 
-# Draw the graph
-# pos = nx.arf_layout(nx_graphs[0])
-# nx.draw(nx_graphs[0], pos, with_labels=True, node_size=500)
-# plt.title("Generater Mini Graph")
-# plt.show()
+num_nodes = []
+for n in nx_graphs:
+    num_nodes.append(len(n.nodes()))
+
+print(num_nodes)
 
     # print(n.nodes[:3])
     # print(n.edges[:3])

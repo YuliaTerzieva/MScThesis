@@ -11,7 +11,7 @@ import torch_geometric as pyg
 import random
 from functools import partial
 from torch_geometric.datasets import QM9
-from datasets.data_utils import EmpiricalEmptyGraphGenerator, NeuralEmptyGraphGenerator, preprocess, collate_fn, FEATURE_EXTRACTOR
+from datasets.data_utils import EmpiricalEmptyGraphGenerator, NeuralEmptyGraphGenerator, EmptyGraphGeneratorWithNodeAttributes, preprocess, collate_fn, FEATURE_EXTRACTOR
 from datasets.evaluator import NetworkEvaluator, GenericGraphEvaluator
 
 
@@ -149,17 +149,18 @@ def get_data(args):
         eval_pygraphs = []
         test_pygraphs = []
 
+        # Todo : possibly pass to the preprocess the augmented features
         max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
         for nx_graph in train_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
+            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
             train_pygraphs.append(pyg_data)
 
         for nx_graph in eval_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
+            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features)
             eval_pygraphs.append(pyg_data)
 
         for nx_graph in test_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
+            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features)
             test_pygraphs.append(pyg_data)
             
         train_set = ConcatDataset([GraphDataset(train_pygraphs) for _ in range(repeat)]) # this means that each graph is in the training dataset a few times.
@@ -168,6 +169,8 @@ def get_data(args):
 
         if args.empty_graph_sampler == 'empirical':
             initial_graph_sampler = EmpiricalEmptyGraphGenerator(train_pygraphs, degree=args.degree)
+        elif args.empty_graph_sampler == 'empirical+node':
+            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(train_pygraphs, degree=args.degree)
         elif args.empty_graph_sampler == 'neural':
             neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
             initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)

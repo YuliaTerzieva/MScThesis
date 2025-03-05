@@ -75,3 +75,14 @@ ToDo from the 25th :
 ---
 ToDO fom 26 of Feb:
 - check if p in formula 1 form the paper -> check if p is the same or they are distinct
+
+
+---- 
+ToDo from 4 of March :
+
+- I need to change / create new empty graph sampler (we need this for when we evaluate the training model), it samples number of nodes and then the degrees for each node. I need to change it in such a way that there are also node features. In the current impleentation I can do that but that means that for all graphs with number of nodes N i would have the same features. 
+
+    - the node degrees depend on the node class, thus i would first need to sample number of nodes, then sample the class of the nodes and then based on the class get the degree of the nodes
+
+- I also need another empty graph sampler for when I want the model to generate edges given am empty graph, This i am not sure how to do, but these would be a set empty graphs from the training set of the alligator model
+

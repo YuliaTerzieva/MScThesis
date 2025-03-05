@@ -63,9 +63,10 @@ def preprocess(g, degree=False, augmented_features=[]):
     if degree:
         pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
     
+    # breakpoint()
     for augmented_feature in augmented_features:
         setattr(pyg_data, augmented_feature, FEATURE_EXTRACTOR[augmented_feature]['func'](pyg_data))
-
+    
     return pyg_data
 
 def collate_fn(pyg_datas, repeat=1):
@@ -149,9 +150,8 @@ class EmpiricalEmptyGraphGenerator:
         return batched_data
 
     def sample(self, num_samples): # return type is -> class 'abc.DataBatch'
-        
         num_node_per_graphs, xT_feats = self._sample_graph_size_and_features(num_samples)
-        print(f"I made a graph with the following numbers of nodes {num_node_per_graphs} with features {xT_feats}")
+        # print(f"I made a graph with the following numbers of nodes {num_node_per_graphs} with features {xT_feats}")
         empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
 
         return empty_pyg_datas
@@ -245,3 +245,99 @@ class NeuralEmptyGraphGenerator:
         empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
         return empty_pyg_datas
 
+class EmptyGraphGeneratorWithNodeAttributes:
+    def __init__(self, train_pyg_datas, degree=False, augment_features=[]):
+        """From what I see, the problem with this is that if there are multiple graphs 
+        with the same number of nodes in the training data, then this sampler would take 
+        only the first graph and save only its degrees and node features"""
+
+        # breakpoint()
+        # pmf of graph size
+        num_nodes = torch.tensor([pyg_data.num_nodes for pyg_data in train_pyg_datas])
+
+        self.min_node = num_nodes.min().long().item()
+        self.max_node = num_nodes.max().long().item()
+
+        unnorm_p = torch.histc(num_nodes.float(), bins=self.max_node-self.min_node+1)
+
+        self.empirical_graph_size_dist = unnorm_p/unnorm_p.sum()
+
+        # From here we need now to sample the node class
+        self.node_classes, class_counts = torch.cat([pyg_data.node_attr for pyg_data in train_pyg_datas], axis = 0).unique(return_counts=True)
+        assert class_counts.sum() == num_nodes.sum()
+        
+        self.node_class_prob_dist = class_counts / num_nodes.sum()
+
+        assert self.node_class_prob_dist.sum() == 1
+
+        self.empirical_node_class_cat_dist = torch.distributions.categorical.Categorical(self.node_class_prob_dist)
+        
+        # breakpoint()
+
+        self.empirical_degree_dist_per_node_class = {}
+        for node_class in self.node_classes:
+            degrees_within_class = torch.cat([pyg_data.degree[pyg_data.node_attr == node_class] for pyg_data in train_pyg_datas])
+
+            self.min_degree = degrees_within_class.min().long().item()
+            max_degree = degrees_within_class.max().long().item()
+            unnorm_p = torch.histc(degrees_within_class.float(), bins=max_degree-self.min_degree+1)
+            unnorm_p = unnorm_p + 0.05 # I am adding this because otherwise there are many degrees with porbability 0 (it is veeeery sparse)
+
+            self.empirical_degree_dist_per_node_class[int(node_class)] = unnorm_p/unnorm_p.sum()
+
+        
+        # print(self.empirical_graph_size_dist)
+        # print(self.node_class_prob_dist)
+        # print(self.empirical_degree_dist_per_node_class)
+
+    def _sample_graph_size_and_features(self, num_samples):
+        # breakpoint()
+
+
+        number_of_nodes_per_graph = self.empirical_graph_size_dist.multinomial(num_samples=num_samples, replacement=True) + self.min_node
+        number_of_nodes_per_graph = number_of_nodes_per_graph.tolist()
+        
+        graphs_feats = [] 
+        for n_node in number_of_nodes_per_graph:
+            graph_feature = {}
+            graph_feature['node_attr'] = self.empirical_node_class_cat_dist.sample((n_node,))
+            graph_feature['degree'] = torch.cat([self.empirical_degree_dist_per_node_class[int(node_class)].multinomial(num_samples=1) + self.min_degree for node_class in graph_feature['node_attr']])
+            graphs_feats.append(graph_feature)
+            # print(graph_feature)
+
+        # graphs_feats is a list of dicts
+        return number_of_nodes_per_graph, graphs_feats
+
+    def _generate_empty_data(self, num_node_per_graphs, xT_feats):
+        """
+        this funcition receives a list of integers num_node_per_graphs and 
+        a list of dictionary, with degree key showing the degree of each node
+        """
+        # breakpoint()
+        return_data_list = []
+
+        for num_node, xT_feat in zip(num_node_per_graphs, xT_feats):
+            pyg_data = pyg.data.Data()
+            row, col = torch.triu_indices(num_node, num_node,1)
+            pyg_data.full_edge_index = torch.stack([row, col])
+
+            pyg_data.full_edge_attr = torch.zeros((pyg_data.full_edge_index[0].shape[0],), dtype=torch.long)
+
+            pyg_data.num_nodes = num_node
+
+            for feat_name in xT_feat:
+                setattr(pyg_data, feat_name, xT_feat[feat_name])
+            
+            return_data_list.append(pyg_data)
+
+        batched_data = collate_fn(return_data_list)
+        # print(batched_data)
+        return batched_data
+
+    def sample(self, num_samples): # return type is -> class 'abc.DataBatch'
+        
+        num_node_per_graphs, xT_feats = self._sample_graph_size_and_features(num_samples)
+        # print(f"I made a graph with the following numbers of nodes {num_node_per_graphs} with features {xT_feats}")
+        empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
+
+        return empty_pyg_datas

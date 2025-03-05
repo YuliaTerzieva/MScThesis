@@ -193,7 +193,7 @@ class DiffusionBase(torch.nn.Module):
 
 
     def sample(self, num_samples):
-        breakpoint()
+        # breakpoint()
         batched_graph = self.initial_graph_sampler.sample(num_samples) # here we can change it so it gets our graph and not an empty one. 
         batched_graph.to(self.device)
 

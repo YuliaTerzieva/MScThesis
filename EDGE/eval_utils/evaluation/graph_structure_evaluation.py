@@ -123,7 +123,7 @@ class Descriptor():
             K_GG = np.exp(-gamma * GG)
             K_RR = np.exp(-gamma * RR)
 
-            mmd = K_GG.mean() + K_RR.mean() - (2 * K_GR.mean())
+            mmd = K_GG.mean() + K_RR.mean() - (2 * K_GR.mean()) 
             max_mmd = mmd if mmd > max_mmd else max_mmd
             # print(mmd, max_mmd)
 

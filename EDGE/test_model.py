@@ -8,11 +8,12 @@ import matplotlib.pyplot as plt
 # Model
 from model import get_model
 
-#"./wandb/Big_Ego_Nets_non_dir/multinomial_diffusion/multistep/2025-02-18_11-24-25/check/checkpoint_49.pt"
-path ="./wandb/140_nodes_graph/multinomial_diffusion/multistep/2025-03-03_13-16-32/check/checkpoint_49.pt"
+which_run = "./wandb/140_nodes_graph/multinomial_diffusion/multistep/2025-03-04_21-51-01"
+
+path = which_run+"/check/checkpoint_39.pt"
 num_samples = 3
 
-path_args = "./wandb/140_nodes_graph/multinomial_diffusion/multistep/2025-03-03_13-16-32/args.pickle"
+path_args = which_run+ "/args.pickle"
 with open(path_args, 'rb') as f:
     args = pickle.load(f)
 
@@ -32,7 +33,7 @@ model.eval()
 print(model) # BinomialDiffusionActive _denoise_fn TGNN_degree_guided
 
 # sample 
-# breakpoint()
+breakpoint()
 sampled_pygraph = model.sample(num_samples) 
 # print(type(sampled_pygraph)) # <class 'abc.DataBatch'>
 pyg_datas = sampled_pygraph.to_data_list()
