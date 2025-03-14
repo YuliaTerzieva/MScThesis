@@ -7,6 +7,7 @@ from torch_geometric.utils import to_dense_adj
 from torch_geometric import transforms as T
 from torch.nn import functional as F
 from layers.layers import BitModel, NodeModel
+import pickle as pkl
 
 FEATURE_EXTRACTOR = {
 }
@@ -40,7 +41,7 @@ def deg_hist_to_deg_seq(deg_hist):
         cum = cum+num_nodes
     return ret
 
-def preprocess(g, degree=False, augmented_features=[]):
+def preprocess(g, degree=False, augmented_features=[], p_uncon = None):
     if isinstance(g, nx.Graph):
         pyg_data = pyg.utils.from_networkx(g)
         adj = torch.from_numpy(nx.to_numpy_array(g).astype(np.int64)).long() # Yulia : changed "int" to "int64"
@@ -55,10 +56,12 @@ def preprocess(g, degree=False, augmented_features=[]):
 
     pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
 
-    if not hasattr(pyg_data, 'node_attr'):
-        # print("the data does not have node attribute data!")
-        # Yulia todo: maybe add the node attribute here?? 
-        pyg_data.node_attr = torch.zeros(pyg_data.num_nodes, dtype=torch.long)
+    if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) <= p_uncon):
+        pyg_data.node_attr = torch.zeros(pyg_data.num_nodes, dtype=torch.long) # TODO : maybe instead of 0 fill it up with -1?
+
+    # if p_uncon is not None:
+    #     mask = torch.rand(pyg_data.node_attr.shape[0]) > p_uncon
+    #     pyg_data.node_attr = torch.where(mask, pyg_data.node_attr, torch.tensor(-1)) # where mask = true original, otherwise -1
 
     if degree:
         pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
@@ -246,98 +249,33 @@ class NeuralEmptyGraphGenerator:
         return empty_pyg_datas
 
 class EmptyGraphGeneratorWithNodeAttributes:
-    def __init__(self, train_pyg_datas, degree=False, augment_features=[]):
-        """From what I see, the problem with this is that if there are multiple graphs 
-        with the same number of nodes in the training data, then this sampler would take 
-        only the first graph and save only its degrees and node features"""
+    def __init__(self, file_path = "../GeneratedDataset/Small_test_no_anomaly_test_graphs"):
 
-        # breakpoint()
-        # pmf of graph size
-        num_nodes = torch.tensor([pyg_data.num_nodes for pyg_data in train_pyg_datas])
+        testing_graphs_nx = pkl.load(open(file_path, 'rb'))
+        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx][:3]
 
-        self.min_node = num_nodes.min().long().item()
-        self.max_node = num_nodes.max().long().item()
-
-        unnorm_p = torch.histc(num_nodes.float(), bins=self.max_node-self.min_node+1)
-
-        self.empirical_graph_size_dist = unnorm_p/unnorm_p.sum()
-
-        # From here we need now to sample the node class
-        self.node_classes, class_counts = torch.cat([pyg_data.node_attr for pyg_data in train_pyg_datas], axis = 0).unique(return_counts=True)
-        assert class_counts.sum() == num_nodes.sum()
-        
-        self.node_class_prob_dist = class_counts / num_nodes.sum()
-
-        assert self.node_class_prob_dist.sum() == 1
-
-        self.empirical_node_class_cat_dist = torch.distributions.categorical.Categorical(self.node_class_prob_dist)
-        
-        # breakpoint()
-
-        self.empirical_degree_dist_per_node_class = {}
-        for node_class in self.node_classes:
-            degrees_within_class = torch.cat([pyg_data.degree[pyg_data.node_attr == node_class] for pyg_data in train_pyg_datas])
-
-            self.min_degree = degrees_within_class.min().long().item()
-            max_degree = degrees_within_class.max().long().item()
-            unnorm_p = torch.histc(degrees_within_class.float(), bins=max_degree-self.min_degree+1)
-            unnorm_p = unnorm_p + 0.05 # I am adding this because otherwise there are many degrees with porbability 0 (it is veeeery sparse)
-
-            self.empirical_degree_dist_per_node_class[int(node_class)] = unnorm_p/unnorm_p.sum()
-
-        
-        # print(self.empirical_graph_size_dist)
-        # print(self.node_class_prob_dist)
-        # print(self.empirical_degree_dist_per_node_class)
-
-    def _sample_graph_size_and_features(self, num_samples):
-        # breakpoint()
-
-
-        number_of_nodes_per_graph = self.empirical_graph_size_dist.multinomial(num_samples=num_samples, replacement=True) + self.min_node
-        number_of_nodes_per_graph = number_of_nodes_per_graph.tolist()
-        
-        graphs_feats = [] 
-        for n_node in number_of_nodes_per_graph:
-            graph_feature = {}
-            graph_feature['node_attr'] = self.empirical_node_class_cat_dist.sample((n_node,))
-            graph_feature['degree'] = torch.cat([self.empirical_degree_dist_per_node_class[int(node_class)].multinomial(num_samples=1) + self.min_degree for node_class in graph_feature['node_attr']])
-            graphs_feats.append(graph_feature)
-            # print(graph_feature)
-
-        # graphs_feats is a list of dicts
-        return number_of_nodes_per_graph, graphs_feats
-
-    def _generate_empty_data(self, num_node_per_graphs, xT_feats):
+    def _fill_needed_features(self, graphs):
         """
-        this funcition receives a list of integers num_node_per_graphs and 
-        a list of dictionary, with degree key showing the degree of each node
+        This function takes a list of graphs and removes the edge_index attribute of all of them. 
         """
-        # breakpoint()
         return_data_list = []
 
-        for num_node, xT_feat in zip(num_node_per_graphs, xT_feats):
-            pyg_data = pyg.data.Data()
-            row, col = torch.triu_indices(num_node, num_node,1)
-            pyg_data.full_edge_index = torch.stack([row, col])
-
-            pyg_data.full_edge_attr = torch.zeros((pyg_data.full_edge_index[0].shape[0],), dtype=torch.long)
-
-            pyg_data.num_nodes = num_node
-
-            for feat_name in xT_feat:
-                setattr(pyg_data, feat_name, xT_feat[feat_name])
-            
-            return_data_list.append(pyg_data)
+        for graph in graphs:
+            graph.edge_index=None
+            return_data_list.append(graph)
 
         batched_data = collate_fn(return_data_list)
-        # print(batched_data)
+        
         return batched_data
 
-    def sample(self, num_samples): # return type is -> class 'abc.DataBatch'
-        
-        num_node_per_graphs, xT_feats = self._sample_graph_size_and_features(num_samples)
-        # print(f"I made a graph with the following numbers of nodes {num_node_per_graphs} with features {xT_feats}")
-        empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
-
-        return empty_pyg_datas
+    def sample(self, num_samples):
+        """
+        This function samples "num_samples" from a list of graphs.
+        The list is created from graphs in the test section of the dataset
+        Then, other features are added to the pyg.data.Data() object 
+        that are required for the algorithm
+        """
+        sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
+        sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
+        empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
+        return sampled_graphs, empty_pyg_datas

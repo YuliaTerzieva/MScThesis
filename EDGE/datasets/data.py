@@ -55,6 +55,7 @@ def add_data_args(parser):
     parser.add_argument('--empty_graph_sampler', type=str, default='empirical', help='empirical | neural') 
     parser.add_argument('--degree', action='store_true') # Yulia : this means that if the --degree flag is provided, the argument will be set to True; otherwise False
     parser.add_argument('--augmented_features', type=str, nargs="*", default=[])
+    parser.add_argument('--p_uncon', type=int,  default=0.5, help="the probability of dropping the node features during training") # Added by Yulia
 
 def get_data_id(args):
     return '{}'.format(args.dataset)
@@ -141,9 +142,9 @@ def get_data(args):
         """
         ToDo : ask Ioana if this training split if okay. They are evaluating on the first 20%, but they also train on the evaluation set!?
         """
-        train_nx_graphs = nx_graphs[:int(0.6*l)]
-        eval_nx_graphs = nx_graphs[int(0.6*l):int(0.8*l)]
-        test_nx_graphs = nx_graphs[int(0.8*l):] 
+        train_nx_graphs = nx_graphs[:int(0.8*l)]
+        eval_nx_graphs = nx_graphs[int(0.8*l):int(0.9*l)]
+        test_nx_graphs = nx_graphs[int(0.9*l):] 
 
         train_pygraphs = []
         eval_pygraphs = []
@@ -152,7 +153,7 @@ def get_data(args):
         # Todo : possibly pass to the preprocess the augmented features
         max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
         for nx_graph in train_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
+            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features, p_uncon = args.p_uncon) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
             train_pygraphs.append(pyg_data)
 
         for nx_graph in eval_nx_graphs:
@@ -169,8 +170,8 @@ def get_data(args):
 
         if args.empty_graph_sampler == 'empirical':
             initial_graph_sampler = EmpiricalEmptyGraphGenerator(train_pygraphs, degree=args.degree)
-        elif args.empty_graph_sampler == 'empirical+node':
-            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(train_pygraphs, degree=args.degree)
+        elif args.empty_graph_sampler == 'file':
+            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes() # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
         elif args.empty_graph_sampler == 'neural':
             neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
             initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)

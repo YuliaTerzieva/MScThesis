@@ -304,16 +304,14 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
 
     def _prepare_data_for_sampling(self, batched_graph):
+        # breakpoint()
         batched_graph.log_node_attr = index_to_log_onehot(batched_graph.node_attr, self.num_node_classes)
-        log_prob_node = torch.ones_like(batched_graph.log_node_attr, device=self.device) * self.log_final_prob_node
-        batched_graph.log_node_attr_t = self.log_sample_categorical(log_prob_node, self.num_node_classes)
+        # log_prob_node = torch.ones_like(batched_graph.log_node_attr, device=self.device) * self.log_final_prob_node
+        # batched_graph.log_node_attr_t = self.log_sample_categorical(log_prob_node, self.num_node_classes)
+        batched_graph.log_node_attr_t = batched_graph.log_node_attr
         
-
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
-
         log_prob_edge = torch.ones_like(batched_graph.log_full_edge_attr, device=self.device) * self.log_final_prob_edge
-
-      
         batched_graph.log_full_edge_attr_t = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
 
         return batched_graph

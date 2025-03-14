@@ -10,6 +10,14 @@ from torch.nn.parameter import Parameter
 
 num_of_times_entering_model_forward = 0
 
+def safe_one_hot(x, num_classes): # TODO: Yulia add documentation
+    
+    one_hot = F.one_hot(torch.where(x == -1, torch.tensor(0, dtype=x.dtype, device=x.device), x), num_classes=num_classes)
+    zero_rows = torch.zeros_like(one_hot)
+    one_hot = torch.where(x.unsqueeze(-1) == -1, zero_rows, one_hot)
+
+    return one_hot
+
 norm_dict = {
     'Batch': lambda d: torch.nn.BatchNorm1d(d),
     'None': lambda d: torch.nn.Identity(),
@@ -478,7 +486,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         type of t_node is <class 'torch.Tensor'>
         type of t_edge is <class 'torch.Tensor'>
         """
-
+        # breakpoint()
         if hasattr(pyg_data, 'edge_index_t'):
             edge_index = pyg_data.edge_index_t
 
@@ -490,7 +498,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
             edge_index = torch.cat([edge_index, edge_index.flip(0)],dim=-1)
 
         
-        nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long() # this is just 0s ?
+        nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long()
         node_selection = torch.zeros_like(nodes_t)
 
         # Yulia : nodes_t[..., None] this is done to add on edimention to the object. for example from (1, 2, 3) to have shape (1, 2, 3, 1)
@@ -504,7 +512,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         I'm adding here the node_class embedding
         the node class has to be saved in pyg_data['node_attr'] NOT as one hot embedding, but with class (0 to num_node_classes-1)
         '''
-        node_attr_one_hot = F.one_hot(pyg_data.node_attr, self.num_node_classes)
+        node_attr_one_hot = safe_one_hot(pyg_data.node_attr, self.num_node_classes)
         node_attr_one_hot = node_attr_one_hot.to(torch.float32)
         # breakpoint()
         nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr_one_hot)], dim=-1)

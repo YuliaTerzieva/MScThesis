@@ -59,12 +59,26 @@ map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list
 
 nx_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly', 'rb'))
 print(len(nx_graphs))
-for n in nx_graphs[:3]:
-    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
-    pos = nx.arf_layout(n)
-    nx.draw(n, pos, with_labels=True, node_color=node_colors)
-    plt.title("Generated Mini Graph")
-    plt.show()
+
+number_of_nodes = [len(n.nodes) for n in nx_graphs]
+plt.hist(number_of_nodes, bins=50,alpha = 0.5, label = "train")
+
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly_test_graphs', 'rb'))
+print(len(nx_graphs))
+
+number_of_nodes = [len(n.nodes) for n in nx_graphs]
+plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "test")
+plt.legend()
+plt.xlabel("Number of nodes")
+plt.ylabel("Number of graphs")
+plt.show()
+
+# for n in nx_graphs[:3]:
+#     node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+#     pos = nx.arf_layout(n)
+#     nx.draw(n, pos, with_labels=True, node_color=node_colors)
+#     plt.title("Generated Mini Graph")
+#     plt.show()
 
 num_nodes = []
 for n in nx_graphs:

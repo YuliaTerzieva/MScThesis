@@ -125,6 +125,6 @@ python3 train.py --epochs 1 --num_generation 2 --diffusion_dim 8 --diffusion_ste
 
 """
 
-python3 train.py --epochs 50 --num_generation 5 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset Small_test_no_anomaly --batch_size 6 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method importance --check_every 5 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical+node --degree --num_heads 8 8 8 8 1 
+python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset Small_test_no_anomaly --batch_size 6 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method uniform --check_every 5 --eval_every 50 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 8 1 
 
 """
