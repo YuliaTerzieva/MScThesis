@@ -252,7 +252,7 @@ class EmptyGraphGeneratorWithNodeAttributes:
     def __init__(self, file_path = "../GeneratedDataset/Small_test_no_anomaly_test_graphs"):
 
         testing_graphs_nx = pkl.load(open(file_path, 'rb'))
-        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx][:3]
+        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
 
     def _fill_needed_features(self, graphs):
         """

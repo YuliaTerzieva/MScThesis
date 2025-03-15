@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import torch_geometric as pyg
 import pickle
 import json
+import random
 
 
 def GeneratePattern1(node_file_name, edge_file_name,  number_of_times=1):
@@ -197,7 +198,7 @@ def Visualizegraph(node_file_name, edge_file_name):
 
     return G
 
-def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_file_name, print_subgraphs=False):
+def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, node_file_name, edge_file_name, print_subgraphs=False):
     """Creating k-hop ego networks and saving them as a pickled list of networkx objects in the file ego_net_file_name. 
     The subgraph includes 
         - the central node, 
@@ -237,6 +238,9 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
     if not os.path.exists(ego_net_file_name):
         with open(ego_net_file_name, 'x') as file:
             print(f"File created: {ego_net_file_name}")
+    if not os.path.exists(test_ego_net_file_name):
+        with open(test_ego_net_file_name, 'x') as file:
+            print(f"File created: {test_ego_net_file_name}")
 
     list_of_ego_nets = []
 
@@ -251,8 +255,13 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, node_file_name, edge_fil
             plt.show()
 
 
+    random.shuffle(list_of_ego_nets)
     dbfile = open(ego_net_file_name, 'ab')
-    pickle.dump(list_of_ego_nets, dbfile)                    
+    pickle.dump(list_of_ego_nets[:int(0.8*len(list_of_ego_nets))], dbfile)
+    dbfile.close()
+
+    dbfile = open(test_ego_net_file_name, 'ab')
+    pickle.dump(list_of_ego_nets[int(0.8*len(list_of_ego_nets)):], dbfile)
     dbfile.close()
 
     return list_of_ego_nets, graph.nodes.items()
@@ -284,4 +293,4 @@ if __name__ == '__main__':
     ConnectPatterns(node_file, edge_file, new_connections)
     InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
     Visualizegraph(node_file, edge_file)
-    Ego_Net_Generation(None, 2, ego_file, node_file, edge_file, False)
+    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)

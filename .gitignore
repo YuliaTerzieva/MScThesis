@@ -4,6 +4,9 @@
 ###
 **/.DS_Store
 
+### weights and biases
+wandb/
+
 ### Python ###
 # Byte-compiled / optimized / DLL files
 __pycache__/

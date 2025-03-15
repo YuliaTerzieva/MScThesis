@@ -74,7 +74,7 @@
         "node_file": "GeneratedDataset/Small_test_no_anomaly_nodes.csv",
         "edge_file": "GeneratedDataset/Small_test_no_anomaly_edges.csv",
         "ego_file": "GeneratedDataset/Small_test_no_anomaly",
-        "mu": 10, 
-        "std": 3
+        "mu": 5, 
+        "std": 2
     }
 }
