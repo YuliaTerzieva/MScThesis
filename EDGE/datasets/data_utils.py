@@ -57,11 +57,9 @@ def preprocess(g, degree=False, augmented_features=[], p_uncon = None):
     pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
 
     if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) <= p_uncon):
-        pyg_data.node_attr = torch.zeros(pyg_data.num_nodes, dtype=torch.long) # TODO : maybe instead of 0 fill it up with -1?
-
-    # if p_uncon is not None:
-    #     mask = torch.rand(pyg_data.node_attr.shape[0]) > p_uncon
-    #     pyg_data.node_attr = torch.where(mask, pyg_data.node_attr, torch.tensor(-1)) # where mask = true original, otherwise -1
+        print("check")
+        pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.long) # TODO : maybe instead of 0 fill it up with -1?
+        # print( pyg_data.node_attr)
 
     if degree:
         pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
@@ -249,10 +247,10 @@ class NeuralEmptyGraphGenerator:
         return empty_pyg_datas
 
 class EmptyGraphGeneratorWithNodeAttributes:
-    def __init__(self, file_path = "../GeneratedDataset/Small_test_no_anomaly_test_graphs"):
+    def __init__(self, file_path):
 
-        testing_graphs_nx = pkl.load(open(file_path, 'rb'))
-        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
+        testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
+        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx][:2]
 
     def _fill_needed_features(self, graphs):
         """

@@ -223,20 +223,13 @@ class DiffusionBase(torch.nn.Module):
             return self._eval_loss(batched_graph)
 
 
-    def sample(self, num_samples, testing_the_model = False, w = 0): 
+    def sample(self, num_samples): 
         original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples)
         batched_graph.to(self.device)
 
         num_nodes = batched_graph.nodes_per_graph.sum()
         num_edges = batched_graph.edges_per_graph.sum()
 
-
-        # breakpoint()
-        if testing_the_model :
-            node_attr_free_batched_graph = batched_graph.clone()
-            node_attr_free_batched_graph.node_attr = torch.full(batched_graph.node_attr.shape, -1)
-
-        node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         batched_graph = self._prepare_data_for_sampling(batched_graph)
  
         print()
@@ -245,21 +238,7 @@ class DiffusionBase(torch.nn.Module):
             t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
             t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
 
-            if testing_the_model : 
-                
-                p_sample_node_attr = self.p_sample(batched_graph, t_node, t_edge)
-                p_sample_node_attr_free = self.p_sample(node_attr_free_batched_graph, t_node, t_edge)
-
-                # breakpoint()
-                # print(p_sample_node_attr)
-                # print(p_sample_node_attr_free)
-
-                log_node_attr_tmin1 = p_sample_node_attr[0]
-                log_full_edge_attr_tmin1 = (1+w) * p_sample_node_attr[1] - w*p_sample_node_attr_free[1]
-
-            else : 
-                log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
-
+            log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
             batched_graph.log_full_edge_attr_t = log_full_edge_attr_tmin1
             batched_graph.log_node_attr_t = log_node_attr_tmin1
 
@@ -285,13 +264,12 @@ class DiffusionBase(torch.nn.Module):
         batched_graph._slice_dict['edge_index'] = edge_slice
         batched_graph._inc_dict['edge_index'] = batched_graph._inc_dict['full_edge_index']
 
-        if testing_the_model :
-            return original_graphs, batched_graph
         return batched_graph 
     
     
     def sample_and_MC(self, num_samples, w = 0, MC = 100): 
         original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples)
+        # breakpoint()
         batched_graph.to(self.device)
 
         num_nodes = batched_graph.nodes_per_graph.sum()
@@ -304,13 +282,14 @@ class DiffusionBase(torch.nn.Module):
         node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         batched_graph = self._prepare_data_for_sampling(batched_graph)
 
+        # breakpoint()
         batched_graph_mc_edge_index_and_count = [Counter() for _ in range(num_samples)]
         for mc_counter in range(MC):
             working_clone_free = node_attr_free_batched_graph.clone()
             working_clone = batched_graph.clone()
 
             for t in reversed(range(0, self.num_timesteps)):
-                print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}', end='\r')
+                print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}')#, end='\r')
                 t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
                 t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
 
@@ -323,8 +302,9 @@ class DiffusionBase(torch.nn.Module):
                 # this is the old one : log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
 
                 working_clone.log_full_edge_attr_t = log_full_edge_attr_tmin1
-                working_clone.log_node_attr_t = log_node_attr_tmin1
-
+                # working_clone.log_node_attr_t = log_node_attr_tmin1 # i don't really need to change it it is the same all the time
+                # print(batched_graph.log_full_edge_attr, "\n", working_clone.log_full_edge_attr_t)
+            
             edge_attr = working_clone.log_full_edge_attr_t.argmax(-1)
             is_edge_indices = edge_attr.nonzero(as_tuple=True)[0]
 

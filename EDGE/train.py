@@ -102,29 +102,17 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     exp.run()
     
 
-"""
-To run : 
-
-PYTORCH_ENABLE_MPS_FALLBACK=1 python train.py --epochs 1 --num_generation 64 --diffusion_dim 64 --diffusion_steps 32 --device cpu --dataset Ego --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-"""
-
-"""
-To run with my dataset:  
-
-python3 train.py --epochs 50 --num_generation 5 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset 140_nodes_graph --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method importance --check_every 10 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical --degree --num_heads 8 8 8 8 1 
-"""
-
-"""
-Testing empty graph sampler and new forward funciton
-python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset 140_nodes_graph --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method importance --check_every 5 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical+node --degree --num_heads 8 8 8 8 1 
-"""
-""" for testing the empty graph sampler : 
-python3 train.py --epochs 1 --num_generation 2 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset 140_nodes_graph --batch_size 4 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method importance --check_every 1 --eval_every 1 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler empirical+node --degree --num_heads 8 8 8 8 1 
-"""
 
 
 """
-
+GENERAL EXAMPLE : 
 python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset Small_test_no_anomaly --batch_size 6 --clip_value 1 --lr 1e-4 --optimizer adam --final_prob_edge 1 0 --final_prob_node 0.57 0.28 0.15 --sample_time_method uniform --check_every 5 --eval_every 50 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 8 1 
 
+"""
+
+#--------
+# TRAINING on Dataset Type 1
+
+"""
+python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_steps 4 --device cpu --dataset Basic_test_no_anomaly --batch_size 4 --clip_value 1 --lr 1e-4 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 --final_prob_node 1 0 0 --sample_time_method uniform --check_every 5 --eval_every 1000 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 4 4 4 4 1 
 """

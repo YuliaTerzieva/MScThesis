@@ -46,10 +46,10 @@ class GraphExperiment(DiffusionExperiment):
 
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs
-            # print("training loss:", loss.detach().cpu().item()) #Yulia ToDo remove
+            print("training loss:", loss.detach().cpu().item()) # Yulia TODO remove
             loss_count += pyg_data.num_graphs
             data_count += pyg_data.num_graphs #pyg_data.num_graphs
-            print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')
+            print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.train_loader.dataset), loss_sum/loss_count))#, end='\r')
             # self.model.complex_data = None
         if self.scheduler_epoch: self.scheduler_epoch.step()
         return {'bpd': loss_sum / loss_count, 'lr': self.optimizer.param_groups[0]['lr']}

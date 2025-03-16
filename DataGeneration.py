@@ -60,6 +60,68 @@ def GeneratePattern1(node_file_name, edge_file_name,  number_of_times=1):
     edge_writer.close()
     return 
 
+def GeneratePattern2(node_file_name, edge_file_name,  number_of_times=1):
+    """Generates pattern 2 : 
+        in a circle connected : blue, orange, grey, orange, blue
+        Where the first and the last blue are connected to each other
+        The last blue is connected to the first blue of the next patters
+        the last blue of the last generated pattern is connected to the first blue of the first pattern
+
+        Note that this is undirectional pattern, however, it is saved as directional 
+        and transformed to undirectional when generating the ego networks
+
+    Parameters
+    ----------
+    node_file_name : str
+        The file name of the csv file with nodes
+    edge_file_name : str
+        The file name of the csv file with the edges
+    number_of_times : int, optional
+        Number of times the pattern should be generated (default is 1)
+    
+    Returns
+    -------
+    None
+    
+    """
+
+    
+    if not os.path.isfile(node_file_name):
+        pd.DataFrame(columns=['node_id', 'color', 'anomaly']).to_csv(node_file_name, index=False)
+
+    if not os.path.isfile(edge_file_name):
+        pd.DataFrame(columns=['source', 'target']).to_csv(edge_file_name, index=False)
+
+    with open(node_file_name, 'r') as file_reader : 
+        number_of_existing_nodes = len(file_reader.readlines())-1
+    
+    node_writer = open(node_file_name, "a")
+    edge_writer = open(edge_file_name, "a")
+    
+    for i in range(number_of_times):
+        node_id_0 = number_of_existing_nodes
+        node_writer.write(f"{node_id_0},blue,0\n")
+        node_writer.write(f"{node_id_0+1},orange,0\n")
+        node_writer.write(f"{node_id_0+2},grey,0\n")
+        node_writer.write(f"{node_id_0+3},orange,0\n")
+        node_writer.write(f"{node_id_0+4},blue,0\n")
+        edge_writer.write(f"{node_id_0},{node_id_0+1}\n") # blue to orange
+        edge_writer.write(f"{node_id_0+1},{node_id_0+2}\n") # orange to grey
+        edge_writer.write(f"{node_id_0+2},{node_id_0+3}\n") # grey to orange
+        edge_writer.write(f"{node_id_0+3},{node_id_0+4}\n") # orange to blue
+        edge_writer.write(f"{node_id_0},{node_id_0+4}\n") # blue 0 to blue 4
+        number_of_existing_nodes +=5
+
+        if i > 0 :
+            edge_writer.write(f"{node_id_0-1},{node_id_0}\n") # last patter last blue to current pattern first blue
+
+        if i == number_of_times-1:
+            edge_writer.write(f"{node_id_0+4},{0}\n") # blue 0 to blue 4
+
+    node_writer.close()
+    edge_writer.close()
+    return 
+
 def ConnectPatterns(node_file_name, edge_file_name, new_connection = 10):
     """Connects patterns by injecting new connections between existing nodes. 
     Those connections are anomalous and thus both nodes are then flagged as anomalies
@@ -191,7 +253,7 @@ def Visualizegraph(node_file_name, edge_file_name):
     node_border_colors = ['red' if G.nodes[node]['anomaly'] == 1 else 'black' for node in G.nodes()]
     
     # Draw the graph
-    pos = nx.arf_layout(G)
+    pos = nx.circular_layout(G)
     nx.draw(G, pos, with_labels=True, node_color=node_colors, edgecolors=node_border_colors, node_size=500)
     plt.title("Generater Mini Graph")
     plt.show()
@@ -221,6 +283,8 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
     # -> diffusion/diffusion_base.py index_to_log_onehot
     map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
+    mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
+    map_to_color = lambda color: ([mapping_to_color[c] for c in color] if isinstance(color, list) else mapping[color])
 
     if not isinstance(graph, nx.Graph):
         graph = nx.Graph()
@@ -249,9 +313,9 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
         list_of_ego_nets.append(sub_graph)
 
         if print_subgraphs : # if you want to test make this True, otherwise False
-            node_colors = [sub_graph.nodes[node]['color'] for node in sub_graph.nodes()]
+            node_colors = [sub_graph.nodes[node]['node_attr'] for node in sub_graph.nodes()]
             pos = nx.arf_layout(sub_graph)
-            nx.draw(sub_graph, pos, with_labels=True, node_color=node_colors)
+            nx.draw(sub_graph, pos, with_labels=True, node_color=map_to_color(node_colors))
             plt.show()
 
 
@@ -266,6 +330,44 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
 
     return list_of_ego_nets, graph.nodes.items()
 
+def Generate_Dataset_Type_1(arguments):
+    """
+    Dataset Tupe 1 is circular type dataset, check PDF with exmaplation and examples. 
+    
+    """
+    pattern_number = arguments["pattern_number"] # the number of times the pattern would be repeated
+    new_connections = arguments["new_connections"] # number of new connections to be added (this would be the anomaly)
+    node_file = arguments["node_file"]
+    edge_file = arguments["edge_file"]
+    ego_file = arguments["ego_file"]
+
+    GeneratePattern2(node_file, edge_file, pattern_number)
+    Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
+
+    return 
+
+def Generate_Dataset_Type_2(arguments):
+    pattern_number = arguments["pattern_number"] # the number of times the pattern would be repeated
+    new_connections = arguments["new_connections"] # number of new connections to be added (this would be the anomaly)
+    number_random = arguments["number_random"] # number of nodes that are random/gray/fillers and have random connections
+    node_file = arguments["node_file"]
+    edge_file = arguments["edge_file"]
+    ego_file = arguments["ego_file"]
+    gray_degree_mu = arguments["mu"]
+    gray_degree_std = arguments["std"]
+
+    """ Note that connecting patters, which the the function that intorduces anomalies, needs to executed before the InjectRandomNodes. 
+    Otherwise it would intorduce anomalies between gray nodes, which would be wrong. """
+
+    GeneratePattern2(node_file, edge_file, pattern_number)
+    ConnectPatterns(node_file, edge_file, new_connections)
+    InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
+    Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
+
+    return
+
 
 if __name__ == '__main__':
 
@@ -277,20 +379,9 @@ if __name__ == '__main__':
     with open(args.config, 'r') as file:
         config = json.load(file)[args.setting]
 
-    pattern_number = config["pattern_number"] # the number of times the pattern would be repeated
-    new_connections = config["new_connections"] # number of new connections to be added (this would be the anomaly)
-    number_random = config["number_random"] # number of nodes that are random/gray/fillers and have random connections
-    node_file = config["node_file"]
-    edge_file = config["edge_file"]
-    ego_file = config["ego_file"]
-    gray_degree_mu = config["mu"]
-    gray_degree_std = config["std"]
-
-    """ Note that connecting patters, which the the function that intorduces anomalies, needs to executed before the InjectRandomNodes. 
-    Otherwise it would intorduce anomalies between gray nodes, which would be wrong. """
-
-    GeneratePattern1(node_file, edge_file, pattern_number)
-    ConnectPatterns(node_file, edge_file, new_connections)
-    InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
-    Visualizegraph(node_file, edge_file)
-    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
+    if config["dataset_type"] == 1: 
+        Generate_Dataset_Type_1(config)
+    if config["dataset_type"] == 2: 
+        Generate_Dataset_Type_2(config)
+    
+    

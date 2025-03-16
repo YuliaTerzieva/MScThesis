@@ -57,14 +57,14 @@ from datasets.data_utils import preprocess
 mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly', 'rb'))
-print(len(nx_graphs))
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly', 'rb'))
+print("The number of graphs in the training is ", len(nx_graphs))
 
 number_of_nodes = [len(n.nodes) for n in nx_graphs]
-plt.hist(number_of_nodes, bins=50,alpha = 0.5, label = "train")
+plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "train")
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly_test_graphs', 'rb'))
-print(len(nx_graphs))
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly_test_graphs', 'rb'))
+print("The number of graphs in the testing is ", len(nx_graphs))
 
 number_of_nodes = [len(n.nodes) for n in nx_graphs]
 plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "test")
@@ -73,18 +73,29 @@ plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
 plt.show()
 
-# for n in nx_graphs[:3]:
-#     node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
-#     pos = nx.arf_layout(n)
-#     nx.draw(n, pos, with_labels=True, node_color=node_colors)
-#     plt.title("Generated Mini Graph")
-#     plt.show()
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly', 'rb'))
 
-num_nodes = []
-for n in nx_graphs:
-    num_nodes.append(len(n.nodes()))
+for n in nx_graphs[:10]:
+    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+    pos = nx.arf_layout(n)
+    nx.draw(n, pos, with_labels=True, node_color=node_colors)
+    plt.title("Training Graph")
+    plt.show()
 
-print(num_nodes)
+nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly_test_graphs', 'rb'))
+
+for n in nx_graphs[:10]:
+    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+    pos = nx.arf_layout(n)
+    nx.draw(n, pos, with_labels=True, node_color=node_colors)
+    plt.title("Testing Graph")
+    plt.show()
+
+# num_nodes = []
+# for n in nx_graphs:
+#     num_nodes.append(len(n.nodes()))
+
+# print(num_nodes)
 
     # print(n.nodes[:3])
     # print(n.edges[:3])
