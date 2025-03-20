@@ -70,7 +70,7 @@ class GraphExperiment(DiffusionExperiment):
                 loss_count += pyg_data.num_graphs #len(x)
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs
 
-            print('Train evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
+            print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
             # print("loss_sum: ", loss_sum, "; loss_count: ", loss_count)
             eval_dict['bpd'] = loss_sum/loss_count
             generated_pyg_datas = self.model.sample(self.args.num_generation)
@@ -118,7 +118,7 @@ class GraphExperiment(DiffusionExperiment):
                 loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs#len(x)
                 loss_count += pyg_data.num_graphs #len(x)
                 data_count += pyg_data.num_graphs #pyg_data.num_graphs
-            print('Test evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r') # yulia todo check with salvatore, this should be test not train           
+            print('Testing. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r') # yulia todo check with salvatore, this should be test not train           
             test_dict['bpd'] = loss_sum/loss_count
             generated_pyg_datas = self.model.sample(self.args.num_generation)
             generated_graphs = []

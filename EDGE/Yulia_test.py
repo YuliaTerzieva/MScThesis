@@ -55,11 +55,14 @@ from datasets.data_utils import preprocess
 # plt.show()
 
 # ------------------------------------------------------------------------------------------------------------------------
-"""
+# """
 mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-train_graph = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly', 'rb'))
+dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", "Small_test_no_anomaly", "Small_test_with_anomaly", "Mid_test_no_anomaly", "Mid_test_with_anomaly"]
+dataset_number = 5
+dataset_name = dataset_name_list[dataset_number]
+train_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}', 'rb'))
 eval_graph = train_graph[int(len(train_graph)*0.9):]
 train_graph = train_graph[:int(len(train_graph)*0.9)]
 
@@ -72,7 +75,7 @@ plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "train")
 number_of_nodes = [len(n.nodes) for n in eval_graph]
 plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "eval")
 
-test_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly_test_graphs', 'rb'))
+test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
 print("The number of graphs in the testing is ", len(test_graphs))
 
 number_of_nodes = [len(n.nodes) for n in test_graphs]
@@ -81,21 +84,26 @@ plt.legend()
 plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
 plt.show()
-"""
+# """
 # ------------------------------------------------------------------------------------------------------------------------
+"""
+# run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
+run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_15-01-57"
 
-run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
 training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
 eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
+
+print(np.argmin(training_loss['bpd']))
+print(np.argmin(eval_loss['bpd'])*5)
+print("Lowest BPD eval: ", eval_loss['bpd'][np.argmin(eval_loss['bpd'])])
 
 plt.plot(np.arange(1, 261), training_loss['bpd'], label = "training BPD")
 plt.plot(np.arange(1, 261, 5), eval_loss['bpd'], label = "evaluation BPD")
 plt.xlabel("Epoch")
 plt.legend()
 plt.show()
-
-print(np.argmin(training_loss['bpd']))
-print(np.argmin(eval_loss['bpd'])*5)
+"""
+# ------------------------------------------------------------------------------------------------------------------------
 # breakpoint()
 # for n in train_graph[:5]:
 #     node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])

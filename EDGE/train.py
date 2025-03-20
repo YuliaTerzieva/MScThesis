@@ -108,11 +108,11 @@ python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_st
 """
 
 #--------
-# TRAINING on Dataset Type 1
+# TRAINING on Dataset Type 2
 
 """
-python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset Small_test_no_anomaly \
-    --batch_size 32 --clip_value 1 --lr 1e-4 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
-        --sample_time_method uniform --check_every 5 --eval_every 1 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
+python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cuda:0 --dataset Small_test_no_anomaly \
+    --batch_size 32 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+        --sample_time_method uniform --check_every 5 --eval_every 5 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 8 1 
 """

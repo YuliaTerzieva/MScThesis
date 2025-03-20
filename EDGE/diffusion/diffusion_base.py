@@ -312,7 +312,7 @@ class DiffusionBase(torch.nn.Module):
             node_attr_free_working_clone = node_attr_free_batched_graph.clone()
             
             for t in reversed(range(0, self.num_timesteps)):
-                print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}')#, end='\r')
+                print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}', end='\r')
                 t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
                 t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
 
