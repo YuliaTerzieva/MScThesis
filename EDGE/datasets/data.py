@@ -146,8 +146,8 @@ def get_data(args):
         During training of the model 90% of the original training dataset is used. The other 10 are used for the during training evaluation
         The model is tested on entirely different dataset, thus there is no test dataset here
         """
-        train_nx_graphs = nx_graphs[:int(0.9*l)]
-        eval_nx_graphs = nx_graphs[int(0.9*l):]
+        train_nx_graphs = nx_graphs[:int(0.8*l)]
+        eval_nx_graphs = nx_graphs[int(0.8*l):]
 
         max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
 

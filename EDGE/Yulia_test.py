@@ -55,7 +55,7 @@ from datasets.data_utils import preprocess
 # plt.show()
 
 # ------------------------------------------------------------------------------------------------------------------------
-# """
+"""
 mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
@@ -84,11 +84,11 @@ plt.legend()
 plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
 plt.show()
-# """
-# ------------------------------------------------------------------------------------------------------------------------
 """
+# ------------------------------------------------------------------------------------------------------------------------
+# """
 # run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
-run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_15-01-57"
+run = "EDGE/wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
 
 training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
 eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
@@ -102,7 +102,7 @@ plt.plot(np.arange(1, 261, 5), eval_loss['bpd'], label = "evaluation BPD")
 plt.xlabel("Epoch")
 plt.legend()
 plt.show()
-"""
+# """
 # ------------------------------------------------------------------------------------------------------------------------
 # breakpoint()
 # for n in train_graph[:5]:
