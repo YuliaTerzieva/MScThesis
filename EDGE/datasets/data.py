@@ -12,7 +12,7 @@ import random
 from functools import partial
 from torch_geometric.datasets import QM9
 from datasets.data_utils import EmpiricalEmptyGraphGenerator, NeuralEmptyGraphGenerator, EmptyGraphGeneratorWithNodeAttributes, preprocess, collate_fn, FEATURE_EXTRACTOR
-from datasets.evaluator import NetworkEvaluator, GenericGraphEvaluator
+# from datasets.evaluator import NetworkEvaluator, GenericGraphEvaluator
 
 
 class NetworkDataset(Dataset):
@@ -62,9 +62,9 @@ def get_data_id(args):
 
 def get_data(args):
     """
-    Yulia comments : 
-        They load the graphd from pickels, the nodes don't have classes, the edges have two? 
-        For ego and community networks, the test section overlap with the traning and evaluation sections?
+    Yulia comments on original code: 
+        They load the graphd from pickels
+        For ego and community networks, the test section overlap with the traning and evaluation sections
     """
     if args.dataset in ['cora', 'polblogs', 'Homo_sapiens']:
         repeat = 1
@@ -77,7 +77,7 @@ def get_data(args):
         train_set = NetworkDataset(pyg_graph, num_iter=args.num_iter * args.batch_size, transform=None)
         test_set = eval_set = NetworkDataset(pyg_graph, num_iter=100, transform=None)
         initial_graph_sampler = EmpiricalEmptyGraphGenerator([train_set[0]], degree=args.degree, augment_features=args.augmented_features)
-        eval_evaluator = test_evaluator = NetworkEvaluator(nx_graph)
+        # eval_evaluator = test_evaluator = NetworkEvaluator(nx_graph)
         monitoring_statistics = ['nmae/assortativity','nmae/triangle_count', 'nmae/clustering_coefficient']
  
     elif args.dataset in ['community',  'Ego']:
@@ -119,16 +119,18 @@ def get_data(args):
             neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
             initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)
 
-        eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
-        test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
+        # eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
+        # test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
 
         monitoring_statistics = ['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
 
     else:
-        # I will try to implement this:
+        """
+        This else is implemented by Yulia, to match the datasets for her thesis
+        """
         repeat = 1 
         num_node_classes = 3 # here I should have 3 (blue, orange and gray)
-        num_edge_classes = 2 # I am not sure if there are two (no edge / edge)
+        num_edge_classes = 2 # no edge / edge
         num_node_feat = 1 
         nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}", 'rb'))
 
@@ -138,56 +140,49 @@ def get_data(args):
         """
         random.shuffle(nx_graphs) 
         l = len(nx_graphs)
+        
 
         """
-        ToDo : ask Ioana if this training split if okay. They are evaluating on the first 20%, but they also train on the evaluation set!?
+        During training of the model 90% of the original training dataset is used. The other 10 are used for the during training evaluation
+        The model is tested on entirely different dataset, thus there is no test dataset here
         """
-        train_nx_graphs = nx_graphs#[:int(0.8*l)]
-        eval_nx_graphs = []#nx_graphs[int(0.8*l):int(0.9*l)]
-        test_nx_graphs = []#nx_graphs[int(0.9*l):] 
+        train_nx_graphs = nx_graphs[:int(0.9*l)]
+        eval_nx_graphs = nx_graphs[int(0.9*l):]
+
+        max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
 
         train_pygraphs = []
         eval_pygraphs = []
-        test_pygraphs = []
 
-        # Todo : possibly pass to the preprocess the augmented features
-        max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
         for nx_graph in train_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features, p_uncon = args.p_uncon) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
+            # Yulia: This preprocessing is to turn the data from networkx object to a pyg object
+            pyg_data = preprocess(nx_graph, degree=args.degree, p_uncon = args.p_uncon)
             train_pygraphs.append(pyg_data)
 
         for nx_graph in eval_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features)
+            pyg_data = preprocess(nx_graph, degree=args.degree)
             eval_pygraphs.append(pyg_data)
-
-        for nx_graph in test_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree, augmented_features=args.augmented_features)
-            test_pygraphs.append(pyg_data)
             
         train_set = ConcatDataset([GraphDataset(train_pygraphs) for _ in range(repeat)]) # this means that each graph is in the training dataset a few times.
         eval_set = GraphDataset(eval_pygraphs)
-        test_set = GraphDataset(test_pygraphs)
-
-        if args.empty_graph_sampler == 'empirical':
-            initial_graph_sampler = EmpiricalEmptyGraphGenerator(train_pygraphs, degree=args.degree)
-        elif args.empty_graph_sampler == 'file':
+        
+        if args.empty_graph_sampler == 'file':
             initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test_graphs") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
-        elif args.empty_graph_sampler == 'neural':
-            neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
-            initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)
+        else : 
+            raise NotImplementedError
 
-        eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
-        test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
+        # eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
+        # test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
 
-        monitoring_statistics = ['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
+        monitoring_statistics = []#['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
 
 
-    augmented_feature_dict = {k:FEATURE_EXTRACTOR[k]['data_spec'] for k in args.augmented_features}
+    augmented_feature_dict = {}#{k:FEATURE_EXTRACTOR[k]['data_spec'] for k in args.augmented_features}
 
     # Data Loader
     train_loader = DataLoader(train_set, batch_size=args.batch_size*repeat, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=partial(collate_fn))
     eval_loader = DataLoader(eval_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=collate_fn)
-    test_loader = DataLoader(test_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=collate_fn)
+    # test_loader = DataLoader(test_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=collate_fn)
 
-    return train_loader, eval_loader, test_loader, num_node_feat, num_node_classes, num_edge_classes, max_degree, augmented_feature_dict, initial_graph_sampler, eval_evaluator, test_evaluator, monitoring_statistics
+    return train_loader, eval_loader, None, num_node_feat, num_node_classes, num_edge_classes, max_degree, augmented_feature_dict, initial_graph_sampler, None, None, monitoring_statistics
  

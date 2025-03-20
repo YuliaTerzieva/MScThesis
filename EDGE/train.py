@@ -45,13 +45,12 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     args.num_edge_classes = num_edge_classes
     args.num_node_classes = num_node_classes
 
-    if args.final_prob_node is None:
-        # breakpoint()
-        args.final_prob_node = [1-1e-12, 1e-12]
-        args.num_node_classes = 2
-        args.has_node_feature = False
-    else: # added by Yulia
-        args.has_node_feature = True
+    # if args.final_prob_node is None:
+    #     args.final_prob_node = [1-1e-12, 1e-12]
+    #     args.num_node_classes = 2
+    #     args.has_node_feature = False
+    # else: # added by Yulia
+    args.has_node_feature = True
 
     if 0 in args.final_prob_edge:
         args.final_prob_edge[np.argmax(args.final_prob_edge)] = args.final_prob_edge[np.argmax(args.final_prob_edge)]-1e-12
@@ -61,17 +60,15 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
     args.num_node_feat = num_node_feat
     args.augmented_feature_dict = augmented_feature_dict
 
-
-    # print(args)
-    
-
     data_id = get_data_id(args)
+
     ###################
     ## Specify model ##
     ###################
 
     model = get_model(args, initial_graph_sampler=initial_graph_sampler)
     model_id = get_model_id(args)
+
     #######################
     ## Specify optimizer ##
     #######################
@@ -114,5 +111,8 @@ python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_st
 # TRAINING on Dataset Type 1
 
 """
-python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_steps 4 --device cpu --dataset Basic_test_no_anomaly --batch_size 4 --clip_value 1 --lr 1e-4 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 --final_prob_node 1 0 0 --sample_time_method uniform --check_every 5 --eval_every 1000 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 4 4 4 4 1 
+python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 8 --diffusion_steps 8 --device cpu --dataset Small_test_no_anomaly \
+    --batch_size 32 --clip_value 1 --lr 1e-4 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+        --sample_time_method uniform --check_every 5 --eval_every 1 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
+            --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 8 1 
 """

@@ -54,42 +54,62 @@ from datasets.data_utils import preprocess
 # plt.title("Generater Mini Graph")
 # plt.show()
 
+# ------------------------------------------------------------------------------------------------------------------------
+"""
 mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly', 'rb'))
-print("The number of graphs in the training is ", len(nx_graphs))
+train_graph = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly', 'rb'))
+eval_graph = train_graph[int(len(train_graph)*0.9):]
+train_graph = train_graph[:int(len(train_graph)*0.9)]
 
-number_of_nodes = [len(n.nodes) for n in nx_graphs]
+print("The number of graphs in the training is ", len(train_graph))
+print("The number of graphs in the eval is ", len(eval_graph))
+
+number_of_nodes = [len(n.nodes) for n in train_graph]
 plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "train")
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly_test_graphs', 'rb'))
-print("The number of graphs in the testing is ", len(nx_graphs))
+number_of_nodes = [len(n.nodes) for n in eval_graph]
+plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "eval")
 
-number_of_nodes = [len(n.nodes) for n in nx_graphs]
+test_graphs = pkl.load(open(f'../GeneratedDataset/Small_test_no_anomaly_test_graphs', 'rb'))
+print("The number of graphs in the testing is ", len(test_graphs))
+
+number_of_nodes = [len(n.nodes) for n in test_graphs]
 plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "test")
 plt.legend()
 plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
 plt.show()
+"""
+# ------------------------------------------------------------------------------------------------------------------------
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly', 'rb'))
+run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
+training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
+eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
 
-for n in nx_graphs[:10]:
-    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
-    pos = nx.arf_layout(n)
-    nx.draw(n, pos, with_labels=True, node_color=node_colors)
-    plt.title("Training Graph")
-    plt.show()
+plt.plot(np.arange(1, 261), training_loss['bpd'], label = "training BPD")
+plt.plot(np.arange(1, 261, 5), eval_loss['bpd'], label = "evaluation BPD")
+plt.xlabel("Epoch")
+plt.legend()
+plt.show()
 
-nx_graphs = pkl.load(open(f'../GeneratedDataset/Basic_test_no_anomaly_test_graphs', 'rb'))
+print(np.argmin(training_loss['bpd']))
+print(np.argmin(eval_loss['bpd'])*5)
+# breakpoint()
+# for n in train_graph[:5]:
+#     node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+#     pos = nx.arf_layout(n)
+#     nx.draw(n, pos, with_labels=True, node_color=node_colors)
+#     plt.title("Training Graph")
+#     plt.show()
 
-for n in nx_graphs[:10]:
-    node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
-    pos = nx.arf_layout(n)
-    nx.draw(n, pos, with_labels=True, node_color=node_colors)
-    plt.title("Testing Graph")
-    plt.show()
+# for n in test_graphs[:5]:
+#     node_colors = map_color([n.nodes[node]['node_attr'] for node in n.nodes()])
+#     pos = nx.arf_layout(n)
+#     nx.draw(n, pos, with_labels=True, node_color=node_colors)
+#     plt.title("Testing Graph")
+#     plt.show()
 
 # num_nodes = []
 # for n in nx_graphs:
@@ -157,3 +177,4 @@ for graph, target in zip(test_graphs, central_nodes):
 #          2.,  1.,  3.,  2.,  1.,  2.,  1.,  1., 29.,  1.,  2.,  1.,  1.,  1.,
 #          1.,  2.,  2.])
 # print(summ)
+

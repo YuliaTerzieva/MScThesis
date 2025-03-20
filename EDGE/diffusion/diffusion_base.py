@@ -31,6 +31,9 @@ def log_1_min_a(a):
 
 
 def log_add_exp(a, b):
+    """
+    Yulia : the way to sum two logs in a stable way :) 
+    """
     maximum = torch.max(a, b)
     return maximum + torch.log(torch.exp(a - maximum) + torch.exp(b - maximum))
 
@@ -45,10 +48,21 @@ def exists(x):
 
 
 def extract(a, t, x_shape):
+    """
+    Yulia: the function takes alphas for the corresponing times t (the gather works as index extraction)
+
+    Parameters : 
+    -------------
+        a = log_cumprod_alpha 
+        t = t_node
+        x_shape = batched_graph.log_node_attr.shape
+
+    b is the number of graphs in the batch
+
+    """
     b, *_ = t.shape
     out = a.gather(-1, t)
     return out.reshape(b, *((1,) * (len(x_shape) - 1)))
-
 
 def default(val, d):
     if exists(val):
@@ -69,7 +83,7 @@ def index_to_log_onehot(x, num_classes):
     assert x.max().item() < num_classes, \
         f'Error: {x.max().item()} >= {num_classes}'
     
-    x_onehot = F.one_hot(torch.where(x == -1, torch.tensor(0, device=x.device), x), num_classes)
+    x_onehot = F.one_hot(torch.where(x == -1, torch.tensor(0, dtype=torch.long, device=x.device), x.to(dtype=torch.long)), num_classes)
     zero_rows = torch.zeros_like(x_onehot)
     x_onehot = torch.where(x.unsqueeze(-1) == -1, zero_rows, x_onehot)
 
@@ -78,7 +92,7 @@ def index_to_log_onehot(x, num_classes):
 
     x_onehot = x_onehot.permute(permute_order)
 
-    log_x = torch.log(x_onehot.float().clamp(min=1e-30)) # addint this to all the 0 so we don't get undefined log 0 and the applying log to all elements individually
+    log_x = torch.log(x_onehot.float().clamp(min=1e-30)) # add int this to all the 0 so we don't get undefined log 0 and the applying log to all elements individually
 
     return log_x
 
@@ -186,15 +200,20 @@ class DiffusionBase(torch.nn.Module):
 
 
     def q_sample(self, batched_graph, t_node, t_edge):
+        """
+        Yulia : I'm modifying this code to remove the change of the node attribute, as the nodes stay the same. 
+        The _q_pred is calculating the probability (\mu) as described in Eq (2) in the EDGE paper 
+        Given the calculated probability, new edges are selected and returned
+        """
 
-        log_prob_node, log_prob_edge = self._q_pred(batched_graph, t_node, t_edge)
+        _, log_prob_edge = self._q_pred(batched_graph, t_node, t_edge)
 
         # sample nodes
-        log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
+        # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
 
         log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
 
-        return log_out_node, log_out_edge 
+        return None , log_out_edge 
     
     @torch.no_grad()
     def p_sample(self, batched_graph, t_node, t_edge):
@@ -207,8 +226,12 @@ class DiffusionBase(torch.nn.Module):
         return log_out_node, log_out_edge
 
     def log_sample_categorical(self, logits, num_classes):
-        # print("in diffusion/diffusion_base.py log_sample_categorical, the logits are: ", type(logits), logits)
-        # <class 'torch.Tensor'> tensor([[-1.7414e-03, -6.3539e+00],[-5.8050e-04, -7.4519e+00],[-5.8050e-04, -7.4519e+00], ...
+        """
+        Yulia :
+            logits -> tensor with shape (edges by edge classes) or (nodes by node classes), depending on the log_prob_?
+            num_classes -> an integer
+        """
+        
         uniform = torch.rand_like(logits)
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
         sample = (gumbel_noise + logits).argmax(dim=1)
@@ -267,7 +290,7 @@ class DiffusionBase(torch.nn.Module):
         return batched_graph 
     
     
-    def sample_and_MC(self, num_samples, w = 0, MC = 100): 
+    def sample_and_MC(self, num_samples, lambda_guidance = torch.tensor(0), MC = 100): 
         original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples)
         # breakpoint()
         batched_graph.to(self.device)
@@ -279,29 +302,41 @@ class DiffusionBase(torch.nn.Module):
         node_attr_free_batched_graph = batched_graph.clone()
         node_attr_free_batched_graph.node_attr = torch.full(batched_graph.node_attr.shape, -1)
 
-        node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         batched_graph = self._prepare_data_for_sampling(batched_graph)
-
+        node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
+        
         # breakpoint()
         batched_graph_mc_edge_index_and_count = [Counter() for _ in range(num_samples)]
         for mc_counter in range(MC):
-            working_clone_free = node_attr_free_batched_graph.clone()
             working_clone = batched_graph.clone()
-
+            node_attr_free_working_clone = node_attr_free_batched_graph.clone()
+            
             for t in reversed(range(0, self.num_timesteps)):
                 print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}')#, end='\r')
                 t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
                 t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
 
-                p_sample_node_attr = self.p_sample(working_clone, t_node, t_edge)
-                p_sample_node_attr_free = self.p_sample(working_clone_free, t_node, t_edge)
+                # Step 1 is sampling the new edge log probabilities 
+                # once with the node features and once without the node features
+                _, log_full_edge_attr_tmin1 = self.p_sample(working_clone, t_node, t_edge)
+                _, node_attr_free_log_full_edge_attr_tmin1 = self.p_sample(node_attr_free_working_clone, t_node, t_edge)
                 
-                log_node_attr_tmin1 = p_sample_node_attr[0]
-                log_full_edge_attr_tmin1 = (1+w) * p_sample_node_attr[1] - w*p_sample_node_attr_free[1]
+                # Calculate the log probability given formula ... TODO : this should be the formula from Algorithm 3!
+                # this is calculates using both probabilities log_full_edge_attr_tmin1 and node_attr_free_log_full_edge_attr_tmin1
+                # multiplying the one conditioned on the node features with (1+w) and the other one with (-w)
+                # afterwards they are summed and both the node attributed and the node attribute free graphs 
+                # are updated with the new edges 
+                # lambda * log_full_edge_attr_tmin1 + (1-lambda) * node_attr_free_log_full_edge_attr_tmin1
+                
+                # edge_formula = lambda_guidance * log_full_edge_attr_tmin1 + (1-lambda_guidance) * node_attr_free_log_full_edge_attr_tmin1
+                not_log_space = lambda_guidance * torch.exp(log_full_edge_attr_tmin1) + (1-lambda_guidance) *  torch.exp(node_attr_free_log_full_edge_attr_tmin1)
+                safe_log = torch.where(not_log_space < 0, 1e-40, not_log_space)
+                edge_formula = torch.log(safe_log)
+                
+                # breakpoint()
+                working_clone.log_full_edge_attr_t = edge_formula
+                node_attr_free_working_clone.log_full_edge_attr_t = edge_formula
 
-                # this is the old one : log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
-
-                working_clone.log_full_edge_attr_t = log_full_edge_attr_tmin1
                 # working_clone.log_node_attr_t = log_node_attr_tmin1 # i don't really need to change it it is the same all the time
                 # print(batched_graph.log_full_edge_attr, "\n", working_clone.log_full_edge_attr_t)
             

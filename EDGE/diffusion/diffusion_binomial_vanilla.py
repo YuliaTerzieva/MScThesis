@@ -18,7 +18,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         super(BinomialDiffusionVanilla, self).__init__(num_node_classes, num_edge_classes, initial_graph_sampler, denoise_fn,
                                                     timesteps, sample_time_method, device)
 
-        log_final_prob_node = torch.tensor(final_prob_node)[None, :].log()
+        # log_final_prob_node = torch.tensor(final_prob_node)[None, :].log()
         log_final_prob_edge = torch.tensor(final_prob_edge)[None, :].log()
         
         self.loss_type = loss_type
@@ -38,7 +38,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         self.register_buffer('log_1_min_alpha', log_1_min_alpha.float())
         self.register_buffer('log_cumprod_alpha', log_cumprod_alpha.float())
         self.register_buffer('log_1_min_cumprod_alpha', log_1_min_cumprod_alpha.float())
-        self.register_buffer('log_final_prob_node', log_final_prob_node.float())
+        # self.register_buffer('log_final_prob_node', log_final_prob_node.float())
         self.register_buffer('log_final_prob_edge', log_final_prob_edge.float())
 
         self.register_buffer('Lt_history', torch.zeros(timesteps))
@@ -94,45 +94,51 @@ class BinomialDiffusionVanilla(DiffusionBase):
         return log_pred_node, log_pred_edge
 
     def _ce_prior(self, batched_graph):
+        """
+        Yulia : I removed everything node related 
+        """
         ones_node = torch.ones(batched_graph.nodes_per_graph.sum(), device=self.device).long()
         ones_edge = torch.ones(batched_graph.edges_per_graph.sum(), device=self.device).long()
 
-        log_qxT_prob_node, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
+        _, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
                                                 t_edge=(self.num_timesteps - 1) * ones_edge)
 
-        log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
+        # log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
         log_final_prob_edge = self.log_final_prob_edge * torch.ones_like(log_qxT_prob_edge)
 
 
-        ce_prior_node = -log_categorical(log_qxT_prob_node, log_final_prob_node)
-        ce_prior_node = scatter(ce_prior_node, batched_graph.batch, dim=-1, reduce='sum')
+        # ce_prior_node = -log_categorical(log_qxT_prob_node, log_final_prob_node)
+        # ce_prior_node = scatter(ce_prior_node, batched_graph.batch, dim=-1, reduce='sum')
 
         ce_prior_edge = -log_categorical(log_qxT_prob_edge, log_final_prob_edge)
         ce_prior_edge = scatter(ce_prior_edge, batched_graph.batch[batched_graph.full_edge_index[0]], dim=-1, reduce='sum')
 
-        ce_prior = ce_prior_node + ce_prior_edge
+        ce_prior = ce_prior_edge #ce_prior_node + ce_prior_edge
 
         return ce_prior
 
     def _kl_prior(self, batched_graph):
+        """
+        Yulia : I removed everything node related 
+        """
 
         ones_node = torch.ones(batched_graph.nodes_per_graph.sum(), device=self.device).long()
         ones_edge = torch.ones(batched_graph.edges_per_graph.sum(), device=self.device).long()
 
-        log_qxT_prob_node, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
+        _, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
                                                 t_edge=(self.num_timesteps - 1) * ones_edge)
 
-        log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
+        # log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
         log_final_prob_edge = self.log_final_prob_edge * torch.ones_like(log_qxT_prob_edge)
 
 
-        kl_prior_node = self.multinomial_kl(log_qxT_prob_node, log_final_prob_node)
-        kl_prior_node = scatter(kl_prior_node, batched_graph.batch, dim=-1, reduce='sum')
+        # kl_prior_node = self.multinomial_kl(log_qxT_prob_node, log_final_prob_node)
+        # kl_prior_node = scatter(kl_prior_node, batched_graph.batch, dim=-1, reduce='sum')
 
         kl_prior_edge = self.multinomial_kl(log_qxT_prob_edge, log_final_prob_edge)
         kl_prior_edge = scatter(kl_prior_edge, batched_graph.batch[batched_graph.full_edge_index[0]], dim=-1, reduce='sum')
 
-        kl_prior = kl_prior_node + kl_prior_edge
+        kl_prior = kl_prior_edge# kl_prior_node + kl_prior_edge
 
         return kl_prior
    
@@ -191,48 +197,59 @@ class BinomialDiffusionVanilla(DiffusionBase):
         
 
     def _q_sample_and_set_xtmin1_xt_given_x0(self, batched_graph, t_node, t_edge):
+        """
+        Yulia : I am changing this function by remoing the changes to the nodes, because for our paper the nodes stay the same. 
+        
+        """
         # breakpoint()
         batched_graph.log_node_attr = index_to_log_onehot(batched_graph.node_attr, self.num_node_classes)
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
         
-        # sample xt-1
+        # sample A^t-1
         tmin1_node = t_node - 1
         tmin1_edge = t_edge - 1
         tmin1_node_clamped = torch.where(tmin1_node < 0, torch.zeros_like(tmin1_node), tmin1_node)
         tmin1_edge_clamped = torch.where(tmin1_edge < 0, torch.zeros_like(tmin1_edge), tmin1_edge)
         
-        log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped)
-        batched_graph.log_node_attr_tmin1 = log_node_attr_tmin1
+        _, log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped)
+        batched_graph.log_node_attr_tmin1 = batched_graph.log_node_attr
         batched_graph.log_full_edge_attr_tmin1 = log_full_edge_attr_tmin1
 
         batched_graph.log_node_attr_tmin1[tmin1_node<0] = batched_graph.log_node_attr[tmin1_node<0]
         batched_graph.log_full_edge_attr_tmin1[tmin1_edge<0] = batched_graph.log_full_edge_attr[tmin1_edge<0]
 
-        # sample xt given xt-1
-        log_node_attr_t, log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge)
-        batched_graph.log_node_attr_t = log_node_attr_t
+        # sample A^t given A^t-1
+        _, log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge)
+        batched_graph.log_node_attr_t = batched_graph.log_node_attr
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t
 
 
     def _q_sample_one_timestep(self, batched_graph, t_node, t_edge):
-        log_prob_node, log_prob_edge = self._q_pred_one_timestep(batched_graph, t_node, t_edge)
+        """
+        Yulia : I am removing the node probability, because it stays the same in our case
+        """
+        _, log_prob_edge = self._q_pred_one_timestep(batched_graph, t_node, t_edge)
 
-        log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
+        # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
 
         log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
 
-        return log_out_node, log_out_edge  
+        return None, log_out_edge  
 
         # xt ~ q(xt|xtmin1)
 
     def _q_pred_one_timestep(self, batched_graph, t_node, t_edge):
-        log_alpha_t_node = extract(self.log_alpha, t_node, batched_graph.log_node_attr.shape)
+        """
+        Yulia : This is implementation of Eq (1) from the EDGE paper
+        I am removing anything node related as the nodes don't change for us
+        """
+        # log_alpha_t_node = extract(self.log_alpha, t_node, batched_graph.log_node_attr.shape)
         log_1_min_alpha_t_node = extract(self.log_1_min_alpha, t_node, batched_graph.log_node_attr.shape)
 
-        log_prob_nodes = log_add_exp(
-            batched_graph.log_node_attr_tmin1 + log_alpha_t_node,
-            log_1_min_alpha_t_node + self.log_final_prob_node
-        )
+        # log_prob_nodes = log_add_exp(
+        #     batched_graph.log_node_attr_tmin1 + log_alpha_t_node,
+        #     log_1_min_alpha_t_node + self.log_final_prob_node
+        # )
 
         log_alpha_t_edge = extract(self.log_alpha, t_edge, batched_graph.log_full_edge_attr.shape)
         log_1_min_alpha_t_edge = extract(self.log_1_min_alpha, t_edge, batched_graph.log_full_edge_attr.shape)
@@ -242,7 +259,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
             log_1_min_alpha_t_edge + self.log_final_prob_edge
         )
 
-        return log_prob_nodes, log_prob_edges 
+        return None, log_prob_edges 
 
     def _calc_num_entries(self, batched_graph):
         return batched_graph.full_edge_attr.shape[0] + batched_graph.node_attr.shape[0]
@@ -262,6 +279,16 @@ class BinomialDiffusionVanilla(DiffusionBase):
             return t, pt
 
         elif method == 'uniform':
+            """
+            Yulia : 
+            - length are the number of time steps / number of diffusion steps
+            - b are the number of graphs in the batch (i.e. how many diffuerent time steps need to be samples for each graph)
+
+            Return : 
+            --------
+            t is the uniformly sampled timesteps
+            pt is TODO : what tf is pt?
+            """
             length = self.Lt_count.shape[0]
             t = torch.randint(0, length, (b,), device=device).long()
 
@@ -272,14 +299,22 @@ class BinomialDiffusionVanilla(DiffusionBase):
     
 
     def _q_pred(self, batched_graph, t_node, t_edge):
+        """
+        Yulia: 
+            first extract the corresponding alpha bar values given the t
+            This function computes the value required for the bernoulli in equation (2) from the paper:
+                It computes \bar_alpha_t * A^0 + (1-\bar_alpha_t)*p
+                But in log space ;) 
+            I am removing the node part becasue for my thesis, we are not predicting / working with the nodes at all!
+        """
         # breakpoint()
         # nodes prob
-        log_cumprod_alpha_t_node = extract(self.log_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
-        log_1_min_cumprod_alpha_node = extract(self.log_1_min_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
-        log_prob_nodes = log_add_exp(
-            batched_graph.log_node_attr + log_cumprod_alpha_t_node, 
-            log_1_min_cumprod_alpha_node + self.log_final_prob_node 
-        ) 
+        # log_cumprod_alpha_t_node = extract(self.log_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
+        # log_1_min_cumprod_alpha_node = extract(self.log_1_min_cumprod_alpha, t_node, batched_graph.log_node_attr.shape)
+        # log_prob_nodes = log_add_exp(
+        #     batched_graph.log_node_attr + log_cumprod_alpha_t_node, 
+        #     log_1_min_cumprod_alpha_node + self.log_final_prob_node 
+        # ) 
 
         # edges prob
         log_cumprod_alpha_t_edge = extract(self.log_cumprod_alpha, t_edge, batched_graph.log_full_edge_attr.shape)
@@ -288,7 +323,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
             batched_graph.log_full_edge_attr + log_cumprod_alpha_t_edge,
             log_1_min_cumprod_alpha_edge + self.log_final_prob_edge
         )
-        return log_prob_nodes, log_prob_edges 
+        return None, log_prob_edges 
 
 
     def _p_pred(self, batched_graph, t_node, t_edge):

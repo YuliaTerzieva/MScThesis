@@ -136,6 +136,9 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             raise NotImplementedError
 
     def _q_set_actives(self, batched_graph):
+        """
+        Yulia : this should be equation 27 from the EDGE paper
+        """
         degree_tmin1 = self._compute_degree(batched_graph.log_full_edge_attr_tmin1.argmax(1), batched_graph.full_edge_index, batched_graph.num_nodes)
         degree_t = self._compute_degree(batched_graph.log_full_edge_attr_t.argmax(1), batched_graph.full_edge_index, batched_graph.num_nodes)
        
@@ -162,30 +165,34 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         return log_pred_node, log_pred_edge
 
     def _compute_MC_KL_joint(self, batched_graph, t, t_node, t_edge):
-        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        """
+        Yulia : 
+        
+        """
+        _, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
 
         active_edge_attr_tmin1 = batched_graph.log_full_edge_attr_tmin1.index_select(0, batched_graph.active_edge_indices)
-        
-        loss_node = 0#scatter(loss_node, batched_graph.batch, dim=-1, reduce='sum')
-
-
+    
+        # Yulia : here they are comparing the true (active_edge_attr_tmin1) vs the predicted (log_model_prob_edge)
         cross_ent_edge = -log_categorical(active_edge_attr_tmin1, log_model_prob_edge)
        
-
-
-        cross_ent_edge = scatter(cross_ent_edge, batched_graph.batch[batched_graph.full_edge_index[0].index_select(0, batched_graph.active_edge_indices)], dim=-1, reduce='sum', dim_size=batched_graph.num_graphs)
+        # Yulia : this all is to calculate the edge loss per graph! 
+        cross_ent_edge = scatter(cross_ent_edge, 
+                                 batched_graph.batch[batched_graph.full_edge_index[0].index_select(0, batched_graph.active_edge_indices)], 
+                                 dim=-1, reduce='sum', dim_size=batched_graph.num_graphs)
 
         # recover constant term
-        num_actives_edge_per_graphs = scatter(torch.ones_like(batched_graph.active_edge_indices), batched_graph.batch[batched_graph.full_edge_index[0].index_select(0, batched_graph.active_edge_indices)], dim=-1, reduce='sum', dim_size=batched_graph.num_graphs)
+        num_actives_edge_per_graphs = scatter(torch.ones_like(batched_graph.active_edge_indices), 
+                                              batched_graph.batch[batched_graph.full_edge_index[0].index_select(0, batched_graph.active_edge_indices)], 
+                                              dim=-1, reduce='sum', dim_size=batched_graph.num_graphs)
         num_nodes_per_graphs = scatter(torch.ones(batched_graph.num_nodes, device=self.device), batched_graph.batch)
-        num_nodes_per_graphs*(num_nodes_per_graphs-1)//2
+        
         num_inactive_edges_per_graph = num_nodes_per_graphs*(num_nodes_per_graphs-1)//2 - num_actives_edge_per_graphs
-        cross_ent_edge += 6.9078e-29 * num_inactive_edges_per_graph
+        cross_ent_edge += 6.9078e-29 * num_inactive_edges_per_graph # Yulia : this is very small used for numerical stability
         ent_edge = 6.9078e-29 * batched_graph.edges_per_graph
         loss_edge = cross_ent_edge + ent_edge
 
-        loss = loss_node + loss_edge
-        return loss    
+        return loss_edge    
 
     def _p_pred(self, batched_graph, t_node, t_edge):
         if self.parametrization in ['x0', 'xt']:
@@ -222,7 +229,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
 
                 kl = self._compute_MC_KL_joint(batched_graph, t, t_node, t_edge)
 
-                ce_prior = self._kl_prior(batched_graph=batched_graph)
+                ce_prior = self._ce_prior(batched_graph=batched_graph)
                 # Upweigh loss term of the kl
                 vb_loss = kl / pt + ce_prior
                 batched_graph.num_entries = self._calc_num_entries(batched_graph)
@@ -245,12 +252,15 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             
             elif self.loss_type == 'vb_ce_xt_prescribred_st':
                 # breakpoint()
+                # Yulia :  For each graph in the batch, a time step t is selected 
                 t, pt =  self._sample_time(b, self.device, self.sample_time_method)
 
+                # Yulia : the drawn time steps are repeated as many times as nodes in each of the geaph of the batch; same is done for the edges
                 t_node = t.repeat_interleave(batched_graph.nodes_per_graph)
                 t_edge = t.repeat_interleave(batched_graph.edges_per_graph)
-                self._q_sample_and_set_xtmin1_xt_given_x0(batched_graph, t_node, t_edge)
 
+                
+                self._q_sample_and_set_xtmin1_xt_given_x0(batched_graph, t_node, t_edge)
                 self._q_set_actives(batched_graph)
 
                 kl = self._compute_MC_KL_joint(batched_graph, t, t_node, t_edge)
@@ -261,7 +271,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
                 self.Lt_history.scatter_(dim=0, index=t, src=new_Lt_history)
                 self.Lt_count.scatter_add_(dim=0, index=t, src=torch.ones_like(Lt2))
 
-                ce_prior = self._kl_prior(batched_graph=batched_graph)# TODO replaced it back to _ce_prior
+                ce_prior = self._ce_prior(batched_graph=batched_graph)# TODO replaced it back to _ce_prior # Yulia : this was their comment and I indeed changed the KL prior to CE prior
                 # Upweigh loss term of the kl
                 vb_loss = kl / pt + ce_prior
 

@@ -9,9 +9,101 @@ from torch.nn import functional as F
 from layers.layers import BitModel, NodeModel
 import pickle as pkl
 
+def preprocess(g, degree=True, p_uncon = None):
+    if isinstance(g, nx.Graph):
+        pyg_data = pyg.utils.from_networkx(g)
+        adj = torch.from_numpy(nx.to_numpy_array(g).astype(np.int64)).long() # Yulia : changed "int" to "int64"
+    elif isinstance(g, pyg.data.Data):
+        pyg_data = g
+        adj = to_dense_adj(g.edge_index)[0].long()
+    else:
+        raise NotImplementedError()
+        
+    row, col = torch.triu_indices(pyg_data.num_nodes, pyg_data.num_nodes,1)
+    # Yulia : full_edge_index has shape (2 by N) it is all the possible undirected edges that can be added to a graph with N  = (number of nodes ^ 2 - number of nodes)/2
+    # note we are wokring with undirectional graph with no self loops!
+    pyg_data.full_edge_index = torch.stack([row, col])
+
+    # Yulia : full_edge_attr has shape (1 by N), it is based on the possible edges from the full_edge_index, 
+    # there are 1s for the edges that actually occur in the graph and 0s for the rest of the edges
+    pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
+
+    if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) < p_uncon): # This part is changed by Yulia, based on Algorithm 1 in the thesis 
+        # TODO check if the algorithm number is still correct
+        pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.int)
+
+    if degree:
+        # Yulia : these are the degrees for each node in the graph
+        pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
+    
+    # for augmented_feature in augmented_features:
+    #     setattr(pyg_data, augmented_feature, FEATURE_EXTRACTOR[augmented_feature]['func'](pyg_data))
+    
+    return pyg_data
+
+def collate_fn(pyg_datas, repeat=1):
+    """
+    Yulia : this function cloned the original pyg_datas repeat times
+    then it batched it and adds two featues to the batch nodes_per_graph and edges_per_graph, 
+    where edges_per_graph is the total possible edges a graph with this many nodes can have
+
+    """
+    pyg_datas = sum([[pyg_data.clone() for _ in range(repeat)]for pyg_data in pyg_datas],[])
+    batched_data = pyg.data.Batch.from_data_list(pyg_datas)
+    batched_data.nodes_per_graph = torch.tensor([pyg_data.num_nodes for pyg_data in pyg_datas])
+    batched_data.edges_per_graph = torch.tensor([pyg_data.num_nodes * (pyg_data.num_nodes-1)//2 for pyg_data in pyg_datas])
+
+    return batched_data 
+
+class EmptyGraphGeneratorWithNodeAttributes:
+
+    def __init__(self, file_path):
+
+        testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
+        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
+
+    def _fill_needed_features(self, graphs):
+        """
+        This function takes a list of graphs and removes the edge_index attribute of all of them. 
+        """
+        return_data_list = []
+
+        for graph in graphs:
+            graph.edge_index=None
+            return_data_list.append(graph)
+
+        batched_data = collate_fn(return_data_list)
+        
+        return batched_data
+
+    def sample(self, num_samples):
+        """
+        This function samples "num_samples" from a list of graphs.
+        The list is created from graphs in the test section of the dataset
+        The graphs already have the following features : 
+            - full_edge_index
+            - full_edge_attr
+            - node_attr
+            - degree
+        Then, other features are added to the pyg.data.Data() object 
+        that are required for the algorithm.
+        The features that are added/removed are : 
+            - edge_index is removed 
+            - nodes_per_graph is added
+            - edges_per_graph is added
+        
+        TODO : maybe add the num_nodes
+        """
+        sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
+        sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
+        empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
+        return sampled_graphs, empty_pyg_datas
+
+#--------------------------------------------------------------------------------------
+# THIS CODE IS FOR THE ORIGINAL EDGE ALGORITHM
+
 FEATURE_EXTRACTOR = {
 }
-
 
 def dec2bin(x, bits):
     mask = 2 ** torch.arange(bits - 1, -1, -1).to(x.device, x.dtype)
@@ -32,7 +124,6 @@ def unpack_deg_matrix(degs):
         res.append(r)
     return res
 
-
 def deg_hist_to_deg_seq(deg_hist):
     ret = torch.zeros(sum(deg_hist))
     cum = 0
@@ -40,43 +131,6 @@ def deg_hist_to_deg_seq(deg_hist):
         ret[cum:cum+num_nodes] = d+1
         cum = cum+num_nodes
     return ret
-
-def preprocess(g, degree=False, augmented_features=[], p_uncon = None):
-    if isinstance(g, nx.Graph):
-        pyg_data = pyg.utils.from_networkx(g)
-        adj = torch.from_numpy(nx.to_numpy_array(g).astype(np.int64)).long() # Yulia : changed "int" to "int64"
-    elif isinstance(g, pyg.data.Data):
-        pyg_data = g
-        adj = to_dense_adj(g.edge_index)[0].long()
-    else:
-        raise NotImplementedError()
-        
-    row, col = torch.triu_indices(pyg_data.num_nodes, pyg_data.num_nodes,1)
-    pyg_data.full_edge_index = torch.stack([row, col])
-
-    pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
-
-    if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) <= p_uncon):
-        print("check")
-        pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.long) # TODO : maybe instead of 0 fill it up with -1?
-        # print( pyg_data.node_attr)
-
-    if degree:
-        pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
-    
-    # breakpoint()
-    for augmented_feature in augmented_features:
-        setattr(pyg_data, augmented_feature, FEATURE_EXTRACTOR[augmented_feature]['func'](pyg_data))
-    
-    return pyg_data
-
-def collate_fn(pyg_datas, repeat=1):
-    pyg_datas = sum([[pyg_data.clone() for _ in range(repeat)]for pyg_data in pyg_datas],[])
-    batched_data = pyg.data.Batch.from_data_list(pyg_datas)
-    batched_data.nodes_per_graph = torch.tensor([pyg_data.num_nodes for pyg_data in pyg_datas])
-    batched_data.edges_per_graph = torch.tensor([pyg_data.num_nodes * (pyg_data.num_nodes-1)//2 for pyg_data in pyg_datas])
-
-    return batched_data 
 
 
 class EmpiricalEmptyGraphGenerator:
@@ -245,35 +299,3 @@ class NeuralEmptyGraphGenerator:
         num_node_per_graphs, xT_feats = self._sample_graph_size_and_features(num_samples)
         empty_pyg_datas = self._generate_empty_data(num_node_per_graphs, xT_feats)
         return empty_pyg_datas
-
-class EmptyGraphGeneratorWithNodeAttributes:
-    def __init__(self, file_path):
-
-        testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
-        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx][:2]
-
-    def _fill_needed_features(self, graphs):
-        """
-        This function takes a list of graphs and removes the edge_index attribute of all of them. 
-        """
-        return_data_list = []
-
-        for graph in graphs:
-            graph.edge_index=None
-            return_data_list.append(graph)
-
-        batched_data = collate_fn(return_data_list)
-        
-        return batched_data
-
-    def sample(self, num_samples):
-        """
-        This function samples "num_samples" from a list of graphs.
-        The list is created from graphs in the test section of the dataset
-        Then, other features are added to the pyg.data.Data() object 
-        that are required for the algorithm
-        """
-        sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
-        sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
-        empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
-        return sampled_graphs, empty_pyg_datas

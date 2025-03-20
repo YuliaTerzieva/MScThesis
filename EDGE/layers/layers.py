@@ -10,9 +10,16 @@ from torch.nn.parameter import Parameter
 
 num_of_times_entering_model_forward = 0
 
-def safe_one_hot(x, num_classes): # TODO: Yulia add documentation
+def safe_one_hot(x, num_classes):
+    """
+    Funciton by Yulia 
     
-    one_hot = F.one_hot(torch.where(x == -1, torch.tensor(0, dtype=x.dtype, device=x.device), x), num_classes=num_classes)
+    Parameters 
+    ----------
+        x : tensor of node attributes with -1 defining the null category and having one hop vector filled with zeros
+        num classes : int the number of classes
+    """
+    one_hot = F.one_hot(torch.where(x == -1, torch.tensor(0, dtype=torch.long, device=x.device), x.to(dtype=torch.long)), num_classes)
     zero_rows = torch.zeros_like(one_hot)
     one_hot = torch.where(x.unsqueeze(-1) == -1, zero_rows, one_hot)
 
@@ -465,7 +472,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         
 
         self.node_out_mlp = torch.nn.Sequential( # missibng node_interaction wrt TGNN (that was the miniattention layer) and this is new/ this is the replacement?
-            torch.nn.Linear(dim*4, dim * 2),
+            torch.nn.Linear(dim*5, dim * 2),
             torch.nn.SiLU(),
             torch.nn.Linear(dim * 2, dim*2),
             torch.nn.SiLU(),
@@ -502,7 +509,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         node_selection = torch.zeros_like(nodes_t)
 
         # Yulia : nodes_t[..., None] this is done to add on edimention to the object. for example from (1, 2, 3) to have shape (1, 2, 3, 1)
-        nodes_t = nodes_t[..., None] / self.max_degree  # I prefer to make it embedding later
+        nodes_t = nodes_t[..., None] / self.max_degree  # I prefer to make it embedding later 
         nodes_0 = pyg_data.degree[..., None] / self.max_degree
 
         node_selection[pyg_data.active_node_indices] = 1
@@ -557,7 +564,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         row = pyg_data.full_edge_index[0].index_select(0, pyg_data.active_edge_indices)
         col = pyg_data.full_edge_index[1].index_select(0, pyg_data.active_edge_indices)
 
-        nodes = torch.cat([nodes, self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection)], dim=-1)
+        nodes = torch.cat([nodes, self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr_one_hot)], dim=-1)
         nodes = self.node_out_mlp(nodes)
 
         edge_emb = nodes[row] + nodes[col]

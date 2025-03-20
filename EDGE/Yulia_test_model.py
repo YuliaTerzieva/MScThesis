@@ -191,11 +191,11 @@ def between_node_class_stats(graphs, edge_list_counter, num_MC_sim) -> int:
     return between_class_edge_occurence
 
 
-which_run = "./wandb/Basic_test_no_anomaly/multinomial_diffusion/multistep/2025-03-15_20-14-25"
+which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
 
-path = which_run+"/check/checkpoint_49.pt"
-num_samples = 3
-Monte_Carlo = 10
+path = which_run+"/check/checkpoint_199.pt"
+num_samples = 100
+Monte_Carlo = 100
 
 path_args = which_run+ "/args.pickle"
 with open(path_args, 'rb') as f:
@@ -217,7 +217,7 @@ model.eval()
 # print(model) # BinomialDiffusionActive _denoise_fn TGNN_degree_guided
 
 # sample 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, w = 0, MC = Monte_Carlo) 
+original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 2, MC = Monte_Carlo) 
 
 # print(per_graph_edge_list_counter)
 
@@ -245,25 +245,25 @@ for count, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_pygra
     lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[count], Monte_Carlo)
 
     # if lowest_edge_probability[0] < 0.01 : 
-    fig, axes = plt.subplots(1, 2)
-    pos = nx.circular_layout(og_gen)
-    nx.draw(og_gen, pos, ax=axes[0],with_labels=True, node_color=OG_node_colors)
-    pos = nx.circular_layout(g_gen)
-    nx.draw(g_gen, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
-    nx.draw_networkx_edge_labels(g_gen, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
+    # fig, axes = plt.subplots(1, 2)
+    # pos = nx.circular_layout(og_gen)
+    # nx.draw(og_gen, pos, ax=axes[0],with_labels=True, node_color=OG_node_colors)
+    # pos = nx.circular_layout(g_gen)
+    # nx.draw(g_gen, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
+    # nx.draw_networkx_edge_labels(g_gen, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
     
-    axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
-    axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
-    print(per_graph_edge_list_counter[count])
-    print(lowest_edge_probability[1])
-    plt.tight_layout()
-    plt.show()    
+    # axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
+    # axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
+    # print(per_graph_edge_list_counter[count])
+    # print(lowest_edge_probability[1])
+    # plt.tight_layout()
+    # plt.show()    
         
     graph_statistic.append(np.array([og_gen.number_of_nodes(), og_gen.number_of_edges(), graph_probabilitiy, lowest_edge_probability[0]]))
 
 print()
 graph_statistic = np.array(graph_statistic)
-# print(graph_statistic)
-# plot_mean_probability_per_nodes_per_edges(graph_statistic)
+print(graph_statistic)
+plot_mean_probability_per_nodes_per_edges(graph_statistic)
 between_node_class_stats(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
 

@@ -27,10 +27,9 @@ def get_model_id(args):
     return 'multinomial_diffusion'
 
 def get_model(args, initial_graph_sampler):
-    # breakpoint()
-    if args.final_prob_node is not None:
-        assert sum(args.final_prob_node) == 1
-        assert len(args.final_prob_node) == args.num_node_classes
+    # if args.final_prob_node is not None:
+    #     assert sum(args.final_prob_node) == 1
+    #     assert len(args.final_prob_node) == args.num_node_classes
     assert sum(args.final_prob_edge) == 1
     assert len(args.final_prob_edge) == args.num_edge_classes
 
@@ -52,7 +51,7 @@ def get_model(args, initial_graph_sampler):
     dynamics = dynamics_fn(
             max_degree=args.max_degree,
             num_node_classes=2 if args.num_node_classes is None else args.num_node_classes, 
-            num_edge_classes=args.num_edge_classes, # Yulia : i am changing this, otherwise i get an error in diffusion/diffusion_binomial_active _predict_xtmin1_given_xt_st
+            num_edge_classes=args.num_edge_classes, # Yulia : I am changing this, otherwise i get an error in diffusion/diffusion_binomial_active _predict_xtmin1_given_xt_st
             dim=args.diffusion_dim,
             num_steps=args.diffusion_steps,
             num_heads=args.num_heads,
@@ -75,7 +74,7 @@ def get_model(args, initial_graph_sampler):
 
     base_dist = diffusion_fn(
         args.num_node_classes, args.num_edge_classes, initial_graph_sampler, dynamics, timesteps=args.diffusion_steps, 
-        loss_type=args.loss_type, final_prob_node=args.final_prob_node, final_prob_edge=args.final_prob_edge,
+        loss_type=args.loss_type, final_prob_node=None, final_prob_edge=args.final_prob_edge,
         parametrization=args.parametrization, sample_time_method=args.sample_time_method,
         noise_schedule=noise_schedule, device=args.device)
 

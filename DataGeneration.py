@@ -11,57 +11,7 @@ import random
 
 
 def GeneratePattern1(node_file_name, edge_file_name,  number_of_times=1):
-    """Generates pattern 1 : in-burst with 5 blue to 1 orange in combination with convey orange to orange
-
-    Parameters
-    ----------
-    node_file_name : str
-        The file name of the csv file with nodes
-    edge_file_name : str
-        The file name of the csv file with the edges
-    number_of_times : int, optional
-        Number of times the pattern should be generated (default is 1)
-    
-    Returns
-    -------
-    None
-    
-    """
-
-    
-    if not os.path.isfile(node_file_name):
-        pd.DataFrame(columns=['node_id', 'color', 'anomaly']).to_csv(node_file_name, index=False)
-
-    if not os.path.isfile(edge_file_name):
-        pd.DataFrame(columns=['source', 'target']).to_csv(edge_file_name, index=False)
-
-    with open(node_file_name, 'r') as file_reader : 
-        number_of_existing_nodes = len(file_reader.readlines())-1
-    
-    node_writer = open(node_file_name, "a")
-    edge_writer = open(edge_file_name, "a")
-    
-    for i in range(number_of_times):
-        node_id_0 = number_of_existing_nodes
-        node_writer.write(f"{node_id_0},blue,0\n")
-        node_writer.write(f"{node_id_0+1},blue,0\n")
-        node_writer.write(f"{node_id_0+2},blue,0\n")
-        node_writer.write(f"{node_id_0+3},blue,0\n")
-        node_writer.write(f"{node_id_0+4},orange,0\n")
-        node_writer.write(f"{node_id_0+5},orange,0\n")
-        edge_writer.write(f"{node_id_0},{node_id_0+4}\n")
-        edge_writer.write(f"{node_id_0+1},{node_id_0+4}\n")
-        edge_writer.write(f"{node_id_0+2},{node_id_0+4}\n")
-        edge_writer.write(f"{node_id_0+3},{node_id_0+4}\n")
-        edge_writer.write(f"{node_id_0+4},{node_id_0+5}\n")
-        number_of_existing_nodes +=6
-
-    node_writer.close()
-    edge_writer.close()
-    return 
-
-def GeneratePattern2(node_file_name, edge_file_name,  number_of_times=1):
-    """Generates pattern 2 : 
+    """Generates pattern 1 : 
         in a circle connected : blue, orange, grey, orange, blue
         Where the first and the last blue are connected to each other
         The last blue is connected to the first blue of the next patters
@@ -117,6 +67,56 @@ def GeneratePattern2(node_file_name, edge_file_name,  number_of_times=1):
 
         if i == number_of_times-1:
             edge_writer.write(f"{node_id_0+4},{0}\n") # blue 0 to blue 4
+
+    node_writer.close()
+    edge_writer.close()
+    return 
+
+def GeneratePattern2(node_file_name, edge_file_name,  number_of_times=1):
+    """Generates pattern 2 : in-burst with 5 blue to 1 orange in combination with convey orange to orange
+
+    Parameters
+    ----------
+    node_file_name : str
+        The file name of the csv file with nodes
+    edge_file_name : str
+        The file name of the csv file with the edges
+    number_of_times : int, optional
+        Number of times the pattern should be generated (default is 1)
+    
+    Returns
+    -------
+    None
+    
+    """
+
+    
+    if not os.path.isfile(node_file_name):
+        pd.DataFrame(columns=['node_id', 'color', 'anomaly']).to_csv(node_file_name, index=False)
+
+    if not os.path.isfile(edge_file_name):
+        pd.DataFrame(columns=['source', 'target']).to_csv(edge_file_name, index=False)
+
+    with open(node_file_name, 'r') as file_reader : 
+        number_of_existing_nodes = len(file_reader.readlines())-1
+    
+    node_writer = open(node_file_name, "a")
+    edge_writer = open(edge_file_name, "a")
+    
+    for i in range(number_of_times):
+        node_id_0 = number_of_existing_nodes
+        node_writer.write(f"{node_id_0},blue,0\n")
+        node_writer.write(f"{node_id_0+1},blue,0\n")
+        node_writer.write(f"{node_id_0+2},blue,0\n")
+        node_writer.write(f"{node_id_0+3},blue,0\n")
+        node_writer.write(f"{node_id_0+4},orange,0\n")
+        node_writer.write(f"{node_id_0+5},orange,0\n")
+        edge_writer.write(f"{node_id_0},{node_id_0+4}\n")
+        edge_writer.write(f"{node_id_0+1},{node_id_0+4}\n")
+        edge_writer.write(f"{node_id_0+2},{node_id_0+4}\n")
+        edge_writer.write(f"{node_id_0+3},{node_id_0+4}\n")
+        edge_writer.write(f"{node_id_0+4},{node_id_0+5}\n")
+        number_of_existing_nodes +=6
 
     node_writer.close()
     edge_writer.close()
@@ -340,10 +340,12 @@ def Generate_Dataset_Type_1(arguments):
     node_file = arguments["node_file"]
     edge_file = arguments["edge_file"]
     ego_file = arguments["ego_file"]
+    hop = arguments["hop"]
 
-    GeneratePattern2(node_file, edge_file, pattern_number)
-    Visualizegraph(node_file, edge_file)
-    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
+    GeneratePattern1(node_file, edge_file, pattern_number)
+    ConnectPatterns(node_file, edge_file, new_connections)
+    # Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, hop, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
 
     return 
 
@@ -356,6 +358,7 @@ def Generate_Dataset_Type_2(arguments):
     ego_file = arguments["ego_file"]
     gray_degree_mu = arguments["mu"]
     gray_degree_std = arguments["std"]
+    hop = arguments["hop"]
 
     """ Note that connecting patters, which the the function that intorduces anomalies, needs to executed before the InjectRandomNodes. 
     Otherwise it would intorduce anomalies between gray nodes, which would be wrong. """
@@ -363,8 +366,8 @@ def Generate_Dataset_Type_2(arguments):
     GeneratePattern2(node_file, edge_file, pattern_number)
     ConnectPatterns(node_file, edge_file, new_connections)
     InjectRandomNodes(node_file, edge_file, number_random, gray_degree_mu, gray_degree_std)
-    Visualizegraph(node_file, edge_file)
-    Ego_Net_Generation(None, 2, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
+    # Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, hop, ego_file, ego_file+"_test_graphs", node_file, edge_file, False)
 
     return
 

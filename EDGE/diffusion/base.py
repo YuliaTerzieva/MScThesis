@@ -188,17 +188,18 @@ class BaseExperiment(object):
                 self.eval_epochs.append(epoch)
                 # Test if eval score a better metrics
                 if self.compare_current_best(eval_dict):
-                    self.current_best_eval_dict = eval_dict
-                    test_dict = self.test_fn(epoch)
-                    self.log_test_metrics(test_dict)
-                    self.test_epochs.append(epoch)
+                    # self.current_best_eval_dict = eval_dict
+                    # test_dict = self.test_fn(epoch)
+                    # self.log_test_metrics(test_dict)
+                    # self.test_epochs.append(epoch)
                     self.patient = 0
                 else:
                     self.patient += 1
                 
             else:
                 eval_dict = None
-                test_dict = None
+            
+            test_dict = None
             
             # Log
             self.save_metrics()
