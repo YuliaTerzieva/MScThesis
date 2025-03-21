@@ -174,7 +174,7 @@ def get_data(args):
         # eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
         # test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
 
-        monitoring_statistics = []#['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
+        monitoring_statistics = ['bpd']#['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
 
 
     augmented_feature_dict = {}#{k:FEATURE_EXTRACTOR[k]['data_spec'] for k in args.augmented_features}

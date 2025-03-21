@@ -28,7 +28,7 @@
         "ego_file": "GeneratedDataset/Small_test_no_anomaly",
         "mu": 5, 
         "std": 2,
-        "hop":1
+        "hop":2
     }, 
 
     "Small_test_with_anomaly": {
@@ -41,7 +41,7 @@
         "ego_file": "GeneratedDataset/Small_test_with_anomaly",
         "mu": 5, 
         "std": 2,
-        "hop":1
+        "hop":2
     }, 
 
     "Mid_test_no_anomaly": {
@@ -54,7 +54,7 @@
         "ego_file": "GeneratedDataset/Mid_test_no_anomaly",
         "mu": 5, 
         "std": 2,
-        "hop":1
+        "hop":2
     },
 
     "Mid_test_with_anomaly": {
@@ -67,6 +67,6 @@
         "ego_file": "GeneratedDataset/Mid_test_with_anomaly",
         "mu": 5, 
         "std": 2,
-        "hop":1
+        "hop":2
     }
 }

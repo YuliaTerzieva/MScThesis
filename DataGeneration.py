@@ -286,6 +286,7 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
     mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
     map_to_color = lambda color: ([mapping_to_color[c] for c in color] if isinstance(color, list) else mapping[color])
 
+    print_patience = 10
     if not isinstance(graph, nx.Graph):
         graph = nx.Graph()
         nodes = pd.read_csv(node_file_name)
@@ -312,11 +313,12 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
         sub_graph = nx.ego_graph(graph, node[0], radius=k_hop, center=True, undirected=True)
         list_of_ego_nets.append(sub_graph)
 
-        if print_subgraphs : # if you want to test make this True, otherwise False
+        if print_subgraphs and print_patience >0: # if you want to test make this True, otherwise False
             node_colors = [sub_graph.nodes[node]['node_attr'] for node in sub_graph.nodes()]
             pos = nx.arf_layout(sub_graph)
             nx.draw(sub_graph, pos, with_labels=True, node_color=map_to_color(node_colors))
             plt.show()
+            print_patience +=1
 
 
     random.shuffle(list_of_ego_nets)

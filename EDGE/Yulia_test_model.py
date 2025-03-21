@@ -191,11 +191,12 @@ def between_node_class_stats(graphs, edge_list_counter, num_MC_sim) -> int:
     return between_class_edge_occurence
 
 
-which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
-# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_15-01-57"
+# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
+which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
 
-path = which_run+"/check/checkpoint_129.pt"
-num_samples = 5
+
+path = which_run+"/check/checkpoint_259.pt"
+num_samples = 6
 Monte_Carlo = 100
 
 path_args = which_run+ "/args.pickle"
@@ -218,7 +219,7 @@ model.eval()
 # print(model) # BinomialDiffusionActive _denoise_fn TGNN_degree_guided
 
 # sample 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 2, MC = Monte_Carlo) 
+original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 3, MC = Monte_Carlo) 
 
 # print(per_graph_edge_list_counter)
 
@@ -255,8 +256,8 @@ for count, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_pygra
     
     axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
     axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
-    print(per_graph_edge_list_counter[count])
-    print(lowest_edge_probability[1])
+    # print(per_graph_edge_list_counter[count])
+    # print(lowest_edge_probability[1])
     plt.tight_layout()
     plt.show()    
         

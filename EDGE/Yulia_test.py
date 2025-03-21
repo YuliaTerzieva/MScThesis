@@ -88,7 +88,11 @@ plt.show()
 # ------------------------------------------------------------------------------------------------------------------------
 # """
 # run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
-run = "EDGE/wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
+# run = "EDGE/wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
+
+run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_22-24-18"
+# run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_22-28-59"
+
 
 training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
 eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
