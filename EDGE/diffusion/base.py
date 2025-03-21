@@ -67,7 +67,6 @@ class BaseExperiment(object):
         raise NotImplementedError()
 
     def compare_current_best(self, eval_dict):
-        breakpoint()
         if eval_dict is None:
             return False
         if self.current_best_eval is None:
