@@ -60,7 +60,7 @@ mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and no
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
 dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", "Small_test_no_anomaly", "Small_test_with_anomaly", "Mid_test_no_anomaly", "Mid_test_with_anomaly"]
-dataset_number = 5
+dataset_number = 4
 dataset_name = dataset_name_list[dataset_number]
 train_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}', 'rb'))
 eval_graph = train_graph[int(len(train_graph)*0.9):]
@@ -83,28 +83,72 @@ plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "test")
 plt.legend()
 plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
+plt.title(f"Dataset {dataset_name}")
+plt.show()
+
+# ---- EDGEs noe
+
+number_of_edges = [len(n.edges) for n in train_graph]
+plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "train")
+
+number_of_edges = [len(n.edges) for n in eval_graph]
+plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "eval")
+
+test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
+print("The number of graphs in the testing is ", len(test_graphs))
+
+number_of_edges = [len(n.edges) for n in test_graphs]
+plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "test")
+plt.legend()
+plt.xlabel("Number of nodes")
+plt.ylabel("Number of graphs")
+plt.title(f"Dataset {dataset_name}")
 plt.show()
 """
 # ------------------------------------------------------------------------------------------------------------------------
 # """
-# run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
-# run = "EDGE/wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
 
-run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_22-24-18"
-# run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_22-28-59"
+# Friday the 21st
+Small_test_no_anomaly = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38"
+Mid_test_no_anomaly = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13"
 
 
-training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
-eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
+# Friday the 21st with Anomalies
+Small_test_with_anomaly = "./wandb/Small_test_with_anomaly/multinomial_diffusion/multistep/2025-03-21_22-24-50"
+Mid_test_with_anomaly = "./wandb/Mid_test_with_anomaly/multinomial_diffusion/multistep/2025-03-21_22-25-56"
 
-print(np.argmin(training_loss['bpd']))
-print(np.argmin(eval_loss['bpd'])*5)
-print("Lowest BPD eval: ", eval_loss['bpd'][np.argmin(eval_loss['bpd'])])
+dataset = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly]
 
-plt.plot(np.arange(1, 261), training_loss['bpd'], label = "training BPD")
-plt.plot(np.arange(1, 261, 5), eval_loss['bpd'], label = "evaluation BPD")
-plt.xlabel("Epoch")
-plt.legend()
+f, ax = plt.subplots(2, 2, figsize=(10, 10))
+for i, run in enumerate(dataset) :
+
+    _ax = ax[int(i//2), int(i%2)]
+
+    training_loss = pkl.load(open(run+"/metrics_train.pickle", "rb"))
+    eval_loss = pkl.load(open(run+"/metrics_eval.pickle", "rb"))
+
+    min_train_idx = np.argmin(training_loss['bpd'])
+    min_train_bpd = min(training_loss['bpd'])
+
+    min_eval_idx = np.argmin(eval_loss['bpd'])
+    min_eval_epoch = min_eval_idx * 5
+    min_eval_bpd = eval_loss['bpd'][min_eval_idx]
+
+    print(min_train_idx)
+    print(min_eval_idx*5)
+    print("Lowest BPD eval: ", min_eval_bpd)
+
+    _ax.plot(np.arange(1, len(training_loss['bpd'])+1), training_loss['bpd'], label = "training BPD")
+    _ax.plot(np.arange(1, len(training_loss['bpd'])+1,5), eval_loss['bpd'], label = "evaluation BPD")
+    _ax.set_xlabel("Epoch")
+
+    _ax.scatter(min_train_idx + 1, min_train_bpd, color='blue', label=f'Min Training BPD = {round(min_train_bpd, 3)}', zorder=5)
+    _ax.scatter(min_eval_epoch + 1, min_eval_bpd, color='orange', label=f'Min Eval BPD = {round(min_eval_bpd, 3)}', zorder=5)
+
+    _ax.set_title(run[8:-52])
+    _ax.legend()
+
+plt.tight_layout()
 plt.show()
 # """
 # ------------------------------------------------------------------------------------------------------------------------
