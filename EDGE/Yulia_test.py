@@ -55,12 +55,13 @@ from datasets.data_utils import preprocess
 # plt.show()
 
 # ------------------------------------------------------------------------------------------------------------------------
-"""
+# THE FOLLOWING CODE IS TO CHECK HOW MNAY GRAPHS IN THE DATASETS ARE WRT THE NUMBER OF NODES
+# """ 
 mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
 map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", "Small_test_no_anomaly", "Small_test_with_anomaly", "Mid_test_no_anomaly", "Mid_test_with_anomaly"]
-dataset_number = 4
+dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", "Small_test_no_anomaly", "Small_test_with_anomaly", "Mid_test_no_anomaly", "Mid_test_with_anomaly", "relation_based_test"]
+dataset_number = 6
 dataset_name = dataset_name_list[dataset_number]
 train_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}', 'rb'))
 eval_graph = train_graph[int(len(train_graph)*0.9):]
@@ -95,7 +96,6 @@ number_of_edges = [len(n.edges) for n in eval_graph]
 plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "eval")
 
 test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
-print("The number of graphs in the testing is ", len(test_graphs))
 
 number_of_edges = [len(n.edges) for n in test_graphs]
 plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "test")
@@ -104,9 +104,10 @@ plt.xlabel("Number of nodes")
 plt.ylabel("Number of graphs")
 plt.title(f"Dataset {dataset_name}")
 plt.show()
-"""
-# ------------------------------------------------------------------------------------------------------------------------
 # """
+# ------------------------------------------------------------------------------------------------------------------------
+# THE FOLLOWING CODE SECTION IS FOR VISUALIZATION OF THE LOSS FUNCTION and checking which is the best epoch
+"""
 
 # Friday the 21st
 Small_test_no_anomaly = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38"
@@ -150,7 +151,7 @@ for i, run in enumerate(dataset) :
 
 plt.tight_layout()
 plt.show()
-# """
+"""
 # ------------------------------------------------------------------------------------------------------------------------
 # breakpoint()
 # for n in train_graph[:5]:
@@ -227,10 +228,5 @@ for graph, target in zip(test_graphs, central_nodes):
 
 """
 
-# summ = np.sum([ 1.,  2.,  1.,  2.,  1.,  1., 22.,  1.,  1.,  2.,  2.,  2.,  2.,  1.,
-#          2.,  1.,  1.,  1.,  1.,  2.,  1.,  1.,  1.,  1.,  1.,  3.,  8.,  1.,
-#          2.,  3.,  1.,  2.,  1.,  2.,  3.,  2.,  1.,  1.,  1.,  1.,  1.,  2.,
-#          2.,  1.,  3.,  2.,  1.,  2.,  1.,  1., 29.,  1.,  2.,  1.,  1.,  1.,
-#          1.,  2.,  2.])
-# print(summ)
+
 

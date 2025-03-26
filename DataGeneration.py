@@ -311,14 +311,15 @@ def Ego_Net_Generation(graph, k_hop, ego_net_file_name, test_ego_net_file_name, 
 
     for node in graph.nodes.items(): # example of node is : (0, {'color': 'blue', 'anomaly': 0})
         sub_graph = nx.ego_graph(graph, node[0], radius=k_hop, center=True, undirected=True)
-        list_of_ego_nets.append(sub_graph)
+        if sub_graph.number_of_nodes() > 2:
+            list_of_ego_nets.append(sub_graph)
 
-        if print_subgraphs and print_patience >0: # if you want to test make this True, otherwise False
-            node_colors = [sub_graph.nodes[node]['node_attr'] for node in sub_graph.nodes()]
-            pos = nx.arf_layout(sub_graph)
-            nx.draw(sub_graph, pos, with_labels=True, node_color=map_to_color(node_colors))
-            plt.show()
-            print_patience +=1
+            if print_subgraphs and print_patience >0: # if you want to test make this True, otherwise False
+                node_colors = [sub_graph.nodes[node]['node_attr'] for node in sub_graph.nodes()]
+                pos = nx.arf_layout(sub_graph)
+                nx.draw(sub_graph, pos, with_labels=True, node_color=map_to_color(node_colors))
+                plt.show()
+                print_patience -=1
 
 
     random.shuffle(list_of_ego_nets)
@@ -373,6 +374,101 @@ def Generate_Dataset_Type_2(arguments):
 
     return
 
+#---------
+
+def Generate_nodes(N_nodes, n_blue, n_orange, n_grey, node_file_name):
+    if not os.path.isfile(node_file_name):
+        pd.DataFrame(columns=['node_id', 'color', 'anomaly']).to_csv(node_file_name, index=False)
+
+    with open(node_file_name, 'r') as file_reader : 
+        number_of_existing_nodes = len(file_reader.readlines())-1
+    
+    node_writer = open(node_file_name, "a")
+    
+    for i in range(N_nodes):
+        if i < int(N_nodes * (n_blue/100)):
+            node_writer.write(f"{i},blue,0\n")
+        elif i < int(N_nodes * (n_blue/100 + n_orange/100)):
+            node_writer.write(f"{i},orange,0\n")  
+        else:
+            node_writer.write(f"{i},grey,0\n")  
+
+    node_writer.close()
+    return 
+
+def Generate_edges(N_edges, edge_prob_list, edge_file_name, node_file_name):
+    """
+    N_edges: int 
+    edge_prob_list: list[int]
+        The lngth of which has to be (N_node_classes**2+N_node_classes)/2. 
+        The list holds the respective percentage for the given type of relation.
+        The order is given by the order of node classes with within class relations coming first, 
+        For example given for nodes clases B, O, G, the list is:
+        [BB, BO, BG, OO, OG, GG]; note : because we work with undirected graphs BO = OB
+    """
+    
+    types = { 'blue': 0, 'orange': 1, 'grey': 2 }
+    nodes_by_type = {0: [], 1: [], 2: []}
+    with open(node_file_name) as f:
+        next(f)
+        for line in f:
+            i, color, _ = line.strip().split(',')
+            nodes_by_type[types[color]].append(int(i))
+
+    type_pairs = [(0,0), (0,1), (0,2), (1,1), (1,2), (2,2)] # [BB, BO, BG, OO, OG, GG]
+    counts = [int(p / 100 * N_edges) for p in edge_prob_list]
+
+    edges = set()
+    for (t1, t2), count in zip(type_pairs, counts):
+        a, b = nodes_by_type[t1], nodes_by_type[t2]
+        if not a or not b: continue
+        while count > 0:
+            x, y = random.choice(a), random.choice(b)
+            if x != y:
+                edge = tuple(sorted((x, y)))
+                if edge not in edges:
+                    edges.add(edge)
+                    count -= 1
+
+    with open(edge_file_name, 'w') as f:
+        f.write('source,target\n')
+        for x, y in edges:
+            f.write(f'{x},{y}\n')
+                
+def Generate_Dataset_Type_3(arguments):
+    """
+    "relation_based_test":{
+        "dataset_type" : 3, 
+        "total_number_nodes" : 500, 
+        "blue_perc" : 60, 
+        "orange_perc" : 15, 
+        "grey_perc": 25, 
+        "total_number_relations" : 250, 
+        "relation_perc" : [25, 0, 15, 0, 60, 0],
+        "node_file": "GeneratedDataset/Mid_test_with_anomaly_nodes.csv",
+        "edge_file": "GeneratedDataset/Mid_test_with_anomaly_edges.csv",
+        "ego_file": "GeneratedDataset/Mid_test_with_anomaly",
+        "hop":2
+    }
+    """
+    total_number_nodes = arguments["total_number_nodes"]
+    blue_perc, orange_perc, grey_perc = arguments["blue_perc"], arguments["orange_perc"], arguments["grey_perc"]
+    total_number_relations = arguments["total_number_relations"]
+    relation_perc = arguments["relation_perc"]
+    node_file = arguments["node_file"]
+    edge_file = arguments["edge_file"]
+    ego_file = arguments["ego_file"]
+    hop = arguments["hop"]
+
+    assert blue_perc + orange_perc + grey_perc == 100
+    assert sum(relation_perc) == 100
+
+    Generate_nodes(total_number_nodes, blue_perc, orange_perc, grey_perc, node_file)
+    Generate_edges(total_number_relations, relation_perc, edge_file, node_file)
+    Visualizegraph(node_file, edge_file)
+    Ego_Net_Generation(None, hop, ego_file, ego_file+"_test_graphs", node_file, edge_file, True)
+
+
 
 if __name__ == '__main__':
 
@@ -388,5 +484,7 @@ if __name__ == '__main__':
         Generate_Dataset_Type_1(config)
     if config["dataset_type"] == 2: 
         Generate_Dataset_Type_2(config)
+    if config["dataset_type"] == 3: 
+        Generate_Dataset_Type_3(config)
     
     
