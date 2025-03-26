@@ -136,7 +136,7 @@ def pretty_print_matrix(matrix, matrix_title):
     print(f"\n{matrix_title}\n")
     
     # Print column headers
-    print(f"{' ':<10} {' | '.join(f'{color:<6}' for color in color_labels)}")
+    print('\033[1;35m', f"{' ':<10} {' | '.join(f'{color:<6}' for color in color_labels)}")
     print("-" * 40)
 
     # Print upper triangular matrix with row labels
@@ -149,6 +149,7 @@ def pretty_print_matrix(matrix, matrix_title):
                 row_str.append("   -  ") 
 
         print(f"{color_labels[i]:<10} {' | '.join(row_str)}")
+    print('\033[0m')
 
 def between_node_class_stats(graphs, edge_list_counter, num_MC_sim) -> int:
     """
@@ -220,6 +221,38 @@ def edge_type_probability_distribution(graphs, per_graph_edge_list_counter, num_
 
     return edge_prob_stats
 
+def print_mean_edge_probs(edge_prob_stats):
+    """
+    Computes the mean probability for each edge type across all num_nodes.
+
+    Parameters
+    ----------
+    edge_prob_stats : dict
+        Nested dict with structure: {
+            num_nodes: {
+                (color1, color2): [prob1, prob2, ...]
+            }
+        }
+
+    Returns
+    -------
+    mean_edge_probs : dict
+        Format: {
+            (color1, color2): mean_prob
+        }
+    """
+    aggregated = defaultdict(list)
+
+    for node_dict in edge_prob_stats.values():
+        for edge_type, probs in node_dict.items():
+            aggregated[edge_type].extend(probs)
+
+    matrix = np.zeros((3, 3), dtype=float)
+    for edge_type, probs in aggregated.items():
+        matrix[edge_type[0], edge_type[1]] = round(np.mean(probs), 4)
+
+    pretty_print_matrix(matrix, "Mean probability")
+
 def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None) -> None:
     """
     Plots a box plot and a violin plot for the distribution of edge type probabilities
@@ -244,7 +277,10 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
             for edge_type, probs in node_size_dict.items():
                 all_edge_type_probs[edge_type].extend(probs)
     else :
-        all_edge_type_probs = edge_prob_stats[number_nodes]
+        for num_nodes, node_size_dict in edge_prob_stats.items():
+            if num_nodes <= number_nodes:
+                for edge_type, probs in node_size_dict.items():
+                    all_edge_type_probs[edge_type].extend(probs)
     
     edge_type_order = [(0, 0), (0, 1), (0, 2), (1, 1), (1, 2), (2, 2)]
     node_color = {0: 'blue', 1: 'orange', 2: 'grey'}
@@ -265,10 +301,10 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
     data = [all_edge_type_probs.get(etype, []) for etype in edge_type_order]
     
     # Create a figure with two subplots: one for the box plot and one for the violin plot.
-    fig, axes = plt.subplots(2, 1, figsize=(10, 15))
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     
     # -- Box Plot --
-    bp = axes[0].boxplot(data, patch_artist=True, labels=labels)
+    bp = axes[0].boxplot(data, patch_artist=True, tick_labels=labels)
     # Color each box with the corresponding edge type color.
     for patch, etype in zip(bp['boxes'], edge_type_order):
         patch.set_facecolor(edge_color_map[etype])
@@ -299,11 +335,14 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
 
 # Friday 21st
 # which_run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13" # here checkpoint 254
-which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
+# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
 
-path = which_run+"/check/checkpoint_469.pt"
-num_samples = 100
-Monte_Carlo = 100
+# Wednesday 26th 
+which_run = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15"
+
+path = which_run+"/check/checkpoint_189.pt"
+num_samples = 60
+Monte_Carlo = 10
 
 path_args = which_run+ "/args.pickle"
 with open(path_args, 'rb') as f:
@@ -325,7 +364,7 @@ model.eval()
 # print(model) # BinomialDiffusionActive _denoise_fn TGNN_degree_guided
 
 # sample 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 3, MC = Monte_Carlo) 
+original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 2, MC = Monte_Carlo) 
 
 # print(per_graph_edge_list_counter)
 
@@ -352,7 +391,8 @@ for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_p
     
     lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[sample_nb], Monte_Carlo)
 
-    if lowest_edge_probability[0] < 0.01 : 
+    # if lowest_edge_probability[0] < 0.001 : 
+    if OG_graph.num_nodes < 10:
         fig, axes = plt.subplots(1, 2)
         pos = nx.circular_layout(og_gen)
         nx.draw(og_gen, pos, ax=axes[0],with_labels=True, node_color=OG_node_colors)
@@ -362,8 +402,6 @@ for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_p
         
         axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
         axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
-        # print(per_graph_edge_list_counter[count])
-        # print(lowest_edge_probability[1])
         plt.tight_layout()
         plt.show()    
         
@@ -374,6 +412,7 @@ print()
 # plot_mean_probability_per_nodes_per_edges(graph_statistic)
 # between_node_class_stats(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
 edge_prob_stats = edge_type_probability_distribution(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
-plot_edge_distribution_violin_boxplots(edge_prob_stats)
+print_mean_edge_probs(edge_prob_stats)
+plot_edge_distribution_violin_boxplots(edge_prob_stats, 15)
 #------------------------------------------------------------------------------------
 
