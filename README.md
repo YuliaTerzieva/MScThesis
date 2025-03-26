@@ -1,15 +1,18 @@
 # MScThesis
 
 ## Generating new data
-To generate a dataset with custom requirenments, add a new configuration to "configurations.json" and call DataGeneration.py as such:
+To generate a dataset with custom requirements, add a new configuration to "configurations.json" and call DataGeneration.py as such:
 
 ```
 python3 DataGeneration.py --setting "_the_name_of_your_configuration_"
 ```
 
-Currently, the code can generate datasets that are all based on a pattern of 6 nodes : 4 blue nodes pointing to a single orange, which points to another orange node. After the pattern is repeated _"pattern_number"_ of times, there are _"new_connections"_ number of new edges added between the patterns randomly. The nodes that become connected and noted/flagged as anomalies. The last step of the datageneration is injecting _"number_random"_ number gray nodes, that are connected to the rest of the nodes randomly. The degree of those nodes are drawn from a gaussian distribution with _"mu"_ and _"std"_.
+Currently, the code can generate 3 types of datasets :
 
-Calling the python file as shown above would create 3 files in the GeneratedDataset foulder : two csv files with nodes and edges respectively, and a pickle with a list of networkx ego graphs. Althought the Big network is directed, the ego_networks that are saved in the pickle are **undirected**
+#### Dataset type 2
+Based on a pattern of 6 nodes: 4 blue nodes pointing to a single orange, which points to another orange node. After the pattern is repeated _"pattern_number"_ of times, there are _"new_connections"_ number of new edges added between the patterns randomly. The nodes that become connected and noted/flagged as anomalies. The last step of the data generation is injecting _"number_random"_ number gray nodes that are connected to the rest of the nodes randomly. The degree of those nodes are drawn from a Gaussian distribution with _"mu"_ and _"std"_.
+
+Calling the python file as shown above would create 4 files in the GeneratedDataset folder: two CSV files with nodes and edges, respectively, and two pickles with a list of networkx ego graphs in each. One is with 90% of the ego networks and can be used for training; the other one is with the other 10% of the ego networks and can be used for testing. Although the Big network is directed, the ego_networks that are saved in the pickle are **undirected**
 
 ## Training the EDGE model using the generated data:
 
