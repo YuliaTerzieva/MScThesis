@@ -287,7 +287,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
             Return : 
             --------
             t is the uniformly sampled timesteps
-            pt is TODO : what tf is pt?
+            pt is the probability of that time step
             """
             length = self.Lt_count.shape[0]
             t = torch.randint(0, length, (b,), device=device).long()

@@ -335,14 +335,14 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
 
 # Friday 21st
 # which_run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13" # here checkpoint 254
-# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
+which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
 
 # Wednesday 26th 
-which_run = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15"
+# which_run = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15" # here checkpoint 189
 
-path = which_run+"/check/checkpoint_189.pt"
+path = which_run+"/check/checkpoint_469.pt"
 num_samples = 60
-Monte_Carlo = 10
+Monte_Carlo = 100
 
 path_args = which_run+ "/args.pickle"
 with open(path_args, 'rb') as f:
@@ -391,7 +391,7 @@ for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_p
     
     lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[sample_nb], Monte_Carlo)
 
-    # if lowest_edge_probability[0] < 0.001 : 
+    # if lowest_edge_probability[0] < 0.01 : 
     if OG_graph.num_nodes < 10:
         fig, axes = plt.subplots(1, 2)
         pos = nx.circular_layout(og_gen)

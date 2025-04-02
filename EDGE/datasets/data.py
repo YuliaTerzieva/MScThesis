@@ -128,7 +128,7 @@ def get_data(args):
         """
         This else is implemented by Yulia, to match the datasets for her thesis
         """
-        repeat = 32
+        repeat = 1
         num_node_classes = 3 # here I should have 3 (blue, orange and gray)
         num_edge_classes = 2 # no edge / edge
         num_node_feat = 1 

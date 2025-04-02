@@ -2,6 +2,8 @@ import numpy as np
 import networkx as nx
 import matplotlib.pyplot as plt
 import random
+import time
+import pickle
 
 def _random_subset(seq, m, rng): # I took this from networkx library
     """Return m unique elements from seq.
@@ -119,76 +121,156 @@ def bipartite_uniform_graph(n_nodes_lhs, n_nodes_rhs, m, seed = 42) -> nx.Graph:
 
     return G
 # ----------------------------------------------------------------------------
-"""
-The parameters are : 
+def plot_degree_distribution(g, l_cls = None, r_cld= None, relation=(None, None)):
 
-N : number of node classes, 
-NC : node class cardinality
-R : relations matrix (N x N) with tuples of relations type and algorithm parameters e.g.
-[[("BA", 2), None, ("R", 0.0001)], 
- [None, None, ("BA", 2)], 
- [None, ("Uni", 2), None]]
+    algorithm, alg_param = relation
+    degree_sequence = sorted((d for n, d in g.degree()), reverse=True)
 
-BA is barabasi albert
-R is random
-Uni is uniform
+    plt.bar(*np.unique(degree_sequence, return_counts=True))
+    if l_cls is not None and r_cld is not None and relation is not None :
+        plt.title(f"Algorithm {algorithm}, param {alg_param}, node class {l_cls} -> {r_cld}")
+        if relation[0] == 'BA':
+            plt.yscale("log")
+    else:
+        plt.title(f"Complete network")
+        plt.yscale("log")
 
-Output is a big graph
-"""
+    plt.xlabel("Degree")
+    plt.ylabel("# of Nodes")
+    plt.show()
 
-N = 3 # B, O, G
-NC = [4_0, 3_5, 2_5] # 40%, 35%, 25% -> 10 000 nodes in total -> 100 anomalies -> 50 anomalous relations
-R = [("BA", 2), None, ("R", 0.001), # BB, BO, BG
-     None, None, ("BA", 2), # OB, OO, OG
-     None, ("Uni", 2), None] # GB, GO, GG
-
-reproducibility_seed = 42
-random.seed(reproducibility_seed)
-np.random.seed(reproducibility_seed)
-
-assert len(NC) == N
-assert len(R) == N*N 
-assert sum(NC) == 10_0 # TODO this can be removed or added as a separate variable
-
-mapping_abbr_2_alg_within_class = {"BA" : nx.barabasi_albert_graph, 
-                                   "R" : nx.erdos_renyi_graph, 
-                                   "Uni" : uniform_graph}
-mapping_abbr_2_alg_between_class = {"BA" : bipartite_barabasi_albert, 
-                                    "R" : nx.bipartite.random_graph, 
-                                    "Uni" : bipartite_uniform_graph}
-
-graphs_to_overlay = []
-for r_count, relation in enumerate(R):
-    if relation is not None :
-        lhs_class = r_count // N
-        rhs_class = r_count % N
-        algorithm_parameter = relation[1] # this is either m in the case of BA and Uni; or p in the case of Random
-
-        # breakpoint()
-        if lhs_class == rhs_class :
-            algorithm = mapping_abbr_2_alg_within_class[relation[0]]
-            generated_graph = algorithm(NC[lhs_class], algorithm_parameter, reproducibility_seed)
-            nx.set_node_attributes(generated_graph, lhs_class, "node_attr")
-            
-        else :
-            algorithm = mapping_abbr_2_alg_between_class[relation[0]]
-            generated_graph = algorithm(NC[lhs_class], NC[rhs_class], algorithm_parameter, reproducibility_seed)
-            class_labels = dict(zip(range(NC[lhs_class]), [lhs_class]*NC[lhs_class]))
-            class_labels.update(dict(zip(range(NC[lhs_class], NC[lhs_class] + NC[rhs_class]), [rhs_class] * NC[rhs_class])))
-            nx.set_node_attributes(generated_graph, class_labels, "node_attr")
-        
-        graphs_to_overlay.append(generated_graph)
-
+def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
+    """
     
-"""
-Plotting
-"""
-print(graphs_to_overlay)
+    """
+    assert len(NC) == N
+    assert len(R) == N*N 
 
-for print_graph in graphs_to_overlay:
+    mapping_abbr_2_alg_within_class = {"BA" : nx.barabasi_albert_graph, 
+                                    "R" : nx.erdos_renyi_graph, 
+                                    "Uni" : uniform_graph}
+    mapping_abbr_2_alg_between_class = {"BA" : bipartite_barabasi_albert, 
+                                        "R" : nx.bipartite.random_graph, 
+                                        "Uni" : bipartite_uniform_graph}
+
+    graphs_to_overlay = []
+    for r_count, relation in enumerate(R):
+        if relation is not None :
+            lhs_class = r_count // N
+            rhs_class = r_count % N
+            algorithm_parameter = relation[1] # this is either m in the case of BA and Uni; or p in the case of Random
+
+            if lhs_class == rhs_class :
+                algorithm = mapping_abbr_2_alg_within_class[relation[0]]
+                generated_graph = algorithm(NC[lhs_class], algorithm_parameter, reproducibility_seed)
+                nx.set_node_attributes(generated_graph, lhs_class, "node_attr")
+                
+            else :
+                algorithm = mapping_abbr_2_alg_between_class[relation[0]]
+                generated_graph = algorithm(NC[lhs_class], NC[rhs_class], algorithm_parameter, reproducibility_seed)
+                class_labels = dict(zip(range(NC[lhs_class]), [lhs_class]*NC[lhs_class]))
+                class_labels.update(dict(zip(range(NC[lhs_class], NC[lhs_class] + NC[rhs_class]), [rhs_class] * NC[rhs_class])))
+                nx.set_node_attributes(generated_graph, class_labels, "node_attr")
+            
+            graphs_to_overlay.append((generated_graph, lhs_class, rhs_class))
+            plot_degree_distribution(generated_graph, lhs_class, rhs_class, relation)
+
+    Final_Graph = nx.Graph()
+    node_id_to_class = [(i, {'node_attr': cls})
+        for cls, _ in enumerate(NC)
+        for i in range(sum(NC[:cls]), sum(NC[:cls+1]))]
+    Final_Graph.add_nodes_from(node_id_to_class)
+
+    # Precompute class start indices in the global graph
+    class_start = [sum(NC[:i]) for i in range(len(NC))]
+
+    # Overlay all graphs into Final_Graph
+    for H, lhs_class, rhs_class in graphs_to_overlay:
+        lhs_offset = class_start[lhs_class]
+        rhs_offset = class_start[rhs_class]
+        lhs_count = NC[lhs_class]
+
+        def map_node(n):
+            return lhs_offset + n if n < lhs_count else rhs_offset + (n - lhs_count)
+
+        Final_Graph.add_edges_from(
+            (map_node(u), map_node(v)) for u, v in H.edges()
+        )
+
+    plot_degree_distribution(Final_Graph)
+    return Final_Graph
+
+def generate_ego_graphs(big_graph, K = 10) -> list[nx.Graph]:
+    
+    ego_graphs = []
+
+    for node in big_graph.nodes:
+        ppr = nx.pagerank(Final_Graph, personalization={node: 1.0})
+
+        top_k_nodes = sorted((n for n in ppr if n != node), key=ppr.get, reverse=True)[:K]
+
+        ego_nodes = [node] + top_k_nodes
+        ego_subgraph = Final_Graph.subgraph(ego_nodes).copy()
+        ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
+        ego_graphs.append(ego_subgraph)
+
+    return ego_graphs
+
+def plot_graph(graph) -> None:
     mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
     map_to_color = lambda color: ([mapping_to_color[c] for c in color] if isinstance(color, list) else mapping_to_color[color])
-    node_colors = [print_graph.nodes[node]['node_attr'] for node in print_graph.nodes()]
-
-    nx.draw(print_graph, with_labels=True, node_color=map_to_color(node_colors))
+    node_colors = [graph.nodes[node]['node_attr'] for node in graph.nodes()]
+    nx.draw(graph, with_labels=True, node_color=map_to_color(node_colors))
     plt.show()
+
+if __name__ == '__main__':
+    
+    N = 3 # B, O, G
+    N_total_nodes = 5000
+    NC_perc = np.array([0.25, 0.35, 0.4]) # 40%, 35%, 25% -> 10 000 nodes in total -> 100 anomalies -> 50 anomalous relations
+    NC = (NC_perc * N_total_nodes).astype(int).tolist()
+    print(f"The node class cardinality is {NC}")
+    R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG 
+        None, None, ("BA", 1), # OB, OO, OG
+        None, ("Uni", 2), None] # GB, GO, GG
+    K = 15
+
+    reproducibility_seed = 42
+    random.seed(reproducibility_seed)
+    np.random.seed(reproducibility_seed)
+
+    # ------------------------------------------------------------
+    # """
+    start_time = time.time()
+
+    Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
+
+    end_time = time.time()
+    print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
+
+    with open("GeneratedDataset_new/Whole_Graph.pkl", 'wb') as f:
+        pickle.dump(Final_Graph, f)
+    # """
+    # ------------------------------------------------------------
+    # """
+    start_time = time.time()
+    ego_net_list = generate_ego_graphs(Final_Graph, K = K)
+    end_time = time.time()
+    print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
+
+    random.shuffle(ego_net_list)
+    with open("GeneratedDataset_new/ListEgoNet.pkl", "wb") as f:
+        pickle.dump(ego_net_list, f)
+    # """
+    # ------------------------------------------------------------
+    # """
+    # with open("GeneratedDataset_new/ListEgoNet.pkl", "rb") as f:
+    #     ego_net_list = pickle.load(f)
+    for graph in ego_net_list[:20]:
+        plot_graph(graph)
+    
+    with open("GeneratedDataset/RelationalDataset_no_anomaly", "wb") as f:
+        pickle.dump(ego_net_list[:int(0.8*len(ego_net_list))], f)
+    with open("GeneratedDataset/RelationalDataset_no_anomaly_test_graphs", "wb") as f:
+        pickle.dump(ego_net_list[int(0.8*len(ego_net_list)):], f)
+    # """

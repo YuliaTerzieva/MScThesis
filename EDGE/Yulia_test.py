@@ -19,18 +19,18 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
     print("The number of graphs in the eval is ", len(eval_graph))
 
-    number_of_nodes = [len(n.nodes) for n in train_graph]
-    plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "train")
+    train_number_of_nodes = [len(n.nodes) for n in train_graph]
+    plt.hist(train_number_of_nodes, bins=50, alpha = 0.5, label = "train")
 
-    number_of_nodes = [len(n.nodes) for n in eval_graph]
-    plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "eval")
+    eval_number_of_nodes = [len(n.nodes) for n in eval_graph]
+    plt.hist(eval_number_of_nodes, bins=50, alpha = 0.5, label = "eval")
 
     test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
     print("The number of graphs in the testing is ", len(test_graphs))
     print('\033[1;30m')
 
-    number_of_nodes = [len(n.nodes) for n in test_graphs]
-    plt.hist(number_of_nodes, bins=50, alpha = 0.5, label = "test")
+    test_number_of_nodes = [len(n.nodes) for n in test_graphs]
+    plt.hist(test_number_of_nodes, bins=50, alpha = 0.5, label = "test")
     plt.legend()
     plt.xlabel("Number of nodes")
     plt.ylabel("Number of graphs")
@@ -39,18 +39,18 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
 
     # ---- EDGEs now
 
-    number_of_edges = [len(n.edges) for n in train_graph]
-    plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "train")
+    train_number_of_edges = [len(n.edges) for n in train_graph]
+    plt.hist(train_number_of_edges, alpha = 0.5, label = "train")
 
-    number_of_edges = [len(n.edges) for n in eval_graph]
-    plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "eval")
+    eval_number_of_edges = [len(n.edges) for n in eval_graph]
+    plt.hist(eval_number_of_edges, alpha = 0.5, label = "eval")
 
     test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
 
-    number_of_edges = [len(n.edges) for n in test_graphs]
-    plt.hist(number_of_edges, bins=50, alpha = 0.5, label = "test")
+    test_number_of_edges = [len(n.edges) for n in test_graphs]
+    plt.hist(test_number_of_edges, bins=50, alpha = 0.5, label = "test")
     plt.legend()
-    plt.xlabel("Number of nodes")
+    plt.xlabel("Number of edges")
     plt.ylabel("Number of graphs")
     plt.title(f"Dataset {dataset_name}")
     plt.show()
@@ -95,10 +95,12 @@ if __name__ == '__main__':
     dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", # 0, 1
                          "Small_test_no_anomaly", "Small_test_with_anomaly", # 2, 3
                          "Mid_test_no_anomaly", "Mid_test_with_anomaly",     # 4, 5
-                         "relation_based_test"]                              # 6
-    dataset_number = 6
+                         "relation_based_test", "RelationalDataset_no_anomaly"]# 6, 7
+    dataset_number = 7
     dataset_name = dataset_name_list[dataset_number]
     plot_graph_freq_wrt_node_edge(dataset_name)
+    # plot_graph_freq_wrt_node_edge("Ego.pkl")
+
 
     # Friday the 21st
     Small_test_no_anomaly = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38"
@@ -114,7 +116,7 @@ if __name__ == '__main__':
     dataset = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly]#, relational_dataset]
     # dataset = [relational_dataset]
 
-    plot_training_loss(dataset)
+    # plot_training_loss(dataset)
 
 
 

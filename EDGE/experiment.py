@@ -26,17 +26,10 @@ class GraphExperiment(DiffusionExperiment):
         loss_count = 0
         data_count = 0
         for pyg_data in self.train_loader:
-            # print("in experiment.py printing pyg_data")
-            # print(pyg_data)
-            # print("and the model is : ", self.model)
+
             self.optimizer.zero_grad()
             pyg_data = pyg_data.to(self.args.device)
-            # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
-
-            # Yulia : checking pyg_data
-            # print(type(pyg_data)) # <class 'abc.DataBatch'>
-
-            # breakpoint()
+            
             loss = elbo_bpd(self.model, pyg_data)
             loss.backward()
             
@@ -46,7 +39,6 @@ class GraphExperiment(DiffusionExperiment):
 
             if self.scheduler_iter: self.scheduler_iter.step()
             loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs
-            # print("training loss:", loss.detach().cpu().item()) # Yulia TODO remove
             loss_count += pyg_data.num_graphs
             data_count += pyg_data.num_graphs #pyg_data.num_graphs
             print('Training. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.train_loader.dataset), loss_sum/loss_count), end='\r')

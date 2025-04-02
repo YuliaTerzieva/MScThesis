@@ -172,6 +172,8 @@ class DiffusionBase(torch.nn.Module):
         self.num_timesteps = timesteps
         self.sample_time_method = sample_time_method
         self.device = device
+
+        self.once_gibble = 0
         
 
     def _q_pred(self, batched_graph, t_node, t_edge):
@@ -225,6 +227,7 @@ class DiffusionBase(torch.nn.Module):
         log_out_edge = self.log_sample_categorical(log_model_prob_edge, self.num_edge_classes)
         return log_out_node, log_out_edge
 
+    # This is the original function, however, i want to try to make the process nondeterministic
     def log_sample_categorical(self, logits, num_classes):
         """
         Yulia :
@@ -232,11 +235,28 @@ class DiffusionBase(torch.nn.Module):
             num_classes -> an integer
         """
         
-        uniform = torch.rand_like(logits)
+        uniform = torch.rand_like(logits) # tensor, same size as input, filled with random numbers from a uniform distribution on the interval [0, 1)
+        # take the random numbers, add 1e-30 in case you draw a 0, then because this is negative make it positive and add 1e-30 again if it is 0
+        # then i don't know why they take the log of that, just for some log noise?
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
         sample = (gumbel_noise + logits).argmax(dim=1)
         log_sample = index_to_log_onehot(sample, num_classes)
         return log_sample
+    
+    # this is the one time gumbel noise
+    # def log_sample_categorical(self, logits, num_classes):
+
+    #     uniform = torch.rand_like(logits)
+    #     gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
+
+    #     if self.once_gibble < 1 :
+    #         noisy_logits = logits + gumbel_noise
+    #         sample = (noisy_logits).argmax(dim=1)
+    #         self.once_gibble +=1
+    #     else :
+    #         sample = (logits).argmax(dim=1)
+    #     log_sample = index_to_log_onehot(sample, num_classes)
+    #     return log_sample
 
 
     def log_prob(self, batched_graph):

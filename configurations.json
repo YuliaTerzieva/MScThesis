@@ -71,13 +71,13 @@
     }, 
 
     "relation_based_test":{
-        "dataset_type" : 3, 
+        "dataset_type" : 3,   
         "total_number_nodes" : 300, 
         "blue_perc" : 60, 
         "orange_perc" : 15, 
         "grey_perc": 25, 
         "total_number_relations" : 600, 
-        "relation_perc" : [40, 0, 25, 0, 35, 0], 
+        "relation_perc" : [40, 0, 25, 0, 35, 0], // [BB, BO, BG, OO, OG, GG]
         "node_file": "GeneratedDataset/relation_based_test_nodes.csv",
         "edge_file": "GeneratedDataset/relation_based_test_edges.csv",
         "ego_file": "GeneratedDataset/relation_based_test",

@@ -3,6 +3,7 @@ import pickle
 import torch
 from prettytable import PrettyTable
 import numpy as np
+import time
 
 
 def get_args_table(args_dict):
@@ -176,7 +177,7 @@ class BaseExperiment(object):
     def run(self, epochs):
 
         for epoch in range(self.current_epoch, epochs):
-
+            
             # Train
             train_dict = self.train_fn(epoch)
             self.log_train_metrics(train_dict)
