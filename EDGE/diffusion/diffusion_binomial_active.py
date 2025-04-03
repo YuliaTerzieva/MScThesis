@@ -79,7 +79,8 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         if batched_graph.active_edge_indices.size(0) == 0:
             # print("There are no active edge indices ...")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
-        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge)
+        
+        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
 
         # breakpoint()
         assert log_model_prob_edge.size(0) == batched_graph.active_edge_indices.size(0)
@@ -92,6 +93,25 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         log_out_edge[batched_graph.active_edge_indices] = log_out_edge_active
 
         return log_out_node, log_out_edge
+    
+    @torch.no_grad()
+    def guided_p_sample(self, batched_graph, t_node, t_edge):
+        """
+        Yulia : This is an alternative version of p_sample, such that it returns the probabilities of each 
+        edge class instead of log of the one hot, calculated by taking the highest probability
+        """        
+        self._p_sample_and_set_actives(batched_graph, t_node)
+        assert hasattr(batched_graph, 'active_node_indices')
+        assert hasattr(batched_graph, 'active_edge_indices')
+        if batched_graph.active_edge_indices.size(0) == 0: # when there are no active nodes
+            print("No active nodes :/ ")
+            return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
+        
+        _, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
+
+        assert log_model_prob_edge.size(0) == batched_graph.active_edge_indices.size(0)
+
+        return None, log_model_prob_edge # original function had two variables as return, however, we don't do anything with the node features int his thesis. 
     
     def _compute_degree(self, full_edge_attr, full_edge_index, num_nodes):
         degree = scatter(full_edge_attr, full_edge_index[0], dim=0, dim_size=num_nodes) +\

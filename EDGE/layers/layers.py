@@ -208,7 +208,7 @@ class TGNN(torch.nn.Module):
             torch.nn.SiLU(),
             torch.nn.Linear(dim * 2, dim),
             torch.nn.SiLU(),
-            torch.nn.Linear(dim, self.num_classes)
+            torch.nn.Linear(dim, self.num_classes, bias=False)
         )
         
     def forward(self, pyg_data, t_node, t_edge):
@@ -498,8 +498,8 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
             edge_index = pyg_data.edge_index_t
 
         else: 
-            edge_attr_t = pyg_data.log_full_edge_attr_t.argmax(-1)
-            is_edge_indices = edge_attr_t.nonzero(as_tuple=True)[0]
+            edge_attr_t = pyg_data.log_full_edge_attr_t.argmax(-1) # from one hot to class index (can be only 0 meaning no edge or 1 meaning edge)
+            is_edge_indices = edge_attr_t.nonzero(as_tuple=True)[0] 
 
             edge_index = pyg_data.full_edge_index[:, is_edge_indices]
             edge_index = torch.cat([edge_index, edge_index.flip(0)],dim=-1)

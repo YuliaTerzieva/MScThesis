@@ -173,7 +173,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
                 nx.set_node_attributes(generated_graph, class_labels, "node_attr")
             
             graphs_to_overlay.append((generated_graph, lhs_class, rhs_class))
-            plot_degree_distribution(generated_graph, lhs_class, rhs_class, relation)
+            # plot_degree_distribution(generated_graph, lhs_class, rhs_class, relation)
 
     Final_Graph = nx.Graph()
     node_id_to_class = [(i, {'node_attr': cls})
@@ -227,7 +227,7 @@ if __name__ == '__main__':
     
     N = 3 # B, O, G
     N_total_nodes = 5000
-    NC_perc = np.array([0.25, 0.35, 0.4]) # 40%, 35%, 25% -> 10 000 nodes in total -> 100 anomalies -> 50 anomalous relations
+    NC_perc = np.array([0.25, 0.35, 0.4]) # 25%, 35%, 40% -> 5 000 nodes in total -> 50 anomalies -> 25 anomalous relations
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
     R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG 

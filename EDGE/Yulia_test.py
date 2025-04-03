@@ -20,17 +20,17 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     print("The number of graphs in the eval is ", len(eval_graph))
 
     train_number_of_nodes = [len(n.nodes) for n in train_graph]
-    plt.hist(train_number_of_nodes, bins=50, alpha = 0.5, label = "train")
+    plt.hist(train_number_of_nodes, alpha = 0.5, label = "train")
 
     eval_number_of_nodes = [len(n.nodes) for n in eval_graph]
-    plt.hist(eval_number_of_nodes, bins=50, alpha = 0.5, label = "eval")
+    plt.hist(eval_number_of_nodes, alpha = 0.5, label = "eval")
 
     test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
     print("The number of graphs in the testing is ", len(test_graphs))
     print('\033[1;30m')
 
     test_number_of_nodes = [len(n.nodes) for n in test_graphs]
-    plt.hist(test_number_of_nodes, bins=50, alpha = 0.5, label = "test")
+    plt.hist(test_number_of_nodes, alpha = 0.5, label = "test")
     plt.legend()
     plt.xlabel("Number of nodes")
     plt.ylabel("Number of graphs")
@@ -48,7 +48,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
 
     test_number_of_edges = [len(n.edges) for n in test_graphs]
-    plt.hist(test_number_of_edges, bins=50, alpha = 0.5, label = "test")
+    plt.hist(test_number_of_edges, alpha = 0.5, label = "test")
     plt.legend()
     plt.xlabel("Number of edges")
     plt.ylabel("Number of graphs")
@@ -69,17 +69,17 @@ def plot_training_loss(dataset) -> None:
         min_train_bpd = min(training_loss['bpd'])
 
         min_eval_idx = np.argmin(eval_loss['bpd'])
-        min_eval_epoch = min_eval_idx * 5
+        min_eval_epoch = min_eval_idx * 10
         min_eval_bpd = eval_loss['bpd'][min_eval_idx]
 
         
         print('\033[1;36m' + "For Dataset ", run[8:-52], '\033[0;36m')
         print("The epoch with the lowest training bpd is ", min_train_idx)
-        print("The epoch with the lowest evaluation bpd is", min_eval_idx*5)
+        print("The epoch with the lowest evaluation bpd is", min_eval_idx*10)
         print("Lowest BPD of the evaluation is: ", round(min_eval_bpd, 4), "\n" + '\033[0;30m')
 
         _ax.plot(np.arange(1, len(training_loss['bpd'])+1), training_loss['bpd'], label = "training BPD")
-        _ax.plot(np.arange(1, len(training_loss['bpd'])+1,5), eval_loss['bpd'], label = "evaluation BPD")
+        _ax.plot(np.arange(1, len(training_loss['bpd'])+1,10), eval_loss['bpd'], label = "evaluation BPD")
         _ax.set_xlabel("Epoch")
 
         _ax.scatter(min_train_idx + 1, min_train_bpd, color='blue', label=f'Min Training BPD = {round(min_train_bpd, 3)}', zorder=5)
@@ -91,7 +91,24 @@ def plot_training_loss(dataset) -> None:
     plt.tight_layout()
     plt.show()
 
-if __name__ == '__main__':
+if __name__ == '__main__': 
+
+    """ # this is test to see what is gimble noise
+
+    uniform = torch.rand_like(torch.zeros(1000))
+    print(uniform)
+    print(-torch.log(uniform + 1e-30))
+    print(-torch.log(-torch.log(uniform + 1e-30) + 1e-30))
+
+
+    plt.hist(uniform, label = "1", alpha = 0.5, density=True)
+    plt.hist(-torch.log(uniform + 1e-30), label = "2", alpha = 0.5,  density=True)
+    plt.hist(-torch.log(-torch.log(uniform + 1e-30) + 1e-30), label = "3", alpha = 0.5,  density=True)
+    plt.legend()
+    plt.show()
+
+    """
+
     dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", # 0, 1
                          "Small_test_no_anomaly", "Small_test_with_anomaly", # 2, 3
                          "Mid_test_no_anomaly", "Mid_test_with_anomaly",     # 4, 5
@@ -113,11 +130,13 @@ if __name__ == '__main__':
     # Wednesday 26th type 3 no anomalies
     relational_dataset = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15"
 
-    dataset = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly]#, relational_dataset]
-    # dataset = [relational_dataset]
+    # Wednesday 2th of April no anomalies
+    big_relational = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55"
+    dataset_list = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly, relational_dataset, big_relational]
+    dataset = dataset_list[5]
 
-    # plot_training_loss(dataset)
 
+    plot_training_loss([dataset])
 
 
 # ------------------------------------------------------------------------------------------------------------------------

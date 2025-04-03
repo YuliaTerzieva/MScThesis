@@ -146,7 +146,15 @@ python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 16 --diffusion
 # THE NEW NEW RELATION DATASET
 """
 python3 train.py --epochs 5000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 15 --device cuda:0 --dataset RelationalDataset_no_anomaly \
-    --batch_size 16 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+    --batch_size 16 --num_workers 4 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
-            --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 8 1 
+            --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 4 1 
+"""
+
+# THE NEW NEW RELATION DATASET ON MY LAPTOP
+"""
+python train.py --epochs 5000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 15 --device cpu --dataset RelationalDataset_no_anomaly \
+    --batch_size 16 --num_workers 4 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+        --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule cosine --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
+            --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 8 8 8 4 1 
 """

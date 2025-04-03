@@ -20,7 +20,7 @@ def get_graph_probability(graph, MC_edge_probabilities, num_MC_sim) -> Tuple[flo
     graph : networkx graph
             This is the original graph which probability we are trying to calculate
     MC_edge_probabilities : dictionary
-            a dictionaly with key edhes (node tuples) and values the probability of that edge
+            a dictionaly with key edges (node tuples) and values the probability of that edge
             (the MC probability of being generated)
     num_MC_sim : int
                 the number of Monte carlo simulations
@@ -30,6 +30,7 @@ def get_graph_probability(graph, MC_edge_probabilities, num_MC_sim) -> Tuple[flo
     lowest_probability : float
     probability : float
     """
+
     probability = 0
     lowest_probability = (float('inf'), None)
     for edge in graph.edges:
@@ -38,6 +39,40 @@ def get_graph_probability(graph, MC_edge_probabilities, num_MC_sim) -> Tuple[flo
             lowest_probability = (MC_edge_probabilities[edge] / num_MC_sim, edge)
 
     probability /= graph.number_of_edges()
+    return lowest_probability, probability
+
+def get_graph_probability_2(graph, MC_edge_probabilities, num_MC_sim) -> Tuple[float, float]:
+    """
+    The edges are independent, thus we can calculate the probabability of this graph by 
+    the formula P(G_c | G) = Prod{e in G_c} P(e) * Prod_{e in G / G_c} 1 - P(e)
+    
+    Parameters
+    ----------
+    graph : networkx graph
+            This is the original graph which probability we are trying to calculate
+    MC_edge_probabilities : dictionary
+            a dictionaly with key edges (node tuples) and values the probability of that edge
+            (the MC probability of being generated)
+    num_MC_sim : int
+                the number of Monte carlo simulations
+
+    Returns
+    -------
+    lowest_probability : float
+    probability : float
+    """
+
+    probability = 0
+    lowest_probability = (float('inf'), None)
+    for edge in MC_edge_probabilities.keys():
+        if edge in graph.edges():
+            probability += MC_edge_probabilities[edge] / num_MC_sim
+        else :
+            probability += 1 - (MC_edge_probabilities[edge] / num_MC_sim)
+
+        if MC_edge_probabilities[edge] / num_MC_sim < lowest_probability[0] : 
+            lowest_probability = (MC_edge_probabilities[edge] / num_MC_sim, edge)
+
     return lowest_probability, probability
 
 def plot_mean_probability_per_nodes_per_edges(graph_statistic) -> None:
@@ -208,10 +243,12 @@ def edge_type_probability_distribution(graphs, per_graph_edge_list_counter, num_
 
     edge_prob_stats = defaultdict(lambda: defaultdict(list))
 
+    # for each graph in the original list
     for g_idx, graph in enumerate(graphs):
         num_nodes = graph.num_nodes
         edge_counts = per_graph_edge_list_counter[g_idx]
         for (u, v), count in edge_counts.items():
+            # for each generated edge for that graph save its probability 
             color_u = int(graph.node_attr[u])
             color_v = int(graph.node_attr[v])
             edge_type = tuple(sorted([color_u, color_v]))
@@ -268,6 +305,8 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
                 (color1, color2): [prob1, prob2, ...]
             }
         }
+    number_nodes : int
+        This is a parameter to filter and use only statistics from graphs nodes less than "number_nodes" 
     """
 
     all_edge_type_probs = defaultdict(list)
@@ -297,9 +336,19 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
             blended = (rgb1 + rgb2) / 2
             edge_color_map[etype] = mcolors.to_hex(blended)
     
-
+    # for each possible relation, get the probability distribution or an empty array
     data = [all_edge_type_probs.get(etype, []) for etype in edge_type_order]
     
+    for relation_number, relation_probabilities in enumerate(data):
+        if len(relation_probabilities) > 0:
+            sorted_relation_probabilities = sorted(relation_probabilities)
+            plt.plot(*np.unique(sorted_relation_probabilities, return_counts=True))
+            plt.title(f"Relation {edge_type_order[relation_number]}")
+            plt.show()
+        else:
+            print(f" Relation {edge_type_order[relation_number]} doesn't exist")
+
+
     # Create a figure with two subplots: one for the box plot and one for the violin plot.
     fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     
@@ -335,14 +384,17 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
 
 # Friday 21st
 # which_run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13" # here checkpoint 254
-which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
+# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
 
 # Wednesday 26th 
 # which_run = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15" # here checkpoint 189
 
-path = which_run+"/check/checkpoint_469.pt"
-num_samples = 60
-Monte_Carlo = 100
+# Wednesday 2th 
+which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55" # here checkpoint 929
+
+path = which_run+"/check/checkpoint_929.pt"
+num_samples = 10
+Monte_Carlo = 1
 
 path_args = which_run+ "/args.pickle"
 with open(path_args, 'rb') as f:
@@ -358,13 +410,10 @@ model.load_state_dict(checkpoint['model'])
 
 if torch.cuda.is_available():
     model = model.to(args.device)
-
 model.eval()
 
-# print(model) # BinomialDiffusionActive _denoise_fn TGNN_degree_guided
 
-# sample 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 2, MC = Monte_Carlo) 
+original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 0.5, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
 
 # print(per_graph_edge_list_counter)
 
@@ -392,7 +441,7 @@ for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_p
     lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[sample_nb], Monte_Carlo)
 
     # if lowest_edge_probability[0] < 0.01 : 
-    if OG_graph.num_nodes < 10:
+    if sample_nb < 10:
         fig, axes = plt.subplots(1, 2)
         pos = nx.circular_layout(og_gen)
         nx.draw(og_gen, pos, ax=axes[0],with_labels=True, node_color=OG_node_colors)
@@ -413,6 +462,6 @@ print()
 # between_node_class_stats(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
 edge_prob_stats = edge_type_probability_distribution(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
 print_mean_edge_probs(edge_prob_stats)
-plot_edge_distribution_violin_boxplots(edge_prob_stats, 15)
+# plot_edge_distribution_violin_boxplots(edge_prob_stats)
 #------------------------------------------------------------------------------------
 
