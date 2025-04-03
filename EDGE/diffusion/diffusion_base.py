@@ -225,7 +225,7 @@ class DiffusionBase(torch.nn.Module):
         return log_out_node, log_out_edge
 
     # This is the original function, this should be used during training
-    # def log_sample_categorical(self, logits, num_classes):
+    def log_sample_categorical(self, logits, num_classes):
         """
         Yulia :
             logits -> tensor with shape (edges by edge classes) or (nodes by node classes), depending on the log_prob_?
@@ -239,7 +239,7 @@ class DiffusionBase(torch.nn.Module):
         return log_sample
     
     # This is the same function but witout the gumbel noise. This is to be used during inference
-    def log_sample_categorical(self, logits, num_classes):
+    # def log_sample_categorical(self, logits, num_classes):
         sample = logits.argmax(dim=1)
         log_sample = index_to_log_onehot(sample, num_classes)
         return log_sample
