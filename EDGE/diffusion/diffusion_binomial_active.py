@@ -104,7 +104,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         assert hasattr(batched_graph, 'active_node_indices')
         assert hasattr(batched_graph, 'active_edge_indices')
         if batched_graph.active_edge_indices.size(0) == 0: # when there are no active nodes
-            print("No active nodes :/ ")
+            # print("No active nodes :/ ")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
         
         _, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)

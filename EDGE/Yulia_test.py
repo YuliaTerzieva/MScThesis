@@ -131,12 +131,13 @@ if __name__ == '__main__':
     relational_dataset = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15"
 
     # Wednesday 2th of April no anomalies
-    big_relational = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55"
-    dataset_list = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly, relational_dataset, big_relational]
-    dataset = dataset_list[5]
+    dataset_list = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly, relational_dataset]
+
+    first_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55"
+    second_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30"
 
 
-    plot_training_loss([dataset])
+    plot_training_loss([first_run, second_run])
 
 
 # ------------------------------------------------------------------------------------------------------------------------

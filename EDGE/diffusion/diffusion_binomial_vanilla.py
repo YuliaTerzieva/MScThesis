@@ -244,7 +244,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         I am removing anything node related as the nodes don't change for us
         """
         # log_alpha_t_node = extract(self.log_alpha, t_node, batched_graph.log_node_attr.shape)
-        log_1_min_alpha_t_node = extract(self.log_1_min_alpha, t_node, batched_graph.log_node_attr.shape)
+        # log_1_min_alpha_t_node = extract(self.log_1_min_alpha, t_node, batched_graph.log_node_attr.shape)
 
         # log_prob_nodes = log_add_exp(
         #     batched_graph.log_node_attr_tmin1 + log_alpha_t_node,

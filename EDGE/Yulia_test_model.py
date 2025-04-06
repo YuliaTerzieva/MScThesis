@@ -391,9 +391,10 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
 
 # Wednesday 2th 
 which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55" # here checkpoint 929
+which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30" # here its 879
 
-path = which_run+"/check/checkpoint_929.pt"
-num_samples = 10
+path = which_run+"/check/checkpoint_879.pt"
+num_samples = 1
 Monte_Carlo = 1
 
 path_args = which_run+ "/args.pickle"
@@ -413,7 +414,7 @@ if torch.cuda.is_available():
 model.eval()
 
 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 0.5, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
+original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 0, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
 
 # print(per_graph_edge_list_counter)
 

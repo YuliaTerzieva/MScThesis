@@ -108,12 +108,12 @@ def log_onehot_to_index(log_x):
 
 
 def linear_beta_schedule(timesteps):
-    scale = 1000 / timesteps
+    scale =  1000 / timesteps
     beta_start = scale * 0.0001
     beta_end = scale * 0.02
-    return 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
-
-
+    alphas = 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
+    alphas = np.clip(alphas, a_min=0.001, a_max=1.)
+    return alphas
 def cosine_beta_schedule(timesteps, s = 0.008):
     """
     cosine schedule
@@ -121,17 +121,17 @@ def cosine_beta_schedule(timesteps, s = 0.008):
     """
     steps = timesteps + 1
     x = np.linspace(0, steps, steps)
-    alphas_cumprod = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2
-    alphas_cumprod = alphas_cumprod / alphas_cumprod[0]
-    alphas = (alphas_cumprod[1:] / alphas_cumprod[:-1])
+    schedule = np.cos(((x / steps) + s) / (1 + s) * np.pi * 0.5) ** 2
+    bar_alpha = schedule / schedule[0]
+    alphas = (bar_alpha[1:] / bar_alpha[:-1])
 
     alphas = np.clip(alphas, a_min=0.001, a_max=1.)
 
+    # Yulia : I removed the following 
     # Use sqrt of this, so the alpha in our paper is the alpha_sqrt from the
     # Gaussian diffusion in Ho et al.
-    alphas = np.sqrt(alphas)
+    # alphas = np.sqrt(alphas)
     return alphas
-
 
 def Tt1_beta_schedule(timesteps):
     return 1/torch.linspace(1+1e-8, timesteps+1e-8, timesteps, dtype = torch.float64).flip(0).numpy() 
@@ -225,7 +225,7 @@ class DiffusionBase(torch.nn.Module):
         return log_out_node, log_out_edge
 
     # This is the original function, this should be used during training
-    def log_sample_categorical(self, logits, num_classes):
+    # def log_sample_categorical(self, logits, num_classes):
         """
         Yulia :
             logits -> tensor with shape (edges by edge classes) or (nodes by node classes), depending on the log_prob_?
@@ -239,7 +239,7 @@ class DiffusionBase(torch.nn.Module):
         return log_sample
     
     # This is the same function but witout the gumbel noise. This is to be used during inference
-    # def log_sample_categorical(self, logits, num_classes):
+    def log_sample_categorical(self, logits, num_classes):
         sample = logits.argmax(dim=1)
         log_sample = index_to_log_onehot(sample, num_classes)
         return log_sample
@@ -341,7 +341,11 @@ class DiffusionBase(torch.nn.Module):
                     working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                     node_attr_free_working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                 
-            
+                    print(f"\n\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} ({working_clone.active_edge_indices}) \n "+ \
+                        f"those are edges : {working_clone.full_edge_index[:, [working_clone.active_edge_indices][0]]} \n" + \
+                        f"and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])} ({working_clone.active_edge_indices[log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0]]})")
+                else:
+                    print("\nNo Active Edges :(")
             edge_attr = working_clone.log_full_edge_attr_t.argmax(-1) # check what class each egde is (it can be either 0 - no edge or 1-edge)
             is_edge_indices = edge_attr.nonzero(as_tuple=True)[0] # take index of the edges
 
