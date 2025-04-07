@@ -300,7 +300,7 @@ if __name__ == '__main__':
     end_time = time.time()
     print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_new/Whole_Graph_with_anomalies.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Whole_Graph_with_anomalies.pkl", 'wb') as f:
         pickle.dump(Final_Graph_witn_anomalies, f)
     # """
     # ------------------------------------------------------------
@@ -311,14 +311,14 @@ if __name__ == '__main__':
     print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
     random.shuffle(ego_net_list)
-    with open("GeneratedDataset_new/ListEgoNet_with_anomalies.pkl", "wb") as f:
+    with open("GeneratedDataset_interm_graph/ListEgoNet_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
-    with open("GeneratedDataset_new/is_central_node_anomalous.pkl", "wb") as f:
+    with open("GeneratedDataset_interm_graph/is_central_node_anomalous.pkl", "wb") as f:
         pickle.dump(is_central_node_anomalous, f)
     # """
     # ------------------------------------------------------------
     
-    # with open("GeneratedDataset_new/ListEgoNet.pkl", "rb") as f:
+    # with open("GeneratedDataset_interm_graph/ListEgoNet.pkl", "rb") as f:
     #     ego_net_list = pickle.load(f)
     for graph in ego_net_list[:20]:
         plot_graph(graph)
