@@ -146,7 +146,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         if self.parametrization == 'xt_prescribed_st':
             degree_t = self._compute_degree(batched_graph.log_full_edge_attr_t.argmax(1), batched_graph.full_edge_index, batched_graph.num_nodes)
             log_model_prob_active = self._q_posterior_actives(batched_graph.degree, degree_t, t_node)
-            active_node_masks = self.log_sample_categorical(log_model_prob_active, num_classes=2).argmax(1).bool()
+            active_node_masks = self.log_sample_categorical_no_noise(log_model_prob_active, num_classes=2).argmax(1).bool()
             batched_graph.active_node_indices = active_node_masks.nonzero(as_tuple=True)[0]
             batched_graph.active_edge_indices = active_node_masks[batched_graph.full_edge_index[0]].logical_and(
             active_node_masks[batched_graph.full_edge_index[1]]).nonzero(as_tuple=True)[0] 

@@ -91,10 +91,11 @@ class EmptyGraphGeneratorWithNodeAttributes:
             - edge_index is removed 
             - nodes_per_graph is added
             - edges_per_graph is added
-        
-        TODO : maybe add the num_nodes
         """
-        sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
+        if num_samples == len(self.testing_graphs):
+            sampled_graphs = self.testing_graphs
+        else:
+            sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
         sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
         empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
         return sampled_graphs, empty_pyg_datas

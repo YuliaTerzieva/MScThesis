@@ -347,7 +347,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
         log_prob_edge = torch.ones_like(batched_graph.log_full_edge_attr, device=self.device) * self.log_final_prob_edge
-        batched_graph.log_full_edge_attr_t = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
+        batched_graph.log_full_edge_attr_t = self.log_sample_categorical_no_noise(log_prob_edge, self.num_edge_classes)
 
         return batched_graph
 

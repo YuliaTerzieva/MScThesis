@@ -379,22 +379,12 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
     plt.tight_layout()
     plt.show()
 
-# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-19_19-46-30"
-# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-20_19-13-14"
-
-# Friday 21st
-# which_run = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13" # here checkpoint 254
-# which_run = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38" # here checkpoint 469
-
-# Wednesday 26th 
-# which_run = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15" # here checkpoint 189
-
-# Wednesday 2th 
 which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55" # here checkpoint 929
 which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30" # here its 879
+which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_09-19-41" # here its 659
 
 path = which_run+"/check/checkpoint_879.pt"
-num_samples = 1
+num_samples = 100
 Monte_Carlo = 1
 
 path_args = which_run+ "/args.pickle"
@@ -414,9 +404,34 @@ if torch.cuda.is_available():
 model.eval()
 
 
-original_graphs, sampled_pygraph, per_graph_edge_list_counter = model.sample_and_MC(num_samples, lambda_guidance = 0, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
+original_graphs, sampled_pygraph, per_graph_edge_list_counter, active_edges = model.sample_and_MC(num_samples, lambda_guidance = 1, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
 
-# print(per_graph_edge_list_counter)
+timesteps = sorted(active_edges.keys(), reverse=True)
+vals = [active_edges[t] for t in timesteps]
+val1s, val2s, vals3s = zip(*vals)
+
+# Plot in one go without separate variable assignment
+# plt.figure(figsize=(10, 5))
+# plt.plot(timesteps, val1s, label='Number of active edges')
+# plt.plot(timesteps, val2s, label='Number of added edges')
+# plt.title('Values over Timesteps')
+# plt.xlabel('Timestep (t)')
+# plt.ylabel('Values')
+# plt.grid(True)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
+
+# plt.figure(figsize=(10, 5))
+# plt.plot(timesteps, vals3s, label='Number of active nodes')
+# plt.hlines(sampled_pygraph.num_nodes, timesteps[0], timesteps[-1], label='total number of nodes')
+# plt.title('Values over Timesteps')
+# plt.xlabel('Timestep (t)')
+# plt.ylabel('Values')
+# plt.grid(True)
+# plt.legend()
+# plt.tight_layout()
+# plt.show()
 
 mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
 # fig, axes = plt.subplots(num_samples, 2)

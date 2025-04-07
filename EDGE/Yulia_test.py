@@ -109,35 +109,14 @@ if __name__ == '__main__':
 
     """
 
-    dataset_name_list = ["Basic_test_no_anomaly", "Basic_test_with_anomaly", # 0, 1
-                         "Small_test_no_anomaly", "Small_test_with_anomaly", # 2, 3
-                         "Mid_test_no_anomaly", "Mid_test_with_anomaly",     # 4, 5
-                         "relation_based_test", "RelationalDataset_no_anomaly"]# 6, 7
-    dataset_number = 7
-    dataset_name = dataset_name_list[dataset_number]
+    dataset_name = "RelationalDataset_no_anomaly"
     plot_graph_freq_wrt_node_edge(dataset_name)
-    # plot_graph_freq_wrt_node_edge("Ego.pkl")
-
-
-    # Friday the 21st
-    Small_test_no_anomaly = "./wandb/Small_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-10-38"
-    Mid_test_no_anomaly = "./wandb/Mid_test_no_anomaly/multinomial_diffusion/multistep/2025-03-21_10-12-13"
-
-    # Friday the 21st with Anomalies
-    Small_test_with_anomaly = "./wandb/Small_test_with_anomaly/multinomial_diffusion/multistep/2025-03-21_22-24-50"
-    Mid_test_with_anomaly = "./wandb/Mid_test_with_anomaly/multinomial_diffusion/multistep/2025-03-21_22-25-56"
-
-    # Wednesday 26th type 3 no anomalies
-    relational_dataset = "./wandb/relation_based_test/multinomial_diffusion/multistep/2025-03-26_18-36-15"
-
-    # Wednesday 2th of April no anomalies
-    dataset_list = [Small_test_no_anomaly, Mid_test_no_anomaly, Small_test_with_anomaly, Mid_test_with_anomaly, relational_dataset]
 
     first_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55"
     second_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30"
+    updated_params = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_09-19-41"
 
-
-    plot_training_loss([first_run, second_run])
+    plot_training_loss([first_run, second_run, updated_params])
 
 
 # ------------------------------------------------------------------------------------------------------------------------

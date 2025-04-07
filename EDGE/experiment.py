@@ -56,7 +56,6 @@ class GraphExperiment(DiffusionExperiment):
 
             for pyg_data in self.eval_loader:
                 pyg_data = pyg_data.to(self.args.device)
-                # pyg_data.num_entries = self.model._calc_num_entries(pyg_data)
                 loss = elbo_bpd(self.model, pyg_data) 
                 loss_sum += loss.detach().cpu().item() * pyg_data.num_graphs#len(x)
                 loss_count += pyg_data.num_graphs #len(x)
@@ -70,8 +69,6 @@ class GraphExperiment(DiffusionExperiment):
             
             pyg_data_list = generated_pyg_datas.to_data_list()
             for pyg_data in pyg_data_list:
-                # assert pyg_data.edge_index.shape[1]%2==0
-                # assert pyg_data.edge_index.shape[0]%2==0
                 g_gen = pyg.utils.to_networkx(pyg_data, node_attrs = ["node_attr"], to_undirected=True)
                 generated_graphs.append(g_gen)
 

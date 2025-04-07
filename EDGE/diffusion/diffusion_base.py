@@ -4,7 +4,7 @@ import numpy as np
 from inspect import isfunction
 from torch_scatter import scatter
 import torch_geometric as pyg
-from collections import Counter
+from collections import Counter, defaultdict
 
 """
 Based in part on: https://github.com/lucidrains/denoising-diffusion-pytorch/blob/5989f4c77eafcdc6be0fb4739f0f277a6dd7f7d8/denoising_diffusion_pytorch/denoising_diffusion_pytorch.py#L281
@@ -129,7 +129,7 @@ def cosine_beta_schedule(timesteps, s = 0.008):
     # Yulia : I removed the following 
     # Use sqrt of this, so the alpha in our paper is the alpha_sqrt from the
     # Gaussian diffusion in Ho et al.
-    # alphas = np.sqrt(alphas)
+    alphas = np.sqrt(alphas)
     return alphas
 
 def Tt1_beta_schedule(timesteps):
@@ -239,11 +239,10 @@ class DiffusionBase(torch.nn.Module):
         return log_sample
     
     # This is the same function but witout the gumbel noise. This is to be used during inference
-    # def log_sample_categorical(self, logits, num_classes):
-        # print("In log_sample_categorical inference version")
-        # sample = logits.argmax(dim=1)
-        # log_sample = index_to_log_onehot(sample, num_classes)
-        # return log_sample
+    def log_sample_categorical_no_noise(self, logits, num_classes):
+        sample = logits.argmax(dim=1)
+        log_sample = index_to_log_onehot(sample, num_classes)
+        return log_sample
 
 
     def log_prob(self, batched_graph):
@@ -314,6 +313,7 @@ class DiffusionBase(torch.nn.Module):
         
         # breakpoint()
         batched_graph_mc_edge_index_and_count = [Counter() for _ in range(num_samples)]
+        active_edges = defaultdict(list)
         for mc_counter in range(MC):
             working_clone = batched_graph.clone()
             node_attr_free_working_clone = node_attr_free_batched_graph.clone()
@@ -336,16 +336,22 @@ class DiffusionBase(torch.nn.Module):
                 safe_log = torch.where(guided_probability_over_edge_attr < 0, 1e-40, guided_probability_over_edge_attr)
                 log_guided_probability_over_edge_attr = torch.log(safe_log)
 
-                log_out_edge_active = self.log_sample_categorical(log_guided_probability_over_edge_attr, self.num_edge_classes)
+                log_out_edge_active = self.log_sample_categorical_no_noise(log_guided_probability_over_edge_attr, self.num_edge_classes)
 
                 if working_clone.active_edge_indices.size(0) != 0 :
                     working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                     node_attr_free_working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                 
-                    print(f"\n\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} ({working_clone.active_edge_indices}) \n "+ \
-                        f"those are edges : {working_clone.full_edge_index[:, [working_clone.active_edge_indices][0]]} \n" + \
-                        f"and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])} ({working_clone.active_edge_indices[log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0]]})")
+                    # print(f"\n\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} ({working_clone.active_edge_indices}) \n "+ \
+                    #     f"those are edges : {working_clone.full_edge_index[:, [working_clone.active_edge_indices][0]]} \n" + \
+                    #     f"and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])} ({working_clone.active_edge_indices[log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0]]})")
+                    
+                    # the number of active edges and the number of added edges
+                    active_edges[t] = [working_clone.active_edge_indices.size(0), len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0]), working_clone.active_node_indices.size(0)]
+                    print(f"\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])}")
+                    print(f"The number of active nodes is {working_clone.active_node_indices.size(0)}")
                 else:
+                    active_edges[t] = [0, 0, 0]
                     print("\nNo Active Edges :(")
             edge_attr = working_clone.log_full_edge_attr_t.argmax(-1) # check what class each egde is (it can be either 0 - no edge or 1-edge)
             is_edge_indices = edge_attr.nonzero(as_tuple=True)[0] # take index of the edges
@@ -374,4 +380,4 @@ class DiffusionBase(torch.nn.Module):
         # breakpoint()
         # print(batched_graph_mc_edge_index_and_count)
         
-        return original_graphs, working_clone, batched_graph_mc_edge_index_and_count
+        return original_graphs, working_clone, batched_graph_mc_edge_index_and_count, active_edges
