@@ -230,7 +230,7 @@ class DiffusionBase(torch.nn.Module):
             logits -> tensor with shape (edges by edge classes) or (nodes by node classes), depending on the log_prob_?
             num_classes -> an integer
         """
-        print("In log_sample_categorical training version")
+        # print("In log_sample_categorical training version")
         
         uniform = torch.rand_like(logits) # tensor, same size as input, filled with random numbers from a uniform distribution on the interval [0, 1)
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
