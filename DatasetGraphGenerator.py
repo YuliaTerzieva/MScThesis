@@ -205,6 +205,9 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
 
     assert len(nb_anomalous_relations) == N*N
 
+    nx.set_node_attributes(graph, 0, 'anomalous')
+    nx.set_edge_attributes(graph, 0, 'anomalous')
+
     for r_count, relation in enumerate(nb_anomalous_relations):
         if relation > 0:
             lhs_class = r_count // N
@@ -221,9 +224,9 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
 
             sampled_pairs = random.sample(possible_pairs, relation)
             for u, v in sampled_pairs:
-                graph.add_edge(u, v, anomalous = True)
-                graph.nodes[u]['anomalous'] = True
-                graph.nodes[v]['anomalous'] = True
+                graph.add_edge(u, v, anomalous = 1)
+                graph.nodes[u]['anomalous'] = 1
+                graph.nodes[v]['anomalous'] = 1
 
     return graph
 
@@ -288,7 +291,7 @@ if __name__ == '__main__':
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_new/Whole_Graph.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Whole_Graph.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     # """
     # ------------------------------------------------------------
@@ -320,8 +323,8 @@ if __name__ == '__main__':
     
     # with open("GeneratedDataset_interm_graph/ListEgoNet.pkl", "rb") as f:
     #     ego_net_list = pickle.load(f)
-    for graph in ego_net_list[:20]:
-        plot_graph(graph)
+    # for graph in ego_net_list[:20]:
+    #     plot_graph(graph)
     
     with open("GeneratedDataset/RelationalDataset_with_anomaly", "wb") as f:
         pickle.dump(ego_net_list[:int(0.8*len(ego_net_list))], f)
