@@ -72,7 +72,6 @@ def default(val, d):
 def log_categorical(log_x_start, log_prob):
     return (log_x_start.exp() * log_prob).sum(dim=1)
 
-
 def index_to_log_onehot(x, num_classes): 
     """
     I (Yulia) have changed this funciton to accomodate the case in which the node class is -1. 
@@ -225,12 +224,13 @@ class DiffusionBase(torch.nn.Module):
         return log_out_node, log_out_edge
 
     # This is the original function, this should be used during training
-    # def log_sample_categorical(self, logits, num_classes):
+    def log_sample_categorical(self, logits, num_classes):
         """
         Yulia :
             logits -> tensor with shape (edges by edge classes) or (nodes by node classes), depending on the log_prob_?
             num_classes -> an integer
         """
+        print("In log_sample_categorical training version")
         
         uniform = torch.rand_like(logits) # tensor, same size as input, filled with random numbers from a uniform distribution on the interval [0, 1)
         gumbel_noise = -torch.log(-torch.log(uniform + 1e-30) + 1e-30)
@@ -239,10 +239,11 @@ class DiffusionBase(torch.nn.Module):
         return log_sample
     
     # This is the same function but witout the gumbel noise. This is to be used during inference
-    def log_sample_categorical(self, logits, num_classes):
-        sample = logits.argmax(dim=1)
-        log_sample = index_to_log_onehot(sample, num_classes)
-        return log_sample
+    # def log_sample_categorical(self, logits, num_classes):
+        # print("In log_sample_categorical inference version")
+        # sample = logits.argmax(dim=1)
+        # log_sample = index_to_log_onehot(sample, num_classes)
+        # return log_sample
 
 
     def log_prob(self, batched_graph):
