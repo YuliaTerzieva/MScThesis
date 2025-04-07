@@ -94,7 +94,7 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
                     monitoring_statistics=monitoring_statistics,
                     eval_evaluator=eval_evaluator, 
                     test_evaluator=test_evaluator,
-                    n_patient=50)
+                    n_patient=30)
 
     exp.run()
     

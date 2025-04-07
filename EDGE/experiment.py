@@ -47,7 +47,6 @@ class GraphExperiment(DiffusionExperiment):
         return {'bpd': loss_sum / loss_count, 'lr': self.optimizer.param_groups[0]['lr']}
 
     def eval_fn(self, epoch):
-        breakpoint()
         self.model.eval()
         eval_dict = {}
         with torch.no_grad():
