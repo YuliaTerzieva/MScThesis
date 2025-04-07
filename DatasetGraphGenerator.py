@@ -261,16 +261,16 @@ if __name__ == '__main__':
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
     R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG 
-        None, None, ("BA", 1), # OB, OO, OG
-        None, ("Uni", 2), None] # GB, GO, GG
+         None, None, ("BA", 1), # OB, OO, OG
+         None, ("Uni", 2), None] # GB, GO, GG
     K = 15
 
     # the goal is that 1% of the nodes are anomalous, this means that we have halv the relations being anomalous
     # because both noed of anomalous edge are set as anomalies
     N_anomalous_relations = int(0.01 * N_total_nodes / 2) 
     anomalous_R_perc = np.array([0, 0.2, 0, 
-                        0.2, 0.2, 0, 
-                        0.2, 0, 0.2])
+                                 0.2, 0.2, 0, 
+                                 0.2, 0, 0.2])
     nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
     print(nb_anomalous_relations)
     assert sum(nb_anomalous_relations) == N_anomalous_relations
@@ -311,9 +311,9 @@ if __name__ == '__main__':
     print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
     random.shuffle(ego_net_list)
-    with open("GeneratedDataset_new/ListEgoNet.pkl", "wb") as f:
+    with open("GeneratedDataset_new/ListEgoNet_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
-    with open("GeneratedDataset_new/is_central_node_anomalous.pkl", "w") as f:
+    with open("GeneratedDataset_new/is_central_node_anomalous.pkl", "wb") as f:
         pickle.dump(is_central_node_anomalous, f)
     # """
     # ------------------------------------------------------------
@@ -323,9 +323,9 @@ if __name__ == '__main__':
     for graph in ego_net_list[:20]:
         plot_graph(graph)
     
-    with open("GeneratedDataset/RelationalDataset_no_anomaly", "wb") as f:
+    with open("GeneratedDataset/RelationalDataset_with_anomaly", "wb") as f:
         pickle.dump(ego_net_list[:int(0.8*len(ego_net_list))], f)
-    with open("GeneratedDataset/RelationalDataset_no_anomaly_test_graphs", "wb") as f:
+    with open("GeneratedDataset/RelationalDataset_with_anomaly_test_graphs", "wb") as f:
         pickle.dump(ego_net_list[int(0.8*len(ego_net_list)):], f)
     
 
