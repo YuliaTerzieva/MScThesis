@@ -210,6 +210,7 @@ class DiffusionBase(torch.nn.Module):
         # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
 
         if evaluation : 
+            breakpoint()
             log_out_edge = self.log_sample_categorical_no_noise(log_prob_edge, self.num_edge_classes)
         else:
             log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)

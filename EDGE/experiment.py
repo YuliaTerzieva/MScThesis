@@ -47,6 +47,7 @@ class GraphExperiment(DiffusionExperiment):
         return {'bpd': loss_sum / loss_count, 'lr': self.optimizer.param_groups[0]['lr']}
 
     def eval_fn(self, epoch):
+        breakpoint()
         self.model.eval()
         eval_dict = {}
         with torch.no_grad():
@@ -64,6 +65,8 @@ class GraphExperiment(DiffusionExperiment):
             print('Evaluating. Epoch: {}/{}, Datapoint: {}/{}, Bits/dim: {:.3f}'.format(epoch+1, self.args.epochs, data_count, len(self.eval_loader.dataset), loss_sum/loss_count), end='\r')            
             # print("loss_sum: ", loss_sum, "; loss_count: ", loss_count)
             eval_dict['bpd'] = loss_sum/loss_count
+
+            """
             generated_pyg_datas = self.model.sample(self.args.num_generation)
             generated_graphs = []
             
@@ -84,7 +87,7 @@ class GraphExperiment(DiffusionExperiment):
 
             plt.savefig(os.path.join(self.log_path, f"eval/sample{epoch}.png"))
             plt.close()
-
+            """
             # statistics evaluation
             # metrics = self.eval_evaluator.evaluate(generated_graphs)
             # eval_dict.update(metrics)
