@@ -197,7 +197,7 @@ class DiffusionBase(torch.nn.Module):
         return kl
 
 
-    def q_sample(self, batched_graph, t_node, t_edge):
+    def q_sample(self, batched_graph, t_node, t_edge, evaluation = False):
         """
         Yulia : I'm modifying this code to remove the change of the node attribute, as the nodes stay the same. 
         The _q_pred is calculating the probability (\mu) as described in Eq (2) in the EDGE paper 
@@ -209,7 +209,10 @@ class DiffusionBase(torch.nn.Module):
         # sample nodes
         # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
 
-        log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
+        if evaluation : 
+            log_out_edge = self.log_sample_categorical_no_noise(log_prob_edge, self.num_edge_classes)
+        else:
+            log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
 
         return None , log_out_edge 
     
