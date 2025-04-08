@@ -128,26 +128,12 @@ def get_data(args):
         """
         This else is implemented by Yulia, to match the datasets for her thesis
         """
-        repeat = 1
         num_node_classes = 3 # here I should have 3 (blue, orange and gray)
         num_edge_classes = 2 # no edge / edge
         num_node_feat = 1 
-        nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}", 'rb'))
-
-        """
-        shuffling for the training purposes is okay because I just want the EDGE to learn how to generate the same ego nets, 
-        but then I would need to have a separate "tasting" ego nets, where i keep the edge id to be able to check the anomaly 
-        """
-        random.shuffle(nx_graphs) 
-        l = len(nx_graphs)
         
-
-        """
-        During training of the model 90% of the original training dataset is used. The other 10 are used for the during training evaluation
-        The model is tested on entirely different dataset, thus there is no test dataset here
-        """
-        train_nx_graphs = nx_graphs[:int(0.8*l)]
-        eval_nx_graphs = nx_graphs[int(0.8*l):]
+        train_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_train", 'rb'))
+        eval_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_eval", 'rb'))
 
         max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
 
@@ -163,21 +149,17 @@ def get_data(args):
             pyg_data = preprocess(nx_graph, degree=args.degree)
             eval_pygraphs.append(pyg_data)
             
-        train_set = ConcatDataset([GraphDataset(train_pygraphs) for _ in range(repeat)]) # this means that each graph is in the training dataset a few times.
+        train_set = GraphDataset(train_pygraphs)
         eval_set = GraphDataset(eval_pygraphs)
         
         if args.empty_graph_sampler == 'file':
-            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test_graphs") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
+            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
         else : 
             raise NotImplementedError
 
-        # eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
-        # test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
+        monitoring_statistics = ['bpd']
 
-        monitoring_statistics = ['bpd']#['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
-
-
-    augmented_feature_dict = {}#{k:FEATURE_EXTRACTOR[k]['data_spec'] for k in args.augmented_features}
+    augmented_feature_dict = {}
 
     # Data Loader
     train_loader = DataLoader(train_set, batch_size=args.batch_size*repeat, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=partial(collate_fn))

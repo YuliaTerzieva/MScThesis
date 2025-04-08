@@ -18,6 +18,12 @@ def preprocess(g, degree=True, p_uncon = None):
         adj = to_dense_adj(g.edge_index)[0].long()
     else:
         raise NotImplementedError()
+    
+    if hasattr(pyg_data, 'anomalous'):
+        del pyg_data.anomalous
+
+    if hasattr(pyg_data, 'edge_anomalous'):
+        del pyg_data.edge_anomalous
         
     row, col = torch.triu_indices(pyg_data.num_nodes, pyg_data.num_nodes,1)
     # Yulia : full_edge_index has shape (2 by N) it is all the possible undirected edges that can be added to a graph with N  = (number of nodes ^ 2 - number of nodes)/2
@@ -36,8 +42,6 @@ def preprocess(g, degree=True, p_uncon = None):
         # Yulia : these are the degrees for each node in the graph
         pyg_data.degree = pyg.utils.degree(pyg_data.edge_index[0]).long() # make sure edge_index is bi-directional
     
-    # for augmented_feature in augmented_features:
-    #     setattr(pyg_data, augmented_feature, FEATURE_EXTRACTOR[augmented_feature]['func'](pyg_data))
     
     return pyg_data
 
@@ -94,8 +98,10 @@ class EmptyGraphGeneratorWithNodeAttributes:
         """
         if num_samples == len(self.testing_graphs):
             sampled_graphs = self.testing_graphs
-        else:
+        elif type(num_samples) == int:
             sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
+        else : # if case the num_samples are a list of indices as in sample_and_MC
+            sampled_graphs = [self.testing_graphs[i] for i in num_samples]
         sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
         empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
         return sampled_graphs, empty_pyg_datas

@@ -109,14 +109,13 @@ if __name__ == '__main__':
 
     """
 
-    dataset_name = "RelationalDataset_no_anomaly"
+    dataset_name = "RelationalDataset_with_anomaly"
     plot_graph_freq_wrt_node_edge(dataset_name)
 
-    first_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55"
-    second_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30"
-    updated_params = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_09-19-41"
+    no_anomaly = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_14-24-33"
+    anomaly = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-07_22-40-55"
 
-    plot_training_loss([first_run, second_run, updated_params])
+    plot_training_loss([no_anomaly, anomaly])
 
 
 # ------------------------------------------------------------------------------------------------------------------------

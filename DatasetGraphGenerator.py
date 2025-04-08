@@ -270,10 +270,10 @@ if __name__ == '__main__':
 
     # the goal is that 1% of the nodes are anomalous, this means that we have halv the relations being anomalous
     # because both noed of anomalous edge are set as anomalies
-    N_anomalous_relations = int(0.01 * N_total_nodes / 2) 
-    anomalous_R_perc = np.array([0, 0.2, 0, 
-                                 0.2, 0.2, 0, 
-                                 0.2, 0, 0.2])
+    N_anomalous_relations = int(0.03 * N_total_nodes / 2) 
+    anomalous_R_perc = np.array([0, 0.4, 0, 
+                                 0, 0.4, 0, 
+                                 0, 0, 0.2])
     nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
     print(nb_anomalous_relations)
     assert sum(nb_anomalous_relations) == N_anomalous_relations
@@ -313,7 +313,9 @@ if __name__ == '__main__':
     end_time = time.time()
     print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
+    
     random.shuffle(ego_net_list)
+
     with open("GeneratedDataset_interm_graph/ListEgoNet_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
     with open("GeneratedDataset_interm_graph/is_central_node_anomalous.pkl", "wb") as f:
@@ -321,15 +323,17 @@ if __name__ == '__main__':
     # """
     # ------------------------------------------------------------
     
-    # with open("GeneratedDataset_interm_graph/ListEgoNet.pkl", "rb") as f:
-    #     ego_net_list = pickle.load(f)
-    # for graph in ego_net_list[:20]:
-    #     plot_graph(graph)
-    
-    with open("GeneratedDataset/RelationalDataset_with_anomaly", "wb") as f:
-        pickle.dump(ego_net_list[:int(0.8*len(ego_net_list))], f)
-    with open("GeneratedDataset/RelationalDataset_with_anomaly_test_graphs", "wb") as f:
-        pickle.dump(ego_net_list[int(0.8*len(ego_net_list)):], f)
+    # I have a 60% 20% 20% split
+
+    l = len(ego_net_list)
+    train, eval = int(0.6 * l), int(0.8 * l)
+
+    for name, data in zip(
+        ["train", "eval", "test"],
+        [ego_net_list[:train], ego_net_list[train:eval], ego_net_list[eval:]]
+    ):
+        with open(f"GeneratedDataset/RelationalDataset_with_anomaly_{name}", "wb") as f:
+            pickle.dump(data, f)
     
 
     

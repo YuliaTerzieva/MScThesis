@@ -379,105 +379,125 @@ def plot_edge_distribution_violin_boxplots(edge_prob_stats, number_nodes = None)
     plt.tight_layout()
     plt.show()
 
-which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55" # here checkpoint 929
-which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30" # here its 879
-which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_09-19-41" # here its 659
+def plot_active_edges_and_nodes(active_edges, totan_node_number):
 
-path = which_run+"/check/checkpoint_879.pt"
-num_samples = 100
-Monte_Carlo = 1
+    timesteps = sorted(active_edges.keys(), reverse=True)
+    vals = [active_edges[t] for t in timesteps]
+    val1s, val2s, vals3s = zip(*vals)
 
-path_args = which_run+ "/args.pickle"
-with open(path_args, 'rb') as f:
-    args = pickle.load(f)
+    # Plot in one go without separate variable assignment
+    plt.figure(figsize=(10, 5))
+    plt.plot(timesteps, val1s, label='Number of active edges')
+    plt.plot(timesteps, val2s, label='Number of added edges')
+    plt.title('Values over Timesteps')
+    plt.xlabel('Timestep (t)')
+    plt.ylabel('Values')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-# print(args)
-args.device = 'cpu'
-_, _, _, _, _, _, _, _, initial_graph_sampler, _, _, _ = get_data(args)
+    plt.figure(figsize=(10, 5))
+    plt.plot(timesteps, vals3s, label='Number of active nodes')
+    plt.hlines(totan_node_number, timesteps[0], timesteps[-1], label='total number of nodes')
+    plt.title('Values over Timesteps')
+    plt.xlabel('Timestep (t)')
+    plt.ylabel('Values')
+    plt.grid(True)
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
 
-model = get_model(args, initial_graph_sampler=initial_graph_sampler)
-checkpoint = torch.load(path, map_location=args.device, weights_only=False)
-model.load_state_dict(checkpoint['model'])
+    return
 
-if torch.cuda.is_available():
-    model = model.to(args.device)
-model.eval()
-
-
-original_graphs, sampled_pygraph, per_graph_edge_list_counter, active_edges = model.sample_and_MC(num_samples, lambda_guidance = 1, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
-
-timesteps = sorted(active_edges.keys(), reverse=True)
-vals = [active_edges[t] for t in timesteps]
-val1s, val2s, vals3s = zip(*vals)
-
-# Plot in one go without separate variable assignment
-# plt.figure(figsize=(10, 5))
-# plt.plot(timesteps, val1s, label='Number of active edges')
-# plt.plot(timesteps, val2s, label='Number of added edges')
-# plt.title('Values over Timesteps')
-# plt.xlabel('Timestep (t)')
-# plt.ylabel('Values')
-# plt.grid(True)
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
-
-# plt.figure(figsize=(10, 5))
-# plt.plot(timesteps, vals3s, label='Number of active nodes')
-# plt.hlines(sampled_pygraph.num_nodes, timesteps[0], timesteps[-1], label='total number of nodes')
-# plt.title('Values over Timesteps')
-# plt.xlabel('Timestep (t)')
-# plt.ylabel('Values')
-# plt.grid(True)
-# plt.legend()
-# plt.tight_layout()
-# plt.show()
-
-mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
-# fig, axes = plt.subplots(num_samples, 2)
-# if num_samples == 1:
-#     axes = np.array(axes).reshape(1, 2)
-
-graph_statistic = []
-for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_pygraph.to_data_list())):
-
-    OG_node_colors = [mapping[node_class.item()] for node_class in OG_graph.node_attr]
-    og_gen = pyg.utils.to_networkx(OG_graph, to_undirected=True)
+def plot_OG_Gen_graph(og_gen, OG_node_colors, OG_edge_colorsm,  g_gen, generated_node_colors, edge_labels, graph_probabilitiy, lowest_edge_probability, Monte_Carlo):
+    fig, axes = plt.subplots(1, 2)
+    pos = nx.circular_layout(og_gen)
+    nx.draw(og_gen, pos, ax=axes[0], with_labels=True, node_color=OG_node_colors, edge_color = OG_edge_colors)
+    pos = nx.circular_layout(g_gen)
+    nx.draw(g_gen, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
+    nx.draw_networkx_edge_labels(g_gen, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
     
-    generated_node_colors = [mapping[node_class.item()] for node_class in generated.node_attr]
-    g_gen = pyg.utils.to_networkx(generated, to_undirected=True)
+    axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
+    axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
+    plt.tight_layout()
+    plt.show() 
 
-    g_gen.clear_edges()
-    g_gen.remove_edges_from(list(g_gen.edges))
-    edges_with_weights = [(u, v, {'probability': count / Monte_Carlo}) for (u, v), count in per_graph_edge_list_counter[sample_nb].items()]
-    g_gen.add_edges_from(edges_with_weights)
-    edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in g_gen.edges(data=True)}
+    return
 
+def get_from_file(filename):
+
+    with open(filename, 'rb') as f:
+        file = pickle.load(f)
+
+    return file
+
+
+if __name__ == '__main__':
+
+    which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-02_13-18-55" # here checkpoint 929
+    which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-03_18-07-30" # here its 879
+    which_run = "./wandb/RelationalDataset_no_anomaly/multinomial_diffusion/multistep/2025-04-07_09-19-41" # here its 659
+    which_run = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-07_22-40-55" # 489
+
+    path = which_run+"/check/checkpoint_489.pt"
+    sample_numbers = np.arange(100).tolist()
+    Monte_Carlo = 1
+
+    path_args = which_run+ "/args.pickle"
+    with open(path_args, 'rb') as f:
+        args = pickle.load(f)
+
+    # print(args)
+    args.device = 'cpu'
+    _, _, _, _, _, _, _, _, initial_graph_sampler, _, _, _ = get_data(args)
+
+    model = get_model(args, initial_graph_sampler=initial_graph_sampler)
+    checkpoint = torch.load(path, map_location=args.device, weights_only=False)
+    model.load_state_dict(checkpoint['model'])
+
+    if torch.cuda.is_available():
+        model = model.to(args.device)
+    model.eval()
+
+    original_graphs, sampled_pygraph, per_graph_edge_list_counter, active_edges = model.sample_and_MC(sample_numbers, lambda_guidance = 2, MC = Monte_Carlo) # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
+    # the variable below is an np array filled with 0s and 1s for each node in the graph. if the node is anomalous the 
+    is_graph_anomalous = get_from_file("../GeneratedDataset_interm_graph/is_central_node_anomalous.pkl")[:1000] # I know that the last 1000 nodes are the training ones
     
-    lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[sample_nb], Monte_Carlo)
+    # plot_active_edges_and_nodes(active_edges, sampled_pygraph.number_nodes)
 
-    # if lowest_edge_probability[0] < 0.01 : 
-    if sample_nb < 10:
-        fig, axes = plt.subplots(1, 2)
-        pos = nx.circular_layout(og_gen)
-        nx.draw(og_gen, pos, ax=axes[0],with_labels=True, node_color=OG_node_colors)
-        pos = nx.circular_layout(g_gen)
-        nx.draw(g_gen, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
-        nx.draw_networkx_edge_labels(g_gen, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
-        
-        axes[0].set_title(f"Original graph with probability {graph_probabilitiy :.3f}\n edge with lowest porbability {lowest_edge_probability[1]}")
-        axes[1].set_title(f"Edge probability over {Monte_Carlo} generated graphs")
-        plt.tight_layout()
-        plt.show()    
-        
-    graph_statistic.append(np.array([og_gen.number_of_nodes(), og_gen.number_of_edges(), graph_probabilitiy, lowest_edge_probability[0]]))
+    mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
 
-print()
-# graph_statistic = np.array(graph_statistic)
-# plot_mean_probability_per_nodes_per_edges(graph_statistic)
-# between_node_class_stats(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
-edge_prob_stats = edge_type_probability_distribution(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
-print_mean_edge_probs(edge_prob_stats)
-# plot_edge_distribution_violin_boxplots(edge_prob_stats)
-#------------------------------------------------------------------------------------
+    graph_statistic = []
+    for sample_nb, (OG_graph, generated) in enumerate(zip(original_graphs, sampled_pygraph.to_data_list())):
+
+        OG_node_colors = [mapping[node_class.item()] for node_class in OG_graph.node_attr]
+        OG_edge_colors = ["red" if e == 1 else "black" for e in OG_graph.edge_anomalous]
+        og_gen = pyg.utils.to_networkx(OG_graph, to_undirected=True)
+        
+        generated_node_colors = [mapping[node_class.item()] for node_class in generated.node_attr]
+        g_gen = pyg.utils.to_networkx(generated, to_undirected=True)
+
+        g_gen.clear_edges()
+        g_gen.remove_edges_from(list(g_gen.edges))
+        edges_with_weights = [(u, v, {'probability': count / Monte_Carlo}) for (u, v), count in per_graph_edge_list_counter[sample_nb].items()]
+        g_gen.add_edges_from(edges_with_weights)
+        edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in g_gen.edges(data=True)}
+
+        
+        lowest_edge_probability, graph_probabilitiy = get_graph_probability(og_gen, per_graph_edge_list_counter[sample_nb], Monte_Carlo)
+
+        if OG_graph.edge_anomalous.any(): # lowest_edge_probability[0] < 0.01 or
+        # if sample_nb < 10:
+            plot_OG_Gen_graph(og_gen, OG_node_colors, OG_edge_colors,  g_gen, generated_node_colors, edge_labels, graph_probabilitiy, lowest_edge_probability, Monte_Carlo)  
+            
+        graph_statistic.append(np.array([og_gen.number_of_nodes(), og_gen.number_of_edges(), graph_probabilitiy, lowest_edge_probability[0]]))
+
+    print()
+    # plot_mean_probability_per_nodes_per_edges(np.array(graph_statistic))
+    # between_node_class_stats(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
+    edge_prob_stats = edge_type_probability_distribution(original_graphs, per_graph_edge_list_counter, Monte_Carlo)
+    print_mean_edge_probs(edge_prob_stats)
+    # plot_edge_distribution_violin_boxplots(edge_prob_stats)
+    #------------------------------------------------------------------------------------
 

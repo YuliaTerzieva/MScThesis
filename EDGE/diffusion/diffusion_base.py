@@ -316,12 +316,13 @@ class DiffusionBase(torch.nn.Module):
         node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         
         # breakpoint()
-        batched_graph_mc_edge_index_and_count = [Counter() for _ in range(num_samples)]
+        batched_graph_mc_edge_index_and_count = [Counter() for _ in range(len(num_samples))]
         active_edges = defaultdict(list)
         for mc_counter in range(MC):
             working_clone = batched_graph.clone()
             node_attr_free_working_clone = node_attr_free_batched_graph.clone()
-            
+            add_noise_once = False
+
             for t in reversed(range(0, self.num_timesteps)):
                 print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}', end='\r')
                 t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
@@ -332,17 +333,20 @@ class DiffusionBase(torch.nn.Module):
                 _, log_model_prob_edge_attr_tmin1 = self.guided_p_sample(working_clone, t_node, t_edge) # there are now probabilities, not log of one hot!
                 _, node_attr_free_log_model_prob_edge_attr_tmin1 = self.guided_p_sample(node_attr_free_working_clone, t_node, t_edge)
 
-                # CFG :=> w * (cond - uncond) + cond ----> formula given in Algorithm .. in the paper
-                guided_probability_over_edge_attr = lambda_guidance * \
-                    (torch.softmax(torch.exp(log_model_prob_edge_attr_tmin1), dim=1) - \
-                     torch.softmax(torch.exp(node_attr_free_log_model_prob_edge_attr_tmin1), dim=1)) \
-                        + torch.softmax(torch.exp(log_model_prob_edge_attr_tmin1), dim=1)
-                safe_log = torch.where(guided_probability_over_edge_attr < 0, 1e-40, guided_probability_over_edge_attr)
-                log_guided_probability_over_edge_attr = torch.log(safe_log)
-
-                log_out_edge_active = self.log_sample_categorical_no_noise(log_guided_probability_over_edge_attr, self.num_edge_classes)
-
                 if working_clone.active_edge_indices.size(0) != 0 :
+                # CFG :=> w * (cond - uncond) + cond ----> formula given in Algorithm .. in the paper
+                    cond = torch.softmax(log_model_prob_edge_attr_tmin1, dim=1) # this is the same as doing torch.exp()
+                    uncond = torch.softmax(node_attr_free_log_model_prob_edge_attr_tmin1, dim=1)
+                    guided_probability_over_edge_attr = lambda_guidance * (cond - uncond) + cond
+                    safe_log = torch.where(guided_probability_over_edge_attr < 0, 1e-40, guided_probability_over_edge_attr)
+                    log_guided_probability_over_edge_attr = torch.log(safe_log)
+
+                    if add_noise_once: 
+                        log_out_edge_active = self.log_sample_categorical(log_guided_probability_over_edge_attr, self.num_edge_classes)
+                        # add_noise_once = False
+                    else:
+                        log_out_edge_active = self.log_sample_categorical_no_noise(log_guided_probability_over_edge_attr, self.num_edge_classes)
+
                     working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                     node_attr_free_working_clone.log_full_edge_attr_t[working_clone.active_edge_indices] = log_out_edge_active
                 
@@ -357,6 +361,7 @@ class DiffusionBase(torch.nn.Module):
                 else:
                     active_edges[t] = [0, 0, 0]
                     print("\nNo Active Edges :(")
+
             edge_attr = working_clone.log_full_edge_attr_t.argmax(-1) # check what class each egde is (it can be either 0 - no edge or 1-edge)
             is_edge_indices = edge_attr.nonzero(as_tuple=True)[0] # take index of the edges
 
@@ -377,11 +382,8 @@ class DiffusionBase(torch.nn.Module):
             working_clone._slice_dict['edge_index'] = edge_slice
             working_clone._inc_dict['edge_index'] = working_clone._inc_dict['full_edge_index']
 
-            # breakpoint()
 
             update_edge_occurence(batched_graph_mc_edge_index_and_count, working_clone)
-        
-        # breakpoint()
-        # print(batched_graph_mc_edge_index_and_count)
+
         
         return original_graphs, working_clone, batched_graph_mc_edge_index_and_count, active_edges
