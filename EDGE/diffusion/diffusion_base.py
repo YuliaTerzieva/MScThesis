@@ -154,7 +154,8 @@ def update_edge_occurence(list_graph_edge_index_occurence, batched_graphs) -> No
     """
     # breakpoint()
     for graph_i in range(batched_graphs.num_graphs) :
-        edge_tuples_graph = list(zip(batched_graphs[graph_i].edge_index[0].tolist(), batched_graphs[graph_i].edge_index[1].tolist())) 
+        edges = zip(*batched_graphs[graph_i].edge_index.tolist())
+        edge_tuples_graph = sorted({tuple(sorted((u, v))) for u, v in edges if u != v})
         list_graph_edge_index_occurence[graph_i].update(edge_tuples_graph)
 
 
@@ -300,7 +301,7 @@ class DiffusionBase(torch.nn.Module):
         return batched_graph 
     
     
-    def sample_and_MC(self, num_samples, lambda_guidance = torch.tensor(0), MC = 100): 
+    def sample_and_MC(self, num_samples, lambda_guidance = torch.tensor(0), MC = 100, noise_times = 0, seed = 42): 
         original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples)
         # breakpoint()
         batched_graph.to(self.device)
@@ -312,7 +313,9 @@ class DiffusionBase(torch.nn.Module):
         node_attr_free_batched_graph = batched_graph.clone()
         node_attr_free_batched_graph.node_attr = torch.full(batched_graph.node_attr.shape, -1)
 
+        # torch.manual_seed(seed)
         batched_graph = self._prepare_data_for_sampling(batched_graph)
+        # torch.manual_seed(seed)
         node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         
         # breakpoint()
@@ -321,8 +324,7 @@ class DiffusionBase(torch.nn.Module):
         for mc_counter in range(MC):
             working_clone = batched_graph.clone()
             node_attr_free_working_clone = node_attr_free_batched_graph.clone()
-            add_noise_once = False
-
+            working_clone_noise_times = noise_times
             for t in reversed(range(0, self.num_timesteps)):
                 print(f'MC counter {mc_counter:4d} -> Sample timestep {t:4d}', end='\r')
                 t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
@@ -330,7 +332,9 @@ class DiffusionBase(torch.nn.Module):
 
                 # Step 1 is sampling the new edge log probabilities 
                 # once with the node features and once without the node features
+                torch.manual_seed(seed+mc_counter+t)# I do this so that both processes have the same radomly changed active edges and each iteration of the loop time it is different 
                 _, log_model_prob_edge_attr_tmin1 = self.guided_p_sample(working_clone, t_node, t_edge) # there are now probabilities, not log of one hot!
+                torch.manual_seed(seed+mc_counter+t)
                 _, node_attr_free_log_model_prob_edge_attr_tmin1 = self.guided_p_sample(node_attr_free_working_clone, t_node, t_edge)
 
                 if working_clone.active_edge_indices.size(0) != 0 :
@@ -341,9 +345,9 @@ class DiffusionBase(torch.nn.Module):
                     safe_log = torch.where(guided_probability_over_edge_attr < 0, 1e-40, guided_probability_over_edge_attr)
                     log_guided_probability_over_edge_attr = torch.log(safe_log)
 
-                    if add_noise_once: 
+                    if working_clone_noise_times > 0: 
                         log_out_edge_active = self.log_sample_categorical(log_guided_probability_over_edge_attr, self.num_edge_classes)
-                        # add_noise_once = False
+                        working_clone_noise_times -= 1
                     else:
                         log_out_edge_active = self.log_sample_categorical_no_noise(log_guided_probability_over_edge_attr, self.num_edge_classes)
 
@@ -356,11 +360,11 @@ class DiffusionBase(torch.nn.Module):
                     
                     # the number of active edges and the number of added edges
                     active_edges[t] = [working_clone.active_edge_indices.size(0), len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0]), working_clone.active_node_indices.size(0)]
-                    print(f"\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])}")
-                    print(f"The number of active nodes is {working_clone.active_node_indices.size(0)}")
+                    # print(f"\nThe number of active edge indexes are {working_clone.active_edge_indices.size(0)} and the number of newly added edges is {len(log_out_edge_active.argmax(-1).nonzero(as_tuple=True)[0])}")
+                    # print(f"The number of active nodes is {working_clone.active_node_indices.size(0)}")
                 else:
                     active_edges[t] = [0, 0, 0]
-                    print("\nNo Active Edges :(")
+                    # print("\nNo Active Edges :(")
 
             edge_attr = working_clone.log_full_edge_attr_t.argmax(-1) # check what class each egde is (it can be either 0 - no edge or 1-edge)
             is_edge_indices = edge_attr.nonzero(as_tuple=True)[0] # take index of the edges

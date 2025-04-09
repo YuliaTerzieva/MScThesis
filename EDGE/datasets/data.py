@@ -162,7 +162,7 @@ def get_data(args):
     augmented_feature_dict = {}
 
     # Data Loader
-    train_loader = DataLoader(train_set, batch_size=args.batch_size*repeat, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=partial(collate_fn))
+    train_loader = DataLoader(train_set, batch_size=args.batch_size, shuffle=True, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=partial(collate_fn))
     eval_loader = DataLoader(eval_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=collate_fn)
     # test_loader = DataLoader(test_set, batch_size=1, shuffle=False, num_workers=args.num_workers, pin_memory=args.pin_memory, collate_fn=collate_fn)
 

@@ -63,8 +63,8 @@ class EmptyGraphGeneratorWithNodeAttributes:
 
     def __init__(self, file_path):
 
-        testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
-        self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
+        self.testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
+        # self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
 
     def _fill_needed_features(self, graphs):
         """
@@ -96,13 +96,22 @@ class EmptyGraphGeneratorWithNodeAttributes:
             - nodes_per_graph is added
             - edges_per_graph is added
         """
-        if num_samples == len(self.testing_graphs):
-            sampled_graphs = self.testing_graphs
+        if num_samples == len(self.testing_graphs_nx):
+            sampled_graphs = self.testing_graphs_nx
         elif type(num_samples) == int:
-            sampled_graphs = random.choices(self.testing_graphs, k=num_samples)
+            sampled_graphs = random.choices(self.testing_graphs_nx, k=num_samples)
         else : # if case the num_samples are a list of indices as in sample_and_MC
-            sampled_graphs = [self.testing_graphs[i] for i in num_samples]
-        sampled_graphs_clone = [graph.clone() for graph in sampled_graphs]
+            sampled_graphs = [self.testing_graphs_nx[i] for i in num_samples]
+        
+        # I first sample, then I clone
+        # the original sampled graphs don't need to be preprocessed, only truened into pygeometric
+        # the one that owul be used for inference need to be preprocessed
+
+        sampled_graphs_clone = [graph.copy() for graph in sampled_graphs]
+
+        sampled_graphs_clone = [preprocess(graph, degree=True) for graph in sampled_graphs_clone]
+        sampled_graphs = [pyg.utils.from_networkx(graph) for graph in sampled_graphs]
+
         empty_pyg_datas = self._fill_needed_features(sampled_graphs_clone)
         return sampled_graphs, empty_pyg_datas
 

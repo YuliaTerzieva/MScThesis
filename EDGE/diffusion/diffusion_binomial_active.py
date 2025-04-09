@@ -119,6 +119,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         return degree
 
     def _q_posterior_actives(self, degree_start, degree_t, t_node):
+        # this is formula 27 from the EDGE paper ? maybe
         tmin1 = t_node - 1
         tmin1 = torch.where(tmin1 < 0, torch.zeros_like(tmin1), tmin1)
 
@@ -128,6 +129,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
 
         log_1_min_cumprod_alpha_t = extract(self.log_1_min_cumprod_alpha, t_node, degree_start.shape)
 
+        # this is log( (beta_t - \bar_alpha_{t-1}) / (1 - \bar alpha_t))
         logprob_edge_t = log_beta_t + log_cumprod_alpha_t_min_1 - log_1_min_cumprod_alpha_t
 
         logit_edge_t = logprob_edge_t - log_1_min_a(logprob_edge_t)
@@ -146,7 +148,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         if self.parametrization == 'xt_prescribed_st':
             degree_t = self._compute_degree(batched_graph.log_full_edge_attr_t.argmax(1), batched_graph.full_edge_index, batched_graph.num_nodes)
             log_model_prob_active = self._q_posterior_actives(batched_graph.degree, degree_t, t_node)
-            active_node_masks = self.log_sample_categorical_no_noise(log_model_prob_active, num_classes=2).argmax(1).bool()
+            active_node_masks = self.log_sample_categorical(log_model_prob_active, num_classes=2).argmax(1).bool()
             batched_graph.active_node_indices = active_node_masks.nonzero(as_tuple=True)[0]
             batched_graph.active_edge_indices = active_node_masks[batched_graph.full_edge_index[0]].logical_and(
             active_node_masks[batched_graph.full_edge_index[1]]).nonzero(as_tuple=True)[0] 
