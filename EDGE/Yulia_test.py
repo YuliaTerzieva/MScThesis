@@ -12,12 +12,14 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
     map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-    train_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}', 'rb'))
-    eval_graph = train_graph[int(len(train_graph)*0.9):]
-    train_graph = train_graph[:int(len(train_graph)*0.9)]
+    train_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}_train', 'rb'))
+    eval_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}_eval', 'rb'))
+    test_graph = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test', 'rb'))
 
     print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
     print("The number of graphs in the eval is ", len(eval_graph))
+    print("The number of graphs in the testing is ", len(test_graph))
+    print('\033[1;30m')
 
     train_number_of_nodes = [len(n.nodes) for n in train_graph]
     plt.hist(train_number_of_nodes, alpha = 0.5, label = "train")
@@ -25,11 +27,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     eval_number_of_nodes = [len(n.nodes) for n in eval_graph]
     plt.hist(eval_number_of_nodes, alpha = 0.5, label = "eval")
 
-    test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
-    print("The number of graphs in the testing is ", len(test_graphs))
-    print('\033[1;30m')
-
-    test_number_of_nodes = [len(n.nodes) for n in test_graphs]
+    test_number_of_nodes = [len(n.nodes) for n in test_graph]
     plt.hist(test_number_of_nodes, alpha = 0.5, label = "test")
     plt.legend()
     plt.xlabel("Number of nodes")
@@ -45,9 +43,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     eval_number_of_edges = [len(n.edges) for n in eval_graph]
     plt.hist(eval_number_of_edges, alpha = 0.5, label = "eval")
 
-    test_graphs = pkl.load(open(f'../GeneratedDataset/{dataset_name}_test_graphs', 'rb'))
-
-    test_number_of_edges = [len(n.edges) for n in test_graphs]
+    test_number_of_edges = [len(n.edges) for n in test_graph]
     plt.hist(test_number_of_edges, alpha = 0.5, label = "test")
     plt.legend()
     plt.xlabel("Number of edges")
@@ -93,12 +89,13 @@ def plot_training_loss(dataset) -> None:
 
 if __name__ == '__main__': 
 
-    """ # this is test to see what is gimble noise
+    # this is test to see what is gimble noise
 
     uniform = torch.rand_like(torch.zeros(1000))
     print(uniform)
     print(-torch.log(uniform + 1e-30))
     print(-torch.log(-torch.log(uniform + 1e-30) + 1e-30))
+    
 
 
     plt.hist(uniform, label = "1", alpha = 0.5, density=True)
@@ -107,10 +104,10 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
 
-    """
+    
 
     dataset_name = "RelationalDataset_with_anomaly"
-    # plot_graph_freq_wrt_node_edge(dataset_name)
+    plot_graph_freq_wrt_node_edge(dataset_name)
 
     
     anomaly = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
