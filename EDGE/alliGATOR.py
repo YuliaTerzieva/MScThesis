@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 from collections import defaultdict
 import pickle
 from sklearn.metrics import precision_recall_curve, auc
-
+from sklearn.metrics import confusion_matrix
 
 # ---- EDGE functions ----
 from datasets.data import get_data
@@ -16,9 +16,9 @@ from model import get_model
 
 class alliGATOR(object):
 
-    def __init__(self, saved_model, checkpoint_nb, MC, lambda_guidance = 4.5, previously_sampled_model_filename = None, node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}):
+    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}):
         
-        wandb_model_log = saved_model # "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10" 679 
+        wandb_model_log = saved_model
         path = wandb_model_log+f"/check/checkpoint_{checkpoint_nb}.pt"
         path_args = wandb_model_log+ "/args.pickle"
         with open(path_args, 'rb') as f:
@@ -43,7 +43,7 @@ class alliGATOR(object):
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
             self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo) 
-            with open(f"Alligator_Output/sampled_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
+            with open(f"Alligator_Output/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
                 pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
             with open(previously_sampled_model_filename, 'rb') as f:
@@ -52,7 +52,6 @@ class alliGATOR(object):
         self.original_graphs_edges = self.get_original_graphs_edges() # this is dictionary
         self.number_possible_edges_not_generated = self.get_number_possible_edges_not_generated() # this is a list with int for each graph
         self.log_graph_probability = self.get_log_graph_probabilities() # this is a np array
-        self.graph_probability_sum_existing_edges = self.get_graph_probability_experimental() # this is a np array
 
         self.edge_type_probability_original_edges = self.get_per_edge_type_probability_list(only_originla_edges=True)
         self.edge_type_probability_across_generated = self.get_per_edge_type_probability_list(only_originla_edges=False)
@@ -97,19 +96,31 @@ class alliGATOR(object):
 
         return log_graph_probability_per_graph
     
-    def get_graph_probability_experimental(self) -> np.array:
-        
-        graph_probability_per_graph = np.zeros(len(self.sample_numbers))
+    def get_graph_anomaly_min_edge_prob(self) -> np.array:
+        """
+        The anomaly score of a graph is 1 - min(edge probabilities of G_c)
+        """
+        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
 
         for g_index in range(len(self.sample_numbers)):
 
             generated_edges_prob = self.per_graph_edge_list_counter[g_index]
+            anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
 
-            sum_edge_probabilities = sum([generated_edges_prob[edge] / self.Monte_Carlo for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
-            
-            graph_probability_per_graph[g_index] = sum_edge_probabilities / len(self.original_graphs_edges[g_index])
+        return anomaly_score_per_graph
 
-        return graph_probability_per_graph
+    def get_graph_anomaly_mean_edge_prob(self) -> np.array:
+        """
+        The anomaly score of a graph is 1 - min(edge probabilities of G_c)
+        """
+        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+
+        for g_index in range(len(self.sample_numbers)):
+
+            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
+            anomaly_score_per_graph[g_index] = 1 - sum([generated_edges_prob[edge] / self.Monte_Carlo for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])/len(self.original_graphs_edges[g_index])
+
+        return anomaly_score_per_graph
 
     def get_number_possible_edges_not_generated(self)->list:
         # for each graph how many edges are "impossible", i.e. not generated at all and not in the original graph
@@ -133,24 +144,25 @@ class alliGATOR(object):
 
         return labels.tolist()
 
-    def get_PR_AUC(self):
+    def get_PR_AUC(self, predicted_labels, title_PR_type = "the log probability"):
 
         true_labels = self.get_anomaly_labels_for_original_graphs()
-        predicted_labels = [-lp for lp in self.log_graph_probability] # use this for the log graph probabilities
-        # predicted_labels = [1-p for p in self.graph_probability_sum_existing_edges] # use this for the graph porbbaility being a sum
-
+        
         # Data to plot precision - recall curve
         precision, recall, thresholds = precision_recall_curve(true_labels, predicted_labels)
+        # print("Tresholds : ", thresholds)
         # Use AUC function to calculate the area under the curve of precision recall curve
         auc_precision_recall = auc(recall, precision)
-        print(auc_precision_recall)
+        print('\033[1;36m'+f"The ACU using {title_PR_type} of a graph is {auc_precision_recall}\n"+'\033[0;36m')
 
         plt.figure(figsize=(7, 7))
         plt.plot(recall, precision, label = f"Alligator with AUC = {auc_precision_recall}")
         plt.xlabel("Recall")
         plt.ylabel("Precision")
         plt.legend()
-        plt.title(f"Precision - Recall curve with AUC = {auc_precision_recall}")
+        plt.title(f"Precision - Recall curve with AUC = {round(auc_precision_recall, 4)} using {title_PR_type}")
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
         plt.show()
 
     def get_per_edge_type_probability_list(self, only_originla_edges = False):
@@ -180,6 +192,62 @@ class alliGATOR(object):
                     edge_prob_stats[edge_type].append(probability)
 
         return edge_prob_stats
+    
+    def get_edge_PR_AUC(self):
+
+        """this one looks at every single edge in every graph and compares predicted vs actual label, The predicted label of an edge is set wrt a treshold compared to the generated probability for that edge"""
+
+        tresholds = np.arange(0, 0.5, 0.0001)
+        precision = np.zeros(len(tresholds))
+        recall = np.zeros(len(tresholds))
+        accuracy = 0
+
+        true_labels = [] 
+        predicted_labels = defaultdict(list) # keys are tresholds, values are list of predicted labels for all edges
+
+        # breakpoint()
+        for g_index, edge_probabilities in enumerate(self.per_graph_edge_list_counter):
+
+            edge_index = self.original_graphs[g_index].edge_index
+            edge_anomalous = self.original_graphs[g_index].edge_anomalous
+
+            # Build edge -> label map (with sorted edge tuples)
+            edge_to_label = {
+                tuple(sorted((int(edge_index[0, i]), int(edge_index[1, i])))): int(edge_anomalous[i].item())
+                for i in range(edge_index.size(1))
+            }
+
+            # Filter both labels and probabilities for edges in original_graphs_edges[g_index]
+            true_labels.extend([
+                edge_to_label[(i, j)] for (i, j) in self.original_graphs_edges[g_index]
+            ])
+
+            # probabilities_of_original_edges = [prob/self.Monte_Carlo for (i, j), prob in edge_probabilities.items() if (i, j) in self.original_graphs_edges[g_index]]
+            probabilities_of_original_edges = [edge_probabilities[(i, j)]/self.Monte_Carlo if (i, j) in edge_probabilities.keys() else 0 for (i, j) in self.original_graphs_edges[g_index]]
+            for t_count, t in enumerate(tresholds):
+                predicted_labels[t_count].extend([1 if edge_prob <= t else 0 for edge_prob in probabilities_of_original_edges])
+
+        for t_count, t in enumerate(tresholds):
+            tn, fp, fn, tp = confusion_matrix(true_labels, predicted_labels[t_count]).ravel()
+            # print(f"for t = {round(t, 4)} we have tn {tn}, fp {fp}, fn {fn}, tp {tp}")
+            precision[t_count] = tp / (tp + fp) if tp > 0 else 1
+            recall[t_count] = tp / (tp + fn) if tp > 0 else 0
+            if (tp + tn) / (tn + fp + fn + tp) > accuracy :
+                accuracy = (tp + tn) / (tn + fp + fn + tp)
+
+        auc_precision_recall = auc(recall, precision)
+        print('\033[1;36m',f"The per edge AUC is {auc_precision_recall}")
+        print(f"The best accuracy is : {accuracy}\n"+'\033[0;36m')
+
+        plt.figure(figsize=(7, 7))
+        plt.plot(recall, precision, label = f"Alligator with AUC = {auc_precision_recall}")
+        plt.xlabel("Recall")
+        plt.ylabel("Precision")
+        plt.legend()
+        plt.title(f"Precision - Recall curve with AUC = {auc_precision_recall}")
+        plt.xlim([0, 1])
+        plt.ylim([0, 1])
+        plt.show()
 
 #-----------------------------------------
 
@@ -203,7 +271,7 @@ class alliGATOR(object):
 
         plt.figure(figsize=(10, 5))
         plt.plot(timesteps, vals3s, label='Number of active nodes')
-        plt.hlines(self.original_graphs.num_nodes, timesteps[0], timesteps[-1], label='Total number of nodes')
+        plt.hlines(self.generated_graphs.num_nodes, timesteps[0], timesteps[-1], label='Total number of nodes')
         plt.title('Values over Timesteps')
         plt.xlabel('Timestep (t)')
         plt.ylabel('Values')

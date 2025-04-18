@@ -53,7 +53,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
 
 def plot_training_loss(dataset) -> None:
     
-    f, ax = plt.subplots(2, 2, figsize=(10, 10))
+    f, ax = plt.subplots(2, 2, figsize=(10, 8))
     for i, run in enumerate(dataset) :
 
         _ax = ax[int(i//2), int(i%2)]
@@ -88,31 +88,20 @@ def plot_training_loss(dataset) -> None:
     plt.show()
 
 if __name__ == '__main__': 
-
-    # this is test to see what is gimble noise
-
-    uniform = torch.rand_like(torch.zeros(1000))
-    print(uniform)
-    print(-torch.log(uniform + 1e-30))
-    print(-torch.log(-torch.log(uniform + 1e-30) + 1e-30))
-    
-
-
-    plt.hist(uniform, label = "1", alpha = 0.5, density=True)
-    plt.hist(-torch.log(uniform + 1e-30), label = "2", alpha = 0.5,  density=True)
-    plt.hist(-torch.log(-torch.log(uniform + 1e-30) + 1e-30), label = "3", alpha = 0.5,  density=True)
-    plt.legend()
-    plt.show()
-
     
 
     dataset_name = "RelationalDataset_with_anomaly"
-    plot_graph_freq_wrt_node_edge(dataset_name)
+    # plot_graph_freq_wrt_node_edge(dataset_name)
 
     
-    anomaly = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
+    bigger_network_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
+    less_attention_linear = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56"
+    more_diffusion_steps = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_19-21-20"
+    less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
+    even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
 
-    plot_training_loss([anomaly])
+
+    plot_training_loss([less_attention_linear, more_diffusion_steps, less_diffusion_cosine, even_less_attention])
 
 
 # ------------------------------------------------------------------------------------------------------------------------
