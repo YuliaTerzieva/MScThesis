@@ -313,7 +313,6 @@ if __name__ == '__main__':
     end_time = time.time()
     print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
-    
     random.shuffle(ego_net_list)
 
     with open("GeneratedDataset_interm_graph/ListEgoNet_with_anomalies.pkl", "wb") as f:
