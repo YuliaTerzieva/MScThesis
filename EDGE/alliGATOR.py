@@ -27,7 +27,7 @@ class alliGATOR(object):
         _, _, _, _, _, _, _, _, initial_graph_sampler, _, _, _ = get_data(args)
         self.number_diffusion_steps = args.diffusion_steps
 
-        self.sample_numbers = np.arange(1000).tolist()
+        self.sample_numbers = np.arange(2186).tolist()
         self.Monte_Carlo = MC
 
         self.node_color = node_color_mapping

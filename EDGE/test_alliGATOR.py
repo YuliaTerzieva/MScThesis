@@ -5,8 +5,9 @@ from alliGATOR import *
 # my_GATOR = alliGATOR("./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10", 679, MC = 300, name = "ds10_attention8841_cosine", lambda_guidance = 4.5, 
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention8841_cosine_mc300_guidance45.pkl")
 
-my_GATOR = alliGATOR("./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56", 1069, MC = 1000, name = "ds10_attention21_linear", lambda_guidance = 4.5, 
-                     previously_sampled_model_filename="Alligator_Output/ds10_attention21_linear_mc1000_guidance45.pkl")
+##### so far this is the best one #####
+# my_GATOR = alliGATOR("./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56", 1069, MC = 1000, name = "ds10_attention21_linear", lambda_guidance = 4.5, 
+#                      previously_sampled_model_filename="Alligator_Output/ds10_attention21_linear_mc1000_guidance45.pkl")
 
 # my_GATOR = alliGATOR("./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56", 1069, MC = 1000, name = "ds10_attention21_linear", lambda_guidance = 0, 
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention21_linear_mc1000_guidance0.pkl")
@@ -24,13 +25,15 @@ my_GATOR = alliGATOR("./wandb/RelationalDataset_with_anomaly/multinomial_diffusi
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention2_linear_mc1000_guidance45.pkl")
 
 
+edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5)
+
 # my_GATOR.plot_active_edges_and_nodes()
 # my_GATOR.get_PR_AUC([-lp for lp in my_GATOR.log_graph_probability])
 # my_GATOR.get_PR_AUC(my_GATOR.get_anomaly_scores_accounting_for_true_node_degree(), title_PR_type= "Level_of_agreenment")
 
 # my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_min_edge_prob(), title_PR_type = "the min edge probability")
 # my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_min_adjusted_edge_prob(), title_PR_type="the min adjusted edge porbability")
-my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_min_adjusted_edge_prob_no_self_loops(), title_PR_type="the min adjusted edge proba without self-loops")
+# my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_min_adjusted_edge_prob_no_self_loops(), title_PR_type="the min adjusted edge proba without self-loops")
 
 # my_GATOR.get_edge_PR_AUC()
 # my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_mean_edge_prob(), title_PR_type=" the mean edge probability")
