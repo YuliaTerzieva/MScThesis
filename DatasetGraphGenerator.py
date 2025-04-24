@@ -5,6 +5,7 @@ import random
 import time
 import pickle
 from itertools import product
+from collections import defaultdict
 
 def _random_subset(seq, m, rng): # I took this from networkx library
     """Return m unique elements from seq.
@@ -205,7 +206,6 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
 
     assert len(nb_anomalous_relations) == N*N
 
-    nx.set_node_attributes(graph, 0, 'anomalous')
     nx.set_edge_attributes(graph, 0, 'anomalous')
 
     for r_count, relation in enumerate(nb_anomalous_relations):
@@ -225,29 +225,27 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
             sampled_pairs = random.sample(possible_pairs, relation)
             for u, v in sampled_pairs:
                 graph.add_edge(u, v, anomalous = 1)
-                graph.nodes[u]['anomalous'] = 1
-                graph.nodes[v]['anomalous'] = 1
 
     return graph
 
-def generate_ego_graphs(big_graph, K = 10) -> list[nx.Graph]:
+def generate_edge_ego_graphs(big_graph, K) -> list[nx.Graph]:
     
-    ego_graphs = []
-    is_ego_graph_center_anomaly = np.zeros(len(big_graph.nodes))
+    edge_ego_graphs = []
+    is_edge_ego_graph_center_anomaly = []
 
+    ego_nodes = defaultdict(list)
     for node in big_graph.nodes:
         ppr = nx.pagerank(Final_Graph, personalization={node: 1.0})
-
         top_k_nodes = sorted((n for n in ppr if n != node), key=ppr.get, reverse=True)[:K]
+        ego_nodes[node] = [node] + top_k_nodes
 
-        ego_nodes = [node] + top_k_nodes
-        ego_subgraph = Final_Graph.subgraph(ego_nodes).copy()
+    for edge in big_graph.edges(data=True):
+        ego_subgraph = Final_Graph.subgraph(ego_nodes[edge[0]] + ego_nodes[edge[1]]).copy()
         ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
-        ego_graphs.append(ego_subgraph)
-        if "anomalous" in big_graph.nodes[node].keys():
-            is_ego_graph_center_anomaly[node] == 1
+        edge_ego_graphs.append(ego_subgraph)
+        is_edge_ego_graph_center_anomaly.append(edge[2]['anomalous'])
 
-    return ego_graphs, is_ego_graph_center_anomaly
+    return edge_ego_graphs, is_edge_ego_graph_center_anomaly
 
 def plot_graph(graph) -> None:
     mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
@@ -260,23 +258,13 @@ if __name__ == '__main__':
     
     N = 3 # B, O, G
     N_total_nodes = 5000
-    NC_perc = np.array([0.25, 0.35, 0.4]) # 25%, 35%, 40% -> 5 000 nodes in total -> 50 anomalies -> 25 anomalous relations
+    NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG 
+    R = [("BA", 3), None, ("R", 0.0005), # BB, BO, BG 
          None, None, ("BA", 1), # OB, OO, OG
          None, ("Uni", 2), None] # GB, GO, GG
     K = 15
-
-    # the goal is that 1% of the nodes are anomalous, this means that we have halv the relations being anomalous
-    # because both noed of anomalous edge are set as anomalies
-    N_anomalous_relations = int(0.03 * N_total_nodes / 2) 
-    anomalous_R_perc = np.array([0, 0.4, 0, 
-                                 0, 0.4, 0, 
-                                 0, 0, 0.2])
-    nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
-    print(nb_anomalous_relations)
-    assert sum(nb_anomalous_relations) == N_anomalous_relations
 
     reproducibility_seed = 42
     random.seed(reproducibility_seed)
@@ -291,47 +279,59 @@ if __name__ == '__main__':
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_interm_graph/Whole_Graph.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     # """
     # ------------------------------------------------------------
     # """
     start_time = time.time()
 
+    # We want 1% of the relations to be anomalous, so 
+    print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
+    N_anomalous_relations = round(0.02 * Final_Graph.number_of_edges()) 
+    anomalous_R_perc = np.array([0, 0.33, 0, 
+                                 0, 0.33, 0, 
+                                 0, 0, 0.34])
+    nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
+    print((nb_anomalous_relations).astype(int).tolist())
+    assert sum(nb_anomalous_relations) == N_anomalous_relations
+
     Final_Graph_witn_anomalies = add_anomalous_relations(N, (nb_anomalous_relations).astype(int).tolist(), Final_Graph)
 
     end_time = time.time()
     print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_interm_graph/Whole_Graph_with_anomalies.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls_with_anomalies.pkl", 'wb') as f:
         pickle.dump(Final_Graph_witn_anomalies, f)
     # """
     # ------------------------------------------------------------
     # """
     start_time = time.time()
-    ego_net_list, is_central_node_anomalous = generate_ego_graphs(Final_Graph_witn_anomalies, K = K)
+    ego_net_list, is_central_node_anomalous = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
     end_time = time.time()
-    print(f"Time it took to get the ego networks of {sum(NC)} nodes is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
+    print(f"Time it took to get the ego networks of {Final_Graph.number_of_edges()} edges is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
-    random.shuffle(ego_net_list)
+    interm = list(zip(ego_net_list, is_central_node_anomalous))
+    random.shuffle(interm)
+    ego_net_list, is_central_node_anomalous = zip(*interm)
 
-    with open("GeneratedDataset_interm_graph/ListEgoNet_with_anomalies.pkl", "wb") as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls_edge_ego_list_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
     with open("GeneratedDataset_interm_graph/is_central_node_anomalous.pkl", "wb") as f:
         pickle.dump(is_central_node_anomalous, f)
     # """
     # ------------------------------------------------------------
     
-    # I have a 60% 20% 20% split
+    # I have a 70% 10% 20% split
 
     l = len(ego_net_list)
-    train, eval = int(0.6 * l), int(0.8 * l)
+    train, evaluation = int(0.7 * l), int(0.8 * l)
 
     for name, data in zip(
-        ["train", "eval", "test"],
-        [ego_net_list[:train], ego_net_list[train:eval], ego_net_list[eval:]]
+        ["train", "eval", "test", "test_labels"],
+        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:], is_central_node_anomalous[evaluation:]]
     ):
-        with open(f"GeneratedDataset/RelationalDataset_with_anomaly_{name}", "wb") as f:
+        with open(f"GeneratedDataset/Edge_classification_{name}", "wb") as f:
             pickle.dump(data, f)
     
 
