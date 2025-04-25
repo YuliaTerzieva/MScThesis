@@ -50,9 +50,8 @@ class alliGATOR(object):
                 self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = pickle.load(f)
 
         self.original_graphs_edges = self.get_original_graphs_edges() # this is dictionary
-        self.log_graph_probability = self.get_log_graph_probabilities() # this is a np array
     
-#----------------------------------------- 
+#--------------- General functions ---------------
 
     def get_original_graphs_edges(self) -> dict[list[(int, int)]] :
         """This function returns a list of edges (node tuples) for each graph from the original/testing graphs"""
@@ -64,102 +63,121 @@ class alliGATOR(object):
             original_graphs_edges[g_nb] = sorted({tuple(sorted((u, v))) for u, v in original_edges})
 
         return original_graphs_edges
-
-    def get_log_graph_probabilities(self) -> np.array:
-        
-        log_graph_probability_per_graph = np.zeros(len(self.sample_numbers))
-
-        for g_index in range(len(self.sample_numbers)):
-
-            # this is a dictionary with keys = edges (node tuples) and values = count of occurence over 
-            # note that it has to be divided by MC for a porbability
-            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
-
-            # calculated by log(p(Original_Graph | Generated_Graph)) = Sum og_edges (log(edge_probability)) + sum generated w/o og_edges (log(1-edge_probability))
-            # where
-            # lhs = Sum og_edges (log(edge_probability))
-            lhs = sum([np.log(generated_edges_prob[edge] / self.Monte_Carlo) if edge in generated_edges_prob.keys() else np.log(1e-40) for edge in self.original_graphs_edges[g_index]])
-            
-            # where 
-            # rhs = sum generated w/o og_edges (log(1-edge_probability))
-            only_generated_edges = [edge for edge in generated_edges_prob.keys() if edge not in self.original_graphs_edges[g_index]]
-            rhs = sum([np.log(1 - generated_edges_prob[edge] / self.Monte_Carlo) if generated_edges_prob[edge] / self.Monte_Carlo < 1 else np.log(1e-40) for edge in only_generated_edges])
-            
-            # the generated graph doesn't have all the edges a graph might have. However, we know that a non-existing edge is an edge with porbability 0
-            # but because the graph_probability is a product of (1-prob) for the edges that are not in the graph. an edge with probability 0 is the same as multiplying the probability to 1
-            # which doesn't change it. Same for the log to add 0 (log(1) = 0)
-            
-            current_graph_probability = lhs + rhs
-            log_graph_probability_per_graph[g_index] = current_graph_probability
-
-        return log_graph_probability_per_graph
     
-    def get_graph_anomaly_min_edge_prob(self) -> np.array:
-        """
-        The anomaly score of a graph is 1 - min(edge probabilities of G_c)
-        """
-        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+    def get_number_possible_edges_not_generated(self)->list:
+        # for each graph how many edges are "impossible", i.e. not generated at all and not in the original graph
+        number_impossible_edges = np.zeros(len(self.original_graphs))
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_nb, graph in enumerate(self.original_graphs):
 
-            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
-            anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo  for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
+            # the possible number of edges in undirected graph with no self-edges is n(n-1)/2
+            impossible_edges = ((graph.num_nodes * (graph.num_nodes - 1))/2) - len(self.per_graph_edge_list_counter[g_nb].keys())
+            number_impossible_edges[g_nb] = impossible_edges
 
-        return anomaly_score_per_graph
-    
-    def get_graph_anomaly_min_adjusted_edge_prob(self) -> np.array:
+        return number_impossible_edges.tolist()
+
+    def get_per_edge_type_probability_list(self, only_originla_edges = False, node_degree_adjusted = False) -> dict[list[int]]:
         """
-        The anomaly score of a graph is 1 - min(edge probabilities of G_c adjusted for node degree per node)
-
-        this is following the formula by Ioana, but i am not sure it is correctly implemented
+        Creating a list of probabilities for each edge type (e.g. Blue-Blue)
+        This list is generated from all the edges generated during the inference for all graphs. 
+        If only_originla_edges is true, then only edges that were in the original graph are selected. 
+        -------
+        edge_prob_stats: dict
+            Format: {
+                (node_type, node_type): [prob1, prob2, ...]
+            }
         """
-        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+
+        edge_prob_stats = defaultdict(list)
+
+        # this is for the node degree adjusted scenario
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
+
+        for g_idx, graph in enumerate(self.original_graphs):
+            edge_counts = self.per_graph_edge_list_counter[g_idx]
+
+            # this is for the node degree adjusted scenario
+            node_degree_counter = per_graph_node_degree_counter[g_idx]
+            m = len(self.original_graphs_edges[g_idx])
+
+
+            for (u, v), count in edge_counts.items():
+                if not only_originla_edges or ((u, v) in self.original_graphs_edges[g_idx]):
+                    # for each generated edge for that graph save its probability 
+                    node_type_u = int(graph.node_attr[u])
+                    node_type_v = int(graph.node_attr[v])
+                    edge_type = tuple(sorted((node_type_u, node_type_v)))
+                     
+                    if node_degree_adjusted :
+                        probability = count / self.Monte_Carlo - ((node_degree_counter[u] * node_degree_counter[v]) / (2*m))
+                    else:
+                        probability = count / self.Monte_Carlo
+
+                    edge_prob_stats[edge_type].append(probability)
+
+        return edge_prob_stats
         
-        for g_index in range(len(self.sample_numbers)):
-            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
-            m = len(self.original_graphs_edges[g_index])
-            node_degree_counter = per_graph_node_degree_counter[g_index]
-            anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo 
-                                                        - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m)) 
-                                                        for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
+#--------------- Anomaly detection functions ---------------
 
-        return anomaly_score_per_graph
+    # def get_graph_anomaly_min_edge_prob(self) -> np.array:
+    #     """
+    #     The anomaly score of a graph is 1 - min(edge probabilities of G_c)
+    #     """
+    #     anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
 
-    def get_graph_anomaly_min_adjusted_edge_prob_no_self_loops(self) -> np.array:
-        """
-        The anomaly score of a graph is 1 - min(edge probabilities of G_c adjusted for node degree per node without self-loops)
-        """
-        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
-        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-        
-        for g_index in range(len(self.sample_numbers)):
-            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
-            m = len(self.original_graphs_edges[g_index])
-            node_degree_counter = per_graph_node_degree_counter[g_index]
-            anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo 
-                                                        - 
-                                                        (
-                                                            ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m - node_degree_counter[edge[0]] - 1)) 
-                                                            + 
-                                                            ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m - node_degree_counter[edge[1]] - 1))
-                                                        )/2
-                                                        for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
+    #     for g_index in range(len(self.sample_numbers)):
 
-        return anomaly_score_per_graph
+    #         generated_edges_prob = self.per_graph_edge_list_counter[g_index]
+    #         anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo  for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
+
+    #     return anomaly_score_per_graph
     
-    def get_graph_anomaly_mean_edge_prob(self) -> np.array:
-        """
-        The anomaly score of a graph is 1 - min(edge probabilities of G_c)
-        """
-        anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+    # def get_graph_anomaly_min_adjusted_edge_prob(self) -> np.array:
+    #     """
+    #     The anomaly score of a graph is 1 - min(edge probabilities of G_c adjusted for node degree per node)
 
-        for g_index in range(len(self.sample_numbers)):
+    #     this is following the formula by Ioana, but i am not sure it is correctly implemented
+    #     """
+    #     anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+    #     per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
+        
+    #     for g_index in range(len(self.sample_numbers)):
+    #         generated_edges_prob = self.per_graph_edge_list_counter[g_index]
+    #         m = len(self.original_graphs_edges[g_index])
+    #         node_degree_counter = per_graph_node_degree_counter[g_index]
+    #         anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo 
+    #                                                     - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m)) 
+    #                                                     for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
 
-            generated_edges_prob = self.per_graph_edge_list_counter[g_index]
-            anomaly_score_per_graph[g_index] = 1 - sum([generated_edges_prob[edge] / self.Monte_Carlo for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])/len(self.original_graphs_edges[g_index])
+    #     return anomaly_score_per_graph
 
-        return anomaly_score_per_graph
+    # def get_anomaly_scores_accounting_for_true_node_degree(self) -> np.array:
+
+    #     anomaly_scores = np.zeros(len(self.per_graph_edge_list_counter))
+    #     per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
+
+    #     for graph_nb, (original_graph_edges, gen_edge_list_counter, node_degree_counter) in enumerate(zip(self.original_graphs_edges.values(), self.per_graph_edge_list_counter, per_graph_node_degree_counter)):
+
+    #         # breakpoint()
+
+    #         m = len(original_graph_edges)
+
+    #         # Wij = (gen_edge_list_counter[edge] / self.Monte_Carlo)
+    #         # kikj / 2m = (node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m)
+    #         numerator = sum([((gen_edge_list_counter[edge] / self.Monte_Carlo) - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
+    #                          for edge in original_graph_edges])
+    #         # print([((gen_edge_list_counter[edge] / self.Monte_Carlo) ) 
+    #         #                  for edge in original_graph_edges])
+    #         # print([(((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
+    #         #                  for edge in original_graph_edges])
+    #         # print([((gen_edge_list_counter[edge] / self.Monte_Carlo) - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
+    #         #                  for edge in original_graph_edges])
+    #         denominator = m - (1 / (2 * m)) * sum([node_degree_counter[edge[0]] * node_degree_counter[edge[1]] for edge in original_graph_edges])
+    #         level_of_agreenment = numerator / denominator
+
+    #         anomaly_scores[graph_nb] =  1 - level_of_agreenment
+
+    #     return anomaly_scores
 
     def get_per_graph_node_degree_counter(self) -> list[Counter]:
 
@@ -173,50 +191,50 @@ class alliGATOR(object):
         
         return per_graph_node_degree_counter
 
-    def get_anomaly_scores_accounting_for_true_node_degree(self) -> np.array:
-
-        anomaly_scores = np.zeros(len(self.per_graph_edge_list_counter))
-        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-
-        for graph_nb, (original_graph_edges, gen_edge_list_counter, node_degree_counter) in enumerate(zip(self.original_graphs_edges.values(), self.per_graph_edge_list_counter, per_graph_node_degree_counter)):
-
-            # breakpoint()
-
-            m = len(original_graph_edges)
-
-            # Wij = (gen_edge_list_counter[edge] / self.Monte_Carlo)
-            # kikj / 2m = (node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m)
-            numerator = sum([((gen_edge_list_counter[edge] / self.Monte_Carlo) - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
-                             for edge in original_graph_edges])
-            # print([((gen_edge_list_counter[edge] / self.Monte_Carlo) ) 
-            #                  for edge in original_graph_edges])
-            # print([(((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
-            #                  for edge in original_graph_edges])
-            # print([((gen_edge_list_counter[edge] / self.Monte_Carlo) - ((node_degree_counter[edge[0]] * node_degree_counter[edge[1]]) / (2*m))) 
-            #                  for edge in original_graph_edges])
-            denominator = m - (1 / (2 * m)) * sum([node_degree_counter[edge[0]] * node_degree_counter[edge[1]] for edge in original_graph_edges])
-            level_of_agreenment = numerator / denominator
-
-            anomaly_scores[graph_nb] =  1 - level_of_agreenment
-
-        return anomaly_scores
-
-    def get_anomaly_labels_for_original_graphs(self)->list:
+    def get_true_anomaly_labels_for_edge_cls(self)->list:
 
         labels = np.zeros(len(self.original_graphs))
 
         for g_index in range(len(self.sample_numbers)):
-            if self.original_graphs[g_index].edge_anomalous.any() :
+            central_edge_index = np.where(self.original_graphs[g_index]['central_edge'] == 1)[0]
+            if self.original_graphs[g_index].anomalous[central_edge_index].any() :
                 labels[g_index] = 1
 
         return labels.tolist()
 
-    def get_PR_AUC(self, predicted_labels, title_PR_type = "the log probability") -> None:
+    def get_edge_cls_anomaly(self) -> np.array :
 
-        true_labels = self.get_anomaly_labels_for_original_graphs()
+        anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+        central_edge_list = self.get_central_edge_per_graph()
         
+        for g_index in range(len(self.sample_numbers)):
+            central_edge = central_edge_list[g_index]
+        
+            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo 
+
+            anomaly_score_per_edge_sub_graph[g_index] = 1 - generated_prob_central_edge
+
+        return anomaly_score_per_edge_sub_graph
+
+    def get_central_edge_per_graph(self) -> list[tuple[int, int]] :
+
+        central_edge_list = []
+
+        for g_index in range(len(self.sample_numbers)):
+
+            central_edge_index = (np.where(self.original_graphs[g_index]['central_edge'] == 1)[0][0], np.where(self.original_graphs[g_index]['central_edge'] == 1)[0][1])
+            central_edge = tuple(sorted((self.original_graphs[g_index].edge_index[0][central_edge_index[0]].item(), self.original_graphs[g_index].edge_index[0][central_edge_index[1]].item())))
+            
+            central_edge_list.append(central_edge)
+
+
+        return central_edge_list
+    
+    def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type = "the log probability") -> None:
+
         # Data to plot precision - recall curve
         precision, recall, thresholds = precision_recall_curve(true_labels, predicted_labels)
+        # breakpoint()
         # print("Tresholds : ", thresholds)
         # Use AUC function to calculate the area under the curve of precision recall curve
         auc_precision_recall = auc(recall, precision)
@@ -228,7 +246,7 @@ class alliGATOR(object):
         plt.ylabel("Precision")
 
         #isolation forest result using node2vec with sum pooling
-        plt.plot([0.15], [0.11450381679389313], label = "Isolation forest", marker = 'o')
+        # plt.plot([0.15], [0.11450381679389313], label = "Isolation forest", marker = 'o')
         
         plt.title(f"Precision - Recall curve with AUC = {round(auc_precision_recall, 4)} using {title_PR_type}")
         plt.xlim([0, 1])
@@ -238,181 +256,9 @@ class alliGATOR(object):
         plt.hlines(true_labels.count(1)/len(true_labels), xmin=0, xmax=1, label = "Baseline curve", color='red')
         plt.legend()
         plt.show()
-   
-    def get_edge_PR_AUC(self) -> None:
 
-        """this one looks at every single edge in every graph and compares predicted vs actual label, The predicted label of an edge is set wrt a treshold compared to the generated probability for that edge"""
-
-        tresholds = np.arange(0, 1, 0.001)
-        precision = np.zeros(len(tresholds))
-        recall = np.zeros(len(tresholds))
-        accuracy = 0
-
-        true_labels = [] 
-        predicted_labels = defaultdict(list) # keys are tresholds, values are list of predicted labels for all edges
-
-        # for adjusted node prob :
-        # per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-
-
-        # breakpoint()
-        for g_index, edge_probabilities in enumerate(self.per_graph_edge_list_counter):
-
-            edge_index = self.original_graphs[g_index].edge_index
-            edge_anomalous = self.original_graphs[g_index].edge_anomalous
-
-            # Build edge -> label map (with sorted edge tuples)
-            edge_to_label = {
-                tuple(sorted((int(edge_index[0, i]), int(edge_index[1, i])))): int(edge_anomalous[i].item())
-                for i in range(edge_index.size(1))
-            }
-
-            # Filter both labels and probabilities for edges in original_graphs_edges[g_index]
-            true_labels.extend([
-                edge_to_label[(i, j)] for (i, j) in self.original_graphs_edges[g_index]
-            ])
-
-            # probabilities_of_original_edges = [prob/self.Monte_Carlo for (i, j), prob in edge_probabilities.items() if (i, j) in self.original_graphs_edges[g_index]]
-            probabilities_of_original_edges = [edge_probabilities[(i, j)]/self.Monte_Carlo  if (i, j) in edge_probabilities.keys() else 0 for (i, j) in self.original_graphs_edges[g_index]]
-            
-            # the following 3 lines is for degree adjusted edge probs otherwise uncomment the line above for normal
-            # m = len(self.original_graphs_edges[g_index])
-            # node_degree_counter = per_graph_node_degree_counter[g_index]
-            # probabilities_of_original_edges = [edge_probabilities[(i, j)]/self.Monte_Carlo - ((node_degree_counter[i] * node_degree_counter[j]) / (2*m))
-            #                                     if (i, j) in edge_probabilities.keys() else 0 for (i, j) in self.original_graphs_edges[g_index]]
-
-
-            for t_count, t in enumerate(tresholds):
-                predicted_labels[t_count].extend([1 if edge_prob <= t else 0 for edge_prob in probabilities_of_original_edges])
-
-        for t_count, t in enumerate(tresholds):
-            tn, fp, fn, tp = confusion_matrix(true_labels, predicted_labels[t_count]).ravel()
-            # print(f"for t = {round(t, 4)} we have tn {tn}, fp {fp}, fn {fn}, tp {tp}")
-            precision[t_count] = tp / (tp + fp) if tp > 0 else 1
-            recall[t_count] = tp / (tp + fn) if tp > 0 else 0
-            if (tp + tn) / (tn + fp + fn + tp) > accuracy :
-                accuracy = (tp + tn) / (tn + fp + fn + tp)
-
-        auc_precision_recall = auc(recall, precision)
-        print('\033[1;36m',f"The per edge AUC is {auc_precision_recall}")
-        print(f"The best accuracy is : {accuracy}\n"+'\033[0;36m')
-
-        plt.figure(figsize=(7, 7))
-        plt.plot(recall, precision, label = f"Alligator with AUC = {auc_precision_recall}", color='green')
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-        plt.hlines(true_labels.count(1)/len(true_labels), xmin = 0, xmax = 1, label="Baseline Curve", color='red')
-        plt.legend()
-        plt.title(f"Precision - Recall curve with AUC = {auc_precision_recall}")
-        plt.xlim([0, 1])
-        plt.ylim([0, 1])
-        plt.show()
-
-    def get_number_possible_edges_not_generated(self)->list:
-        # for each graph how many edges are "impossible", i.e. not generated at all and not in the original graph
-        number_impossible_edges = np.zeros(len(self.original_graphs))
-
-        for g_nb, graph in enumerate(self.original_graphs):
-
-            # the possible number of edges in undirected graph with no self-edges is n(n-1)/2
-            impossible_edges = ((graph.num_nodes * (graph.num_nodes - 1))/2) - len(self.per_graph_edge_list_counter[g_nb].keys())
-            number_impossible_edges[g_nb] = impossible_edges
-
-        return number_impossible_edges.tolist()
-
-    def get_per_edge_type_probability_list(self, only_originla_edges = False) -> dict[list[int]]:
-        """
-        Creating a list of probabilities for each edge type (e.g. Blue-Blue)
-        This list is generated from all the edges generated during the inference for all graphs. 
-        If only_originla_edges is true, then only edges that were in the original graph are selected. 
-        -------
-        edge_prob_stats: dict
-            Format: {
-                (node_type, node_type): [prob1, prob2, ...]
-            }
-        """
-
-        edge_prob_stats = defaultdict(list)
-
-        for g_idx, graph in enumerate(self.original_graphs):
-            edge_counts = self.per_graph_edge_list_counter[g_idx]
-            for (u, v), count in edge_counts.items():
-                if not only_originla_edges or ((u, v) in self.original_graphs_edges[g_idx]):
-                    # for each generated edge for that graph save its probability 
-                    node_type_u = int(graph.node_attr[u])
-                    node_type_v = int(graph.node_attr[v])
-                    edge_type = tuple(sorted((node_type_u, node_type_v)))
-                    probability = count / self.Monte_Carlo
-
-                    edge_prob_stats[edge_type].append(probability)
-
-        return edge_prob_stats
- 
-    def get_per_edge_type_probability_list_degree_adjusted(self, only_originla_edges = False) -> dict[list[int]]:
-        """
-        Creating a list of probabilities for each edge type (e.g. Blue-Blue)
-        This list is generated from all the edges generated during the inference for all graphs. 
-        If only_originla_edges is true, then only edges that were in the original graph are selected. 
-        -------
-        edge_prob_stats: dict
-            Format: {
-                (node_type, node_type): [prob1, prob2, ...]
-            }
-        """
-
-        edge_prob_stats = defaultdict(list)
-        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-
-        for g_idx, graph in enumerate(self.original_graphs):
-            edge_counts = self.per_graph_edge_list_counter[g_idx]
-            node_degree_counter = per_graph_node_degree_counter[g_idx]
-            m = len(self.original_graphs_edges[g_idx])
-            for (u, v), count in edge_counts.items():
-                if not only_originla_edges or ((u, v) in self.original_graphs_edges[g_idx]):
-                    # for each generated edge for that graph save its probability 
-                    node_type_u = int(graph.node_attr[u])
-                    node_type_v = int(graph.node_attr[v])
-                    edge_type = tuple(sorted((node_type_u, node_type_v)))
-                    probability = count / self.Monte_Carlo - ((node_degree_counter[u] * node_degree_counter[v]) / (2*m))
-
-                    edge_prob_stats[edge_type].append(probability)
-
-        return edge_prob_stats
-
-    def get_per_edge_type_probability_list_degree_adjusted_no_self_loops(self, only_originla_edges = False) -> dict[list[int]]:
-        """
-        Creating a list of probabilities for each edge type (e.g. Blue-Blue)
-        This list is generated from all the edges generated during the inference for all graphs. 
-        If only_originla_edges is true, then only edges that were in the original graph are selected. 
-        -------
-        edge_prob_stats: dict
-            Format: {
-                (node_type, node_type): [prob1, prob2, ...]
-            }
-        """
-
-        edge_prob_stats = defaultdict(list)
-        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-
-        for g_idx, graph in enumerate(self.original_graphs):
-            edge_counts = self.per_graph_edge_list_counter[g_idx]
-            node_degree_counter = per_graph_node_degree_counter[g_idx]
-            m = len(self.original_graphs_edges[g_idx])
-            for (u, v), count in edge_counts.items():
-                if not only_originla_edges or ((u, v) in self.original_graphs_edges[g_idx]):
-                    # for each generated edge for that graph save its probability 
-                    node_type_u = int(graph.node_attr[u])
-                    node_type_v = int(graph.node_attr[v])
-                    edge_type = tuple(sorted((node_type_u, node_type_v)))
-                    k_u = node_degree_counter[u]
-                    k_v = node_degree_counter[v]
-                    probability = count / self.Monte_Carlo - \
-                    (((k_u * k_v) / (2*m - k_u - 1)) + ((k_u * k_v) / (2*m - k_v - 1)))/2
-
-                    edge_prob_stats[edge_type].append(probability)
-
-        return edge_prob_stats
-#----------------------------------------- PLOTS
+                                                 
+#--------------- Plots ---------------
 
     def plot_active_edges_and_nodes(self):
 
@@ -525,10 +371,13 @@ class alliGATOR(object):
         original_graph = self.original_graphs[graph_id] # this is pyg data object
         generated_graph = self.generated_graphs[graph_id]
         generated_edges = self.per_graph_edge_list_counter[graph_id]
+        central_edge = self.get_central_edge_per_graph()[graph_id]
+
+        # breakpoint()
 
         # from pyg to networkx original graph : 
         original_node_colors = [self.node_color[node_class.item()] for node_class in original_graph.node_attr]
-        original_anomalous_edges = [(u.item(), v.item()) for (u, v), is_anom in zip(zip(original_graph.edge_index[0], original_graph.edge_index[1]), original_graph.edge_anomalous) if is_anom]
+        original_anomalous_edges = [(u.item(), v.item()) for (u, v), is_anom in zip(zip(original_graph.edge_index[0], original_graph.edge_index[1]), original_graph.anomalous) if is_anom]
         original_graph_nx = pyg.utils.to_networkx(original_graph, to_undirected=True)
 
         # generated edges/graph
@@ -544,14 +393,7 @@ class alliGATOR(object):
         m = len(self.original_graphs_edges[graph_id])
         k = per_graph_node_degree_counter[graph_id]
         edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
-                                      'adjusted_prob': count / self.Monte_Carlo 
-                                                - 
-                                                (
-                                                    ((k[u] * k[v]) / (2*m - k[u] - 1))
-                                                    +
-                                                    ((k[u] * k[v]) / (2*m - k[v] - 1))
-                                                )/2
-                                     }) 
+                                      'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m)}) 
                                for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
         # print(edges_with_weights)
         # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
@@ -573,7 +415,7 @@ class alliGATOR(object):
         nx.draw(generated_graph_nx, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
         nx.draw_networkx_edge_labels(generated_graph_nx, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
         
-        axes[0].set_title(f"Original graph with log probability {self.log_graph_probability[graph_id] :.3f}")
+        axes[0].set_title(f"Original graph with central edge {central_edge}")
         axes[1].set_title(f"Edge probability over {self.Monte_Carlo} generated graphs")
         plt.tight_layout()
         plt.show() 

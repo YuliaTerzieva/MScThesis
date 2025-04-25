@@ -25,7 +25,11 @@ from alliGATOR import *
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention2_linear_mc1000_guidance45.pkl")
 
 
-edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5)
+edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 500, name = "edge_cls", lambda_guidance=4.5, 
+                           previously_sampled_model_filename="./Alligator_Output/edge_cls_mc500_guidance45.pkl")
+
+edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly())
+
 
 # my_GATOR.plot_active_edges_and_nodes()
 # my_GATOR.get_PR_AUC([-lp for lp in my_GATOR.log_graph_probability])
@@ -42,15 +46,14 @@ edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/mu
 # my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list(only_originla_edges=False), "all generated edges")
 # my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list_degree_adjusted_no_self_loops(only_originla_edges=False), "all generated edges")
 
-#--------->  which are the anomalous graphs?
-# for count, graph in enumerate(my_GATOR.original_graphs):
-#     if graph.edge_anomalous.any() :
-#         print(count)
+# --------->  which are the anomalous graphs?
+
+# print([c for c, i in enumerate(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls()) if i == 1])
 
 #--------->  Plot graphs
-for i in [2, 3, 13, 21, 800]: 
-#     my_GATOR.plot_graph(i, plot_only_existing_edges = True)
-    my_GATOR.plot_graph(i, plot_only_existing_edges = False)
+# for i in [135, 1899, 200, 4, 6, 7]: 
+#     edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = True)
+    # edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = False)
 
 #--------->  IMPOSSIBLE EDGES
 # sorted_impossible_edges = sorted(my_GATOR.get_number_possible_edges_not_generated())
@@ -59,7 +62,6 @@ for i in [2, 3, 13, 21, 800]:
 # plt.xlabel("Number of imposibble edges")
 # plt.ylabel("Count in graphs (how many graphs)")
 # plt.show()
-
 #---------> anomaly score caluclated using the adjusted probabilities : 
 
 # plt.hist(my_GATOR.get_anomaly_scores_accounting_for_true_node_degree(), bins = 50)
@@ -77,18 +79,18 @@ for i in [2, 3, 13, 21, 800]:
 
 # #--
 
-# plt.hist(my_GATOR.get_graph_anomaly_min_adjusted_edge_prob(), bins = 50)
-# plt.title("Min adjusted edge probabilties")
-# plt.show()
+plt.hist(edge_cls_GATOR.get_edge_cls_anomaly(), bins = 50)
+plt.title("Min adjusted edge probabilties")
+plt.show()
 
-# scores = my_GATOR.get_graph_anomaly_min_adjusted_edge_prob()
-# labels = my_GATOR.get_anomaly_labels_for_original_graphs()
-# scores = np.array(scores)
-# labels = np.array(labels)
-# plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
-# plt.title("Min adjusted edge probabilties")
-# plt.legend()
-# plt.show()
+scores = edge_cls_GATOR.get_edge_cls_anomaly()
+labels = edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls()
+scores = np.array(scores)
+labels = np.array(labels)
+plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
+plt.title("Min adjusted edge probabilties")
+plt.legend()
+plt.show()
 
 # #--
 

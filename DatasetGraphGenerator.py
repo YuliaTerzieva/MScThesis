@@ -231,6 +231,7 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
 def generate_edge_ego_graphs(big_graph, K) -> list[nx.Graph]:
     
     edge_ego_graphs = []
+    central_edge = []
     is_edge_ego_graph_center_anomaly = []
 
     ego_nodes = defaultdict(list)
@@ -242,10 +243,13 @@ def generate_edge_ego_graphs(big_graph, K) -> list[nx.Graph]:
     for edge in big_graph.edges(data=True):
         ego_subgraph = Final_Graph.subgraph(ego_nodes[edge[0]] + ego_nodes[edge[1]]).copy()
         ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
+        nx.set_edge_attributes(ego_subgraph, 0, 'central_edge')
+        ego_subgraph[edge[0]][edge[1]]['central_edge'] = 1
         edge_ego_graphs.append(ego_subgraph)
+        central_edge.append((edge[0], edge[1]))
         is_edge_ego_graph_center_anomaly.append(edge[2]['anomalous'])
 
-    return edge_ego_graphs, is_edge_ego_graph_center_anomaly
+    return edge_ego_graphs, central_edge, is_edge_ego_graph_center_anomaly
 
 def plot_graph(graph) -> None:
     mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
@@ -307,16 +311,18 @@ if __name__ == '__main__':
     # ------------------------------------------------------------
     # """
     start_time = time.time()
-    ego_net_list, is_central_node_anomalous = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
+    ego_net_list, central_edge, is_central_node_anomalous = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
     end_time = time.time()
     print(f"Time it took to get the ego networks of {Final_Graph.number_of_edges()} edges is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
-    interm = list(zip(ego_net_list, is_central_node_anomalous))
+    interm = list(zip(ego_net_list, central_edge, is_central_node_anomalous))
     random.shuffle(interm)
-    ego_net_list, is_central_node_anomalous = zip(*interm)
+    ego_net_list, central_edge, is_central_node_anomalous = zip(*interm)
 
     with open("GeneratedDataset_interm_graph/Graph_edge_cls_edge_ego_list_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
+    with open("GeneratedDataset_interm_graph/central_edge.pkl", "wb") as f:
+        pickle.dump(central_edge, f)
     with open("GeneratedDataset_interm_graph/is_central_node_anomalous.pkl", "wb") as f:
         pickle.dump(is_central_node_anomalous, f)
     # """
