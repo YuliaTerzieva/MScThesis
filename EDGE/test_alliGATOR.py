@@ -25,10 +25,10 @@ from alliGATOR import *
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention2_linear_mc1000_guidance45.pkl")
 
 
-edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 500, name = "edge_cls", lambda_guidance=4.5, 
-                           previously_sampled_model_filename="./Alligator_Output/edge_cls_mc500_guidance45.pkl")
+edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5, 
+                           previously_sampled_model_filename="Alligator_Output/edge_cls_mc1000_guidance45.pkl")
 
-edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly())
+edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly(), title_PR_type = "EDGE classification")
 
 
 # my_GATOR.plot_active_edges_and_nodes()
