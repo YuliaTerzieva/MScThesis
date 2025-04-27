@@ -101,13 +101,15 @@ if __name__ == '__main__':
     # less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
     # even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
 
-    # edge_cls = "./wandb/Id_theft/multinomial_diffusion/multistep/2025-04-27_17-45-43"
+    edge_cls = "./wandb/Id_theft_2/multinomial_diffusion/multistep/2025-04-27_22-09-16"
 
-    # plot_training_loss([edge_cls])
+    plot_training_loss([edge_cls])
 
-    graph = pickle.load(open("../GeneratedDataset_interm_graph/Graph_id_theft_with_anomalies.pkl", "rb"))
-    anomalies = [v for v in nx.get_node_attributes(graph, "anomalous").values()].count(1)
-    print(anomalies)
+    # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
+    # anomalies = []
+    # for g in graph :
+    #     anomalies.append([v for v in nx.get_node_attributes(g, "anomalous").values()].count(1))
+    # print(anomalies)
 
 
 # ------------------------------------------------------------------------------------------------------------------------

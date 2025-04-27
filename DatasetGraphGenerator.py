@@ -423,7 +423,7 @@ def Generate_Identity_Theft_dataset() -> None:
     NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 3), None, ("R", 0.005), # BB, BO, BG 
+    R = [("BA", 3), None, ("R", 0.0005), # BB, BO, BG 
          None, None, ("BA", 1), # OB, OO, OG
          None, ("Uni", 2), None] # GB, GO, GG
     K = 15
@@ -439,7 +439,7 @@ def Generate_Identity_Theft_dataset() -> None:
     Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ")
-    with open("GeneratedDataset_interm_graph/Graph_id_theft.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_id_theft_2.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     
     # """
@@ -456,7 +456,7 @@ def Generate_Identity_Theft_dataset() -> None:
     end_time = time.time()
     print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ")
 
-    with open("GeneratedDataset_interm_graph/Graph_id_theft_with_anomalies.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_id_theft_2_with_anomalies.pkl", 'wb') as f:
         pickle.dump(Final_Graph_witn_anomalies, f)
     # """
     # ------------------------------------------------------------
@@ -469,7 +469,7 @@ def Generate_Identity_Theft_dataset() -> None:
     
     random.shuffle(ego_net_list)
     
-    with open("GeneratedDataset_interm_graph/Graph_id_theft_ego_list_with_anomalies.pkl", "wb") as f:
+    with open("GeneratedDataset_interm_graph/Graph_id_theft_2_ego_list_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
 
     # """
@@ -484,7 +484,7 @@ def Generate_Identity_Theft_dataset() -> None:
         ["train", "eval", "test"],
         [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
     ):
-        with open(f"GeneratedDataset/Id_theft_{name}", "wb") as f:
+        with open(f"GeneratedDataset/Id_theft_2_{name}", "wb") as f:
             pickle.dump(data, f)
 
 # ----------------------------------------------------------------------------

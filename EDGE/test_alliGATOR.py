@@ -25,17 +25,19 @@ from alliGATOR import *
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention2_linear_mc1000_guidance45.pkl")
 
 
-# edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5, 
-#                            previously_sampled_model_filename="Alligator_Output/edge_cls_mc1000_guidance45.pkl")
+# edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-27_18-51-17", 619, MC = 100, name = "edge_cls", lambda_guidance=4.5, 
+#                            previously_sampled_model_filename="Alligator_Output/edge_cls_mc100_guidance45.pkl", sample_numbers=2186)
 
 # edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly(), title_PR_type = "EDGE classification")
 
-id_theft_GATOR = alliGATOR("./wandb/Id_theft/multinomial_diffusion/multistep/2025-04-27_17-45-43", 619, MC = 500, name = "id_theft", lambda_guidance=4.5, 
-                           previously_sampled_model_filename="Alligator_Output/id_theft_mc500_guidance45.pkl")
+# id_theft_GATOR = alliGATOR("./wandb/Id_theft/multinomial_diffusion/multistep/2025-04-27_19-36-11", 319, MC = 100, name = "id_theft", lambda_guidance=4.5, 
+#                            sample_numbers=1000)
 
-labels = id_theft_GATOR.get_true_anomaly_label_tf_theft()
-print(labels.count(1))
+id_theft_GATOR = alliGATOR("./wandb/Id_theft_2/multinomial_diffusion/multistep/2025-04-27_22-09-16", 919, MC = 500, name = "id_theft_2", lambda_guidance=4.5, 
+                           sample_numbers=1000, previously_sampled_model_filename="Alligator_Output/id_theft_2_mc500_guidance45.pkl")
 
+id_theft_GATOR.get_PR_AUC(id_theft_GATOR.get_true_anomaly_label_tf_theft(), id_theft_GATOR.get_id_theft_prediction(), title_PR_type="Identity Theft")
+my_GATOR = id_theft_GATOR
 # my_GATOR.plot_active_edges_and_nodes()
 # my_GATOR.get_PR_AUC([-lp for lp in my_GATOR.log_graph_probability])
 # my_GATOR.get_PR_AUC(my_GATOR.get_anomaly_scores_accounting_for_true_node_degree(), title_PR_type= "Level_of_agreenment")
@@ -47,18 +49,30 @@ print(labels.count(1))
 # my_GATOR.get_edge_PR_AUC()
 # my_GATOR.get_PR_AUC(my_GATOR.get_graph_anomaly_mean_edge_prob(), title_PR_type=" the mean edge probability")
 # my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list(only_originla_edges=True), "original edges only")
-# my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list_degree_adjusted(only_originla_edges=True), "original edges only")
+# my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list(only_originla_edges=True, node_degree_adjusted=True), "original edges only")
 # my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list(only_originla_edges=False), "all generated edges")
-# my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list_degree_adjusted_no_self_loops(only_originla_edges=False), "all generated edges")
+# my_GATOR.plot_edge_distribution_violin_boxplots(my_GATOR.get_per_edge_type_probability_list(only_originla_edges=False, node_degree_adjusted=True), "all generated edges")
 
+####### EDGE CLS
 # --------->  which are the anomalous graphs?
 
 # print([c for c, i in enumerate(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls()) if i == 1])
 
-#--------->  Plot graphs
+# #--------->  Plot graphs
 # for i in [135, 1899, 200, 4, 6, 7]: 
 #     edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = True)
-    # edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = False)
+#     edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = False)
+
+####### ID theft
+# --------->  which are the anomalous graphs?
+
+# print([c for c, i in enumerate(id_theft_GATOR.get_true_anomaly_label_tf_theft()) if i == 1])
+
+# #--------->  Plot graphs
+# for i in [61, 229, 3]: 
+#     id_theft_GATOR.plot_graph_IDT(i, plot_only_existing_edges = True)
+#     edge_cls_GATOR.plot_graph(i, plot_only_existing_edges = False)
+
 
 #--------->  IMPOSSIBLE EDGES
 # sorted_impossible_edges = sorted(my_GATOR.get_number_possible_edges_not_generated())
@@ -85,7 +99,7 @@ print(labels.count(1))
 # #--
 
 # plt.hist(edge_cls_GATOR.get_edge_cls_anomaly(), bins = 50)
-# plt.title("Min adjusted edge probabilties")
+# plt.title("Edge classification predicted dist")
 # plt.show()
 
 # scores = edge_cls_GATOR.get_edge_cls_anomaly()
@@ -93,22 +107,22 @@ print(labels.count(1))
 # scores = np.array(scores)
 # labels = np.array(labels)
 # plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
-# plt.title("Min adjusted edge probabilties")
+# plt.title("Edge classification predicted dist")
 # plt.legend()
 # plt.show()
 
 # #--
 
-# plt.hist(my_GATOR.get_graph_anomaly_min_edge_prob(), bins = 50)
-# plt.title("Min edge probabilties")
+# plt.hist(id_theft_GATOR.get_id_theft_prediction(), bins = 50)
+# plt.title("Identity theft")
 # plt.show()
 
-# scores = my_GATOR.get_graph_anomaly_min_edge_prob()
-# labels = my_GATOR.get_anomaly_labels_for_original_graphs()
+# scores = id_theft_GATOR.get_id_theft_prediction()
+# labels = id_theft_GATOR.get_true_anomaly_label_tf_theft()
 # scores = np.array(scores)
 # labels = np.array(labels)
 # plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
-# plt.title("Min edge probabilities")
+# plt.title("Identity Theft")
 # plt.legend()
 # plt.show()
 
