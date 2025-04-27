@@ -449,7 +449,7 @@ def Generate_Identity_Theft_dataset() -> None:
 
     # We want 2% of the nodes to be anomalous, so 
     print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
-    N_anomalous_nodes = round(0.02 * N) 
+    N_anomalous_nodes = int(0.02 * N_total_nodes) 
     
     Final_Graph_witn_anomalies = add_anomalous_nodes(N_anomalous_nodes, Final_Graph.copy())
 
@@ -490,6 +490,6 @@ def Generate_Identity_Theft_dataset() -> None:
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
     
-    Generate_EDGE_cls_dataset()
+    # Generate_EDGE_cls_dataset()
     Generate_Identity_Theft_dataset()
     

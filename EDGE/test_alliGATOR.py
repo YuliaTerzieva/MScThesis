@@ -25,11 +25,16 @@ from alliGATOR import *
 #                      previously_sampled_model_filename="Alligator_Output/ds10_attention2_linear_mc1000_guidance45.pkl")
 
 
-edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5, 
-                           previously_sampled_model_filename="Alligator_Output/edge_cls_mc1000_guidance45.pkl")
+# edge_cls_GATOR = alliGATOR("./wandb/Edge_classification/multinomial_diffusion/multistep/2025-04-24_16-55-08", 619, MC = 1000, name = "edge_cls", lambda_guidance=4.5, 
+#                            previously_sampled_model_filename="Alligator_Output/edge_cls_mc1000_guidance45.pkl")
 
-edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly(), title_PR_type = "EDGE classification")
+# edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(), edge_cls_GATOR.get_edge_cls_anomaly(), title_PR_type = "EDGE classification")
 
+id_theft_GATOR = alliGATOR("./wandb/Id_theft/multinomial_diffusion/multistep/2025-04-27_17-45-43", 619, MC = 500, name = "id_theft", lambda_guidance=4.5, 
+                           previously_sampled_model_filename="Alligator_Output/id_theft_mc500_guidance45.pkl")
+
+labels = id_theft_GATOR.get_true_anomaly_label_tf_theft()
+print(labels.count(1))
 
 # my_GATOR.plot_active_edges_and_nodes()
 # my_GATOR.get_PR_AUC([-lp for lp in my_GATOR.log_graph_probability])
@@ -79,18 +84,18 @@ edge_cls_GATOR.get_PR_AUC(edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls(),
 
 # #--
 
-plt.hist(edge_cls_GATOR.get_edge_cls_anomaly(), bins = 50)
-plt.title("Min adjusted edge probabilties")
-plt.show()
+# plt.hist(edge_cls_GATOR.get_edge_cls_anomaly(), bins = 50)
+# plt.title("Min adjusted edge probabilties")
+# plt.show()
 
-scores = edge_cls_GATOR.get_edge_cls_anomaly()
-labels = edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls()
-scores = np.array(scores)
-labels = np.array(labels)
-plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
-plt.title("Min adjusted edge probabilties")
-plt.legend()
-plt.show()
+# scores = edge_cls_GATOR.get_edge_cls_anomaly()
+# labels = edge_cls_GATOR.get_true_anomaly_labels_for_edge_cls()
+# scores = np.array(scores)
+# labels = np.array(labels)
+# plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
+# plt.title("Min adjusted edge probabilties")
+# plt.legend()
+# plt.show()
 
 # #--
 

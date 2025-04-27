@@ -27,7 +27,7 @@ class alliGATOR(object):
         _, _, _, _, _, _, _, _, initial_graph_sampler, _, _, _ = get_data(args)
         self.number_diffusion_steps = args.diffusion_steps
 
-        self.sample_numbers = np.arange(2186).tolist()
+        self.sample_numbers = np.arange(1000).tolist() # for the classification we have 2186, for the id theft we have 1000
         self.Monte_Carlo = MC
 
         self.node_color = node_color_mapping
@@ -191,6 +191,7 @@ class alliGATOR(object):
         
         return per_graph_node_degree_counter
 
+#----- >  EDGE CLS 
     def get_true_anomaly_labels_for_edge_cls(self)->list:
 
         labels = np.zeros(len(self.original_graphs))
@@ -230,6 +231,22 @@ class alliGATOR(object):
 
         return central_edge_list
     
+#----- > Id Theft
+    def get_true_anomaly_label_tf_theft(self) -> list:
+
+        labels = np.zeros(len(self.original_graphs))
+
+        print([1 for g in range(len(self.original_graphs)) if self.original_graphs[g].anomalous.any()])
+
+        for g_index in range(len(self.sample_numbers)):
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            # print(f"The central node is {central_node_index} and the anomaly there is {self.original_graphs[g_index].anomalous[central_node_index]}")
+            if self.original_graphs[g_index].anomalous[central_node_index].any() :
+                # breakpoint() 
+                labels[g_index] = 1
+
+        return labels.tolist()
+
     def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type) -> None:
 
         # Data to plot precision - recall curve
