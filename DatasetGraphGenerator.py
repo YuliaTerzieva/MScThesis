@@ -141,6 +141,45 @@ def plot_degree_distribution(g, l_cls = None, r_cld= None, relation=(None, None)
     plt.ylabel("# of Nodes")
     plt.show()
 
+def plot_degree_distribution_by_node_class(g, l_cls = None, r_cls= None, relation=(None, None), class_labels = None):
+
+    algorithm, alg_param = relation
+    if l_cls != r_cls:
+        degree_sequence_l_cls = sorted((d for n_id, d in g.degree() if class_labels[n_id] == l_cls), reverse=True)
+        degree_sequence_r_cls = sorted((d for n_id, d in g.degree() if class_labels[n_id] == r_cls), reverse=True)
+
+        x, y = np.unique(degree_sequence_l_cls, return_counts=True)
+        print(x, y)
+        plt.plot(x, y, label=f"Degree of node type {l_cls}")
+        plt.xlabel("Degree")
+        plt.ylabel("# of Nodes")
+        # plt.title(f"Distribution of the node degrees of class {l_cls} ert \nalgorithm {algorithm}, param {alg_param}, node class {l_cls} -> {r_cls}")
+        # plt.show()
+        x, y = np.unique(degree_sequence_r_cls, return_counts=True)
+        print(x, y)
+        plt.plot(x, y, label=f"Degree of node type {r_cls}")
+        plt.xlabel("Degree")
+        plt.ylabel("# of Nodes")
+        plt.title(f"Distribution of the node degrees \nalgorithm {algorithm}, param {alg_param}, node class {l_cls} -> {r_cls}")
+        plt.legend()
+        plt.show()
+        
+    else:
+        degree_sequence = sorted((d for n, d in g.degree()), reverse=True)
+        plt.bar(*np.unique(degree_sequence, return_counts=True))
+
+        if l_cls is not None and r_cls is not None and relation is not None :
+            plt.title(f"Algorithm {algorithm}, param {alg_param}, node class {l_cls} -> {r_cls}")
+            if relation[0] == 'BA':
+                plt.yscale("log")
+        else:
+            plt.title(f"Complete network")
+            plt.yscale("log")
+
+        plt.xlabel("Degree")
+        plt.ylabel("# of Nodes")
+        plt.show()
+
 def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
     """
     
@@ -166,6 +205,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
                 algorithm = mapping_abbr_2_alg_within_class[relation[0]]
                 generated_graph = algorithm(NC[lhs_class], algorithm_parameter, reproducibility_seed)
                 nx.set_node_attributes(generated_graph, lhs_class, "node_attr")
+                # plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation)
                 
             else :
                 algorithm = mapping_abbr_2_alg_between_class[relation[0]]
@@ -173,9 +213,10 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
                 class_labels = dict(zip(range(NC[lhs_class]), [lhs_class]*NC[lhs_class]))
                 class_labels.update(dict(zip(range(NC[lhs_class], NC[lhs_class] + NC[rhs_class]), [rhs_class] * NC[rhs_class])))
                 nx.set_node_attributes(generated_graph, class_labels, "node_attr")
+                # plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation, class_labels)
             
             graphs_to_overlay.append((generated_graph, lhs_class, rhs_class))
-            # plot_degree_distribution(generated_graph, lhs_class, rhs_class, relation)
+            
 
     Final_Graph = nx.Graph()
     node_id_to_class = [(i, {'node_attr': cls})
@@ -231,25 +272,22 @@ def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
 def generate_edge_ego_graphs(big_graph, K) -> list[nx.Graph]:
     
     edge_ego_graphs = []
-    central_edge = []
-    is_edge_ego_graph_center_anomaly = []
 
     ego_nodes = defaultdict(list)
     for node in big_graph.nodes:
-        ppr = nx.pagerank(Final_Graph, personalization={node: 1.0})
+        ppr = nx.pagerank(big_graph, personalization={node: 1.0})
         top_k_nodes = sorted((n for n in ppr if n != node), key=ppr.get, reverse=True)[:K]
         ego_nodes[node] = [node] + top_k_nodes
 
     for edge in big_graph.edges(data=True):
-        ego_subgraph = Final_Graph.subgraph(ego_nodes[edge[0]] + ego_nodes[edge[1]]).copy()
+        ego_subgraph = big_graph.subgraph(ego_nodes[edge[0]] + ego_nodes[edge[1]]).copy()
         ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
         nx.set_edge_attributes(ego_subgraph, 0, 'central_edge')
         ego_subgraph[edge[0]][edge[1]]['central_edge'] = 1
         edge_ego_graphs.append(ego_subgraph)
-        central_edge.append((edge[0], edge[1]))
-        is_edge_ego_graph_center_anomaly.append(edge[2]['anomalous'])
 
-    return edge_ego_graphs, central_edge, is_edge_ego_graph_center_anomaly
+
+    return edge_ego_graphs
 
 def plot_graph(graph) -> None:
     mapping_to_color = {0:'blue', 1: 'orange', 2: 'grey'}
@@ -258,8 +296,52 @@ def plot_graph(graph) -> None:
     nx.draw(graph, with_labels=True, node_color=map_to_color(node_colors))
     plt.show()
 
-if __name__ == '__main__':
+def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
+    # N is from O to G 
+    # M is from G to O this should be bigger because this is a bigger anomaly! 
+
+    M = int(0.8 * N_nodes)
+    N = N_nodes - M
+
+    nx.set_node_attributes(G, 0, 'anomalous')
+
+    nodes = np.array(G.nodes)
+    attrs = np.array([G.nodes[n]['node_attr'] for n in nodes])
+    idx_1 = np.where(attrs == 1)[0] # Orange Nodes
+    idx_2 = np.where(attrs == 2)[0] # Grey nodes
     
+    selected_1_Orange = np.random.choice(idx_1, N, replace=False)
+    selected_2_Gray = np.random.choice(idx_2, M, replace=False)
+
+    for i in selected_1_Orange: # this is from Orange to Grey
+        G.nodes[nodes[i]]['node_attr'] = 2
+        G.nodes[nodes[i]]['anomalous'] = 1
+
+    for i in selected_2_Gray: # this is from Grey to Orange
+        G.nodes[nodes[i]]['node_attr'] = 1
+        G.nodes[nodes[i]]['anomalous'] = 1
+
+    return G
+
+def generate_ego_graph(G, K) -> list[nx.Graph]:
+    
+    ego_graphs = []
+
+    for node in G.nodes:
+        ppr = nx.pagerank(G, personalization={node: 1.0})
+        top_k_nodes = sorted((n for n in ppr if n != node), key=ppr.get, reverse=True)[:K]
+        ego_subgraph = G.subgraph([node] + top_k_nodes).copy()
+        ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
+
+        nx.set_node_attributes(ego_subgraph, 0, 'central_node')
+        ego_subgraph.nodes[node]['central_node'] = 1
+        ego_graphs.append(ego_subgraph)
+
+    return ego_graphs
+
+# ----------------------------------------------------------------------------
+
+def Generate_EDGE_cls_dataset() -> None :
     N = 3 # B, O, G
     N_total_nodes = 5000
     NC_perc = np.array([0.25, 0.35, 0.4]) 
@@ -279,7 +361,6 @@ if __name__ == '__main__':
     start_time = time.time()
 
     Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
-
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
@@ -290,7 +371,7 @@ if __name__ == '__main__':
     # """
     start_time = time.time()
 
-    # We want 1% of the relations to be anomalous, so 
+    # We want 2% of the relations to be anomalous, so 
     print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
     N_anomalous_relations = round(0.02 * Final_Graph.number_of_edges()) 
     anomalous_R_perc = np.array([0, 0.33, 0, 
@@ -311,20 +392,16 @@ if __name__ == '__main__':
     # ------------------------------------------------------------
     # """
     start_time = time.time()
-    ego_net_list, central_edge, is_central_node_anomalous = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
+    ego_net_list = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
     end_time = time.time()
     print(f"Time it took to get the ego networks of {Final_Graph.number_of_edges()} edges is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
 
-    interm = list(zip(ego_net_list, central_edge, is_central_node_anomalous))
-    random.shuffle(interm)
-    ego_net_list, central_edge, is_central_node_anomalous = zip(*interm)
+    
+    random.shuffle(ego_net_list)
 
     with open("GeneratedDataset_interm_graph/Graph_edge_cls_edge_ego_list_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
-    with open("GeneratedDataset_interm_graph/central_edge.pkl", "wb") as f:
-        pickle.dump(central_edge, f)
-    with open("GeneratedDataset_interm_graph/is_central_node_anomalous.pkl", "wb") as f:
-        pickle.dump(is_central_node_anomalous, f)
+
     # """
     # ------------------------------------------------------------
     
@@ -334,11 +411,85 @@ if __name__ == '__main__':
     train, evaluation = int(0.7 * l), int(0.8 * l)
 
     for name, data in zip(
-        ["train", "eval", "test", "test_labels"],
-        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:], is_central_node_anomalous[evaluation:]]
+        ["train", "eval", "test"],
+        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
     ):
         with open(f"GeneratedDataset/Edge_classification_{name}", "wb") as f:
             pickle.dump(data, f)
-    
 
+def Generate_Identity_Theft_dataset() -> None:
+    N = 3 # B, O, G
+    N_total_nodes = 5000
+    NC_perc = np.array([0.25, 0.35, 0.4]) 
+    NC = (NC_perc * N_total_nodes).astype(int).tolist()
+    print(f"The node class cardinality is {NC}")
+    R = [("BA", 3), None, ("R", 0.005), # BB, BO, BG 
+         None, None, ("BA", 1), # OB, OO, OG
+         None, ("Uni", 2), None] # GB, GO, GG
+    K = 15
+
+    reproducibility_seed = 42
+    random.seed(reproducibility_seed)
+    np.random.seed(reproducibility_seed)
+
+    # ------------------------------------------------------------
+    # """
+    start_time = time.time()
+
+    Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
+    end_time = time.time()
+    print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ")
+    with open("GeneratedDataset_interm_graph/Graph_id_theft.pkl", 'wb') as f:
+        pickle.dump(Final_Graph, f)
+    
+    # """
+    # ------------------------------------------------------------
+    # """
+    start_time = time.time()
+
+    # We want 2% of the nodes to be anomalous, so 
+    print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
+    N_anomalous_nodes = round(0.02 * N) 
+    
+    Final_Graph_witn_anomalies = add_anomalous_nodes(N_anomalous_nodes, Final_Graph.copy())
+
+    end_time = time.time()
+    print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ")
+
+    with open("GeneratedDataset_interm_graph/Graph_id_theft_with_anomalies.pkl", 'wb') as f:
+        pickle.dump(Final_Graph_witn_anomalies, f)
+    # """
+    # ------------------------------------------------------------
+    # """
+    start_time = time.time()
+    ego_net_list = generate_ego_graph(Final_Graph_witn_anomalies, K = K)
+    end_time = time.time()
+    print(f"Time it took to get the ego networks is { end_time - start_time } seconds ")
+
+    
+    random.shuffle(ego_net_list)
+    
+    with open("GeneratedDataset_interm_graph/Graph_id_theft_ego_list_with_anomalies.pkl", "wb") as f:
+        pickle.dump(ego_net_list, f)
+
+    # """
+    # ------------------------------------------------------------
+    
+    # I have a 70% 10% 20% split
+
+    l = len(ego_net_list)
+    train, evaluation = int(0.7 * l), int(0.8 * l)
+
+    for name, data in zip(
+        ["train", "eval", "test"],
+        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
+    ):
+        with open(f"GeneratedDataset/Id_theft_{name}", "wb") as f:
+            pickle.dump(data, f)
+
+# ----------------------------------------------------------------------------
+if __name__ == '__main__':
+    
+    Generate_EDGE_cls_dataset()
+    Generate_Identity_Theft_dataset()
     
