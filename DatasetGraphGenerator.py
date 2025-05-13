@@ -127,6 +127,7 @@ def plot_degree_distribution(g, l_cls = None, r_cld= None, relation=(None, None)
 
     algorithm, alg_param = relation
     degree_sequence = sorted((d for n, d in g.degree()), reverse=True)
+    print("The mean node degree in the whole network is : ", np.mean(degree_sequence), np.std(degree_sequence))
 
     plt.bar(*np.unique(degree_sequence, return_counts=True))
     if l_cls is not None and r_cld is not None and relation is not None :
@@ -205,7 +206,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
                 algorithm = mapping_abbr_2_alg_within_class[relation[0]]
                 generated_graph = algorithm(NC[lhs_class], algorithm_parameter, reproducibility_seed)
                 nx.set_node_attributes(generated_graph, lhs_class, "node_attr")
-                # plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation)
+                plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation)
                 
             else :
                 algorithm = mapping_abbr_2_alg_between_class[relation[0]]
@@ -213,7 +214,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
                 class_labels = dict(zip(range(NC[lhs_class]), [lhs_class]*NC[lhs_class]))
                 class_labels.update(dict(zip(range(NC[lhs_class], NC[lhs_class] + NC[rhs_class]), [rhs_class] * NC[rhs_class])))
                 nx.set_node_attributes(generated_graph, class_labels, "node_attr")
-                # plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation, class_labels)
+                plot_degree_distribution_by_node_class(generated_graph, lhs_class, rhs_class, relation, class_labels)
             
             graphs_to_overlay.append((generated_graph, lhs_class, rhs_class))
             
@@ -240,7 +241,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
             (map_node(u), map_node(v)) for u, v in H.edges()
         )
 
-    # plot_degree_distribution(Final_Graph)
+    plot_degree_distribution(Final_Graph)
     return Final_Graph
 
 def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
@@ -297,7 +298,7 @@ def plot_graph(graph) -> None:
     plt.show()
 
 def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
-    # N is from O to G 
+    # , 80 is from O to G 
     # M is from G to O this should be bigger because this is a bigger anomaly! 
 
     M = int(0.8 * N_nodes)
@@ -423,7 +424,7 @@ def Generate_Identity_Theft_dataset() -> None:
     NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 3), None, ("R", 0.0005), # BB, BO, BG 
+    R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG  # 0.0005 for 5000!
          None, None, ("BA", 1), # OB, OO, OG
          None, ("Uni", 2), None] # GB, GO, GG
     K = 15
@@ -437,6 +438,13 @@ def Generate_Identity_Theft_dataset() -> None:
     start_time = time.time()
 
     Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
+    
+    # node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+    # original_node_colors = [node_color_mapping[n[1]['node_attr']] for n in Final_Graph.nodes(data = True)]
+    # nx.draw(Final_Graph,  node_color=original_node_colors, node_size = 50, alpha = 0.7) 
+    # plt.show()
+    breakpoint()
+    return
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ")
     with open("GeneratedDataset_interm_graph/Graph_id_theft_2.pkl", 'wb') as f:

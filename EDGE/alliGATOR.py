@@ -213,8 +213,11 @@ class alliGATOR(object):
             central_edge = central_edge_list[g_index]
             m = len(self.original_graphs_edges[g_index])
             k = per_graph_node_degree_counter[g_index]
+
+            # to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
+            #                                     for edge in self.original_graphs_edges[g_index]])
         
-            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo - ((k[central_edge[0]] * k[central_edge[1]]) / (4*m**2))
+            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo #- ((k[central_edge[0]] * k[central_edge[1]]) / (2*m))) / to_norm
 
             anomaly_score_per_edge_sub_graph[g_index] = 1 - generated_prob_central_edge
 
@@ -263,9 +266,16 @@ class alliGATOR(object):
             m = len(self.original_graphs_edges[g_index])
             k = per_graph_node_degree_counter[g_index]
 
-            score = np.mean([gen_edges[edge]/self.Monte_Carlo -  # this is W ij
-                            ((k[edge[0]] * k[edge[1]]) / (4*m**2)) # this is 
-                            for edge in central_node_edges])
+            # to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
+            #                                     for edge in self.original_graphs_edges[g_index]])
+
+            # score_normalised = np.mean([((gen_edges[edge]/self.Monte_Carlo) - # this is W ij
+            #                 ((k[edge[0]] * k[edge[1]]) / (2*m)))
+            #                 /to_norm # this is #
+            #                 for edge in central_node_edges]) 
+            
+            score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
+            
             node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly # TODO : however this can be above 1, we should normlaise it! 
 
@@ -291,7 +301,7 @@ class alliGATOR(object):
         # plt.plot([1, 0.7688679245283019, 0.41037735849056606], [0.1939615736505032, 0.14913083257090576, 0.07959743824336687], label = "Isolation Forest result with 8, 16, 21 emb (best to worst)", marker = 'o')
         # plt.plot([0.2], [0.2], label = "Isolation Forest with node attr", marker = 'o')
 
-        plt.title(f"Precision - Recall curve with AUC = {round(auc_precision_recall, 3)} using {title_PR_type}")
+        plt.title(f"Precision - Recall curve")# with AUC = {round(auc_precision_recall, 3)} using {title_PR_type}")
 
         # now the "baseline", nice explanation here : https://stats.stackexchange.com/questions/251175/what-is-baseline-in-precision-recall-curve
         plt.hlines(true_labels.count(1)/len(true_labels), xmin=0, xmax=1, label = "Baseline curve", color='red')

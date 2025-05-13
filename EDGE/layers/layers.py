@@ -488,12 +488,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         )
         
     def forward(self, pyg_data, t_node, t_edge):
-        """
-        type of pyg_data is  <class 'abc.DataBatch'>
-        type of t_node is <class 'torch.Tensor'>
-        type of t_edge is <class 'torch.Tensor'>
-        """
-        # breakpoint()
+
         if hasattr(pyg_data, 'edge_index_t'):
             edge_index = pyg_data.edge_index_t
 
