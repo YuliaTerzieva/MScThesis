@@ -239,7 +239,6 @@ class alliGATOR(object):
     
 #----- > Id Theft
     def get_true_anomaly_label_tf_theft(self) -> list:
-
         labels = np.zeros(len(self.original_graphs))
 
         for g_index in range(len(self.sample_numbers)):
@@ -282,7 +281,7 @@ class alliGATOR(object):
         return anomaly_score_per_edge_sub_graph
 
 #----- > PR AUC
-    def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type) -> None:
+    def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type) -> float:
 
         # Data to plot precision - recall curve
         precision, recall, thresholds = precision_recall_curve(true_labels, predicted_labels)
@@ -292,21 +291,18 @@ class alliGATOR(object):
         auc_precision_recall = auc(recall, precision)
         print('\033[1;36m'+f"The ACU using {title_PR_type} of a graph is {round(auc_precision_recall, 5)}\n"+'\033[0;36m')
 
-        plt.figure(figsize=(7, 7))
-        plt.plot(recall, precision, label = f"Alligator with AUC = {round(auc_precision_recall, 3)}", color='green')
-        plt.xlabel("Recall")
-        plt.ylabel("Precision")
-
-        #isolation forest result using node2vec with sum pooling
-        # plt.plot([1, 0.7688679245283019, 0.41037735849056606], [0.1939615736505032, 0.14913083257090576, 0.07959743824336687], label = "Isolation Forest result with 8, 16, 21 emb (best to worst)", marker = 'o')
-        # plt.plot([0.2], [0.2], label = "Isolation Forest with node attr", marker = 'o')
-
-        plt.title(f"Precision - Recall curve")# with AUC = {round(auc_precision_recall, 3)} using {title_PR_type}")
+        # plt.figure(figsize=(7, 7))
+        # plt.plot(recall, precision, label = f"Alligator with AUC = {round(auc_precision_recall, 3)}", color='green')
+        # plt.xlabel("Recall")
+        # plt.ylabel("Precision")
+        # plt.title(f"Precision - Recall curve")# with AUC = {round(auc_precision_recall, 3)} using {title_PR_type}")
 
         # now the "baseline", nice explanation here : https://stats.stackexchange.com/questions/251175/what-is-baseline-in-precision-recall-curve
-        plt.hlines(true_labels.count(1)/len(true_labels), xmin=0, xmax=1, label = "Baseline curve", color='red')
-        plt.legend()
-        plt.show()
+        # plt.hlines(true_labels.count(1)/len(true_labels), xmin=0, xmax=1, label = "Baseline curve", color='red')
+        # plt.legend()
+        # plt.show()
+
+        return auc_precision_recall
 
                                                  
 #--------------- Plots ---------------

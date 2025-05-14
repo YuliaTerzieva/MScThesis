@@ -1,0 +1,43 @@
+from alliGATOR import *
+import itertools
+
+K = [15]
+DS = [8, 10, 15]
+A = [1, 21]
+guidance = [0, 0.5, 1, 3, 4.5]
+mc_simulation = [10, 50, 100, 500, 1000]
+
+valid_combinations = [
+    (k, ds, a, g, mc)
+    for k, ds, a, g, mc in itertools.product(K, DS, A, guidance, mc_simulation)
+    if not (k == 10 and ds == 15)
+]
+
+check = {"K15DS8A1" : 659, 
+         "K15DS8A21" : 799, 
+         "K15DS10A1" : 399, 
+         "K15DS10A21" : 619, 
+         "K15DS15A1" : 1609, 
+         "K15DS15A21" :799}
+
+results = []
+
+for combo in valid_combinations:
+    k, ds, a, g, mc = combo
+    print("-------------------------------------------------------")
+    print(f"Starting with combination K {k}, DS {ds}, A {a}, G {g}, MC {mc}")
+    NAG = alliGATOR(f"./wandb/Id_theft_2/multinomial_diffusion/multistep/K{k}DS{ds}A{a}", check[f"K{k}DS{ds}A{a}"], MC = mc, name = f"K{k}DS{ds}A{a}", lambda_guidance=g, 
+                               sample_numbers=1000) 
+
+    prauc = NAG.get_PR_AUC(NAG.get_true_anomaly_label_tf_theft(), NAG.get_id_theft_prediction(), title_PR_type="Node Anomaly")
+    results.append({'params': combo, 'pr-auc': prauc})
+    print(f"AUPRC is {prauc}")
+
+sorted_results = sorted(results, key=lambda x: x['pr-auc'], reverse=True)
+best_result = sorted_results[0]
+
+print(f"Best parameters: {best_result['params']}")
+print(f"Best score (R): {best_result['score']}")
+
+
+
