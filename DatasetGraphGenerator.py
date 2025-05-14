@@ -351,7 +351,7 @@ def Generate_EDGE_cls_dataset() -> None :
     R = [("BA", 3), None, ("R", 0.0005), # BB, BO, BG 
          None, None, ("BA", 1), # OB, OO, OG
          None, ("Uni", 2), None] # GB, GO, GG
-    K = 15
+    K = 7
 
     reproducibility_seed = 42
     random.seed(reproducibility_seed)
@@ -365,7 +365,7 @@ def Generate_EDGE_cls_dataset() -> None :
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     # """
     # ------------------------------------------------------------
@@ -387,7 +387,7 @@ def Generate_EDGE_cls_dataset() -> None :
     end_time = time.time()
     print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
 
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls_with_anomalies.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7_with_anomalies.pkl", 'wb') as f:
         pickle.dump(Final_Graph_witn_anomalies, f)
     # """
     # ------------------------------------------------------------
@@ -400,7 +400,7 @@ def Generate_EDGE_cls_dataset() -> None :
     
     random.shuffle(ego_net_list)
 
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls_edge_ego_list_with_anomalies.pkl", "wb") as f:
+    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7_edge_ego_list_with_anomalies.pkl", "wb") as f:
         pickle.dump(ego_net_list, f)
 
     # """
@@ -415,7 +415,7 @@ def Generate_EDGE_cls_dataset() -> None :
         ["train", "eval", "test"],
         [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
     ):
-        with open(f"GeneratedDataset/Edge_classification_{name}", "wb") as f:
+        with open(f"GeneratedDataset/Edge_classification_K7_{name}", "wb") as f:
             pickle.dump(data, f)
 
 def Generate_Identity_Theft_dataset() -> None:
@@ -497,6 +497,6 @@ def Generate_Identity_Theft_dataset() -> None:
 # ----------------------------------------------------------------------------
 if __name__ == '__main__':
     
-    # Generate_EDGE_cls_dataset()
-    Generate_Identity_Theft_dataset()
+    Generate_EDGE_cls_dataset()
+    # Generate_Identity_Theft_dataset()
     

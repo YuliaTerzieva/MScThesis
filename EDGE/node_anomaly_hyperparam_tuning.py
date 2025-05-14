@@ -1,11 +1,11 @@
 from alliGATOR import *
 import itertools
 
-K = [15]
+K = [10, 15]
 DS = [8, 10, 15]
 A = [1, 21]
-guidance = [0, 0.5, 1, 3, 4.5]
-mc_simulation = [10, 50, 100, 500, 1000]
+guidance = [0, 0.5, 4.5]
+mc_simulation = [10, 100, 1000]
 
 valid_combinations = [
     (k, ds, a, g, mc)
@@ -18,7 +18,11 @@ check = {"K15DS8A1" : 659,
          "K15DS10A1" : 399, 
          "K15DS10A21" : 619, 
          "K15DS15A1" : 1609, 
-         "K15DS15A21" :799}
+         "K15DS15A21" :799, 
+         "K10DS8A1" : 869, 
+         "K10DS8A21": 799, 
+         "K10DS10A1": 439, 
+         "K10DS10A21": 619}
 
 results = []
 
@@ -26,7 +30,7 @@ for combo in valid_combinations:
     k, ds, a, g, mc = combo
     print("-------------------------------------------------------")
     print(f"Starting with combination K {k}, DS {ds}, A {a}, G {g}, MC {mc}")
-    NAG = alliGATOR(f"./wandb/Id_theft_2/multinomial_diffusion/multistep/K{k}DS{ds}A{a}", check[f"K{k}DS{ds}A{a}"], MC = mc, name = f"K{k}DS{ds}A{a}", lambda_guidance=g, 
+    NAG = alliGATOR(f"./wandb/Id_theft_K{k}/multinomial_diffusion/multistep/K{k}DS{ds}A{a}", check[f"K{k}DS{ds}A{a}"], MC = mc, name = f"K{k}DS{ds}A{a}", lambda_guidance=g, 
                                sample_numbers=1000) 
 
     prauc = NAG.get_PR_AUC(NAG.get_true_anomaly_label_tf_theft(), NAG.get_id_theft_prediction(), title_PR_type="Node Anomaly")
