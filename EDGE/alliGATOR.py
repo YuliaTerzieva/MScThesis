@@ -16,7 +16,7 @@ from model import get_model
 
 class alliGATOR(object):
 
-    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}):
+    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, anomaly_type = "", node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}):
         
         wandb_model_log = saved_model
         path = wandb_model_log+f"/check/checkpoint_{checkpoint_nb}.pt"
@@ -43,7 +43,7 @@ class alliGATOR(object):
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
             self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo) 
-            with open(f"Alligator_Output/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
+            with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
                 pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
             with open(previously_sampled_model_filename, 'rb') as f:
@@ -297,7 +297,7 @@ class alliGATOR(object):
         # plt.ylabel("Precision")
         # plt.title(f"Precision - Recall curve")# with AUC = {round(auc_precision_recall, 3)} using {title_PR_type}")
 
-        # now the "baseline", nice explanation here : https://stats.stackexchange.com/questions/251175/what-is-baseline-in-precision-recall-curve
+        # # now the "baseline", nice explanation here : https://stats.stackexchange.com/questions/251175/what-is-baseline-in-precision-recall-curve
         # plt.hlines(true_labels.count(1)/len(true_labels), xmin=0, xmax=1, label = "Baseline curve", color='red')
         # plt.legend()
         # plt.show()

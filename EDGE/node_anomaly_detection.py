@@ -5,8 +5,8 @@ from alliGATOR import *
 # node_anomaly_gator = alliGATOR("./wandb/Id_theft_2/multinomial_diffusion/multistep/2025-04-27_22-09-16", 919, MC = 500, name = "id_theft_2", lambda_guidance=4.5, 
 #                            sample_numbers=1000, previously_sampled_model_filename="Alligator_Output/id_theft_2_mc500_guidance45.pkl")
 
-node_anomaly_gator = alliGATOR("./wandb/Id_theft_2/multinomial_diffusion/multistep/K15DS8A1", 659, MC = 500, name = "K15DS8A1", lambda_guidance=4.5, 
-                               sample_numbers=1000) 
+node_anomaly_gator = alliGATOR(f"./wandb/Id_theft_K{15}/multinomial_diffusion/multistep/K{15}DS{8}A{21}", 799, MC = 1000, name = f"K{15}DS{8}A{21}", lambda_guidance=4.5, 
+                    sample_numbers=1000, previously_sampled_model_filename=f"Alligator_Output/K{15}DS{8}A{21}_mc{1000}_guidance{int(4.5*10)}.pkl") 
 
 node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
 
@@ -37,7 +37,7 @@ node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft
 
 #---------> anomaly score distribution : 
 # plt.hist(node_anomaly_gator.get_id_theft_prediction(), bins = 50)
-# plt.title("Identity theft")
+# plt.title("Node anomaly score distribution")
 # plt.show()
 
 # scores = node_anomaly_gator.get_id_theft_prediction()
@@ -45,6 +45,6 @@ node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft
 # scores = np.array(scores)
 # labels = np.array(labels)
 # plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
-# plt.title("Identity Theft")
+# plt.title("Node anomaly score distribution")
 # plt.legend()
 # plt.show()
