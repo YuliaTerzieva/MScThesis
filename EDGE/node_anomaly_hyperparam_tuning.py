@@ -118,7 +118,7 @@ valid_combinations = [
     if not (k == 10 and ds == 15)
 ]
 
-# """ This is for reading generating the results for all combinations
+""" This is for reading generating the results for all combinations
 check = {"K15DS8A1" : 659, 
          "K15DS8A21" : 799, 
          "K15DS10A1" : 399, 
@@ -131,19 +131,18 @@ check = {"K15DS8A1" : 659,
          "K10DS10A21": 619}
 
 results = []
-
 for combo in valid_combinations:
     k, ds, a, g, mc = combo
     print("-------------------------------------------------------")
     print(f"Starting with combination K {k}, DS {ds}, A {a}, G {g}, MC {mc}")
     NAG = alliGATOR(f"./wandb/Id_theft_K{k}/multinomial_diffusion/multistep/K{k}DS{ds}A{a}", check[f"K{k}DS{ds}A{a}"], MC = mc, name = f"K{k}DS{ds}A{a}", lambda_guidance=g, 
                                sample_numbers=1000, anomaly_type="node_anomaly", previously_sampled_model_filename=f"Alligator_Output_node_anomaly/K{k}DS{ds}A{a}_mc{mc}_guidance{int(g*10)}.pkl") 
-    prauc = NAG.get_PR_AUC(NAG.get_true_anomaly_label_tf_theft(), NAG.get_id_theft_prediction(), title_PR_type="Node Anomaly")
+    precision, recall, prauc = NAG.get_PR_AUC(NAG.get_true_anomaly_label_tf_theft(), NAG.get_id_theft_prediction(), title_PR_type="Node Anomaly")
     results.append({'params': combo, 'pr-auc': prauc})
 
 with open(f"Alligator_Output_node_anomaly/Node_anomaly_experiment.pkl", "wb") as f:
     pickle.dump(results, f)
-# """
+"""
 
 # ----------------------------------------------------------------------
 

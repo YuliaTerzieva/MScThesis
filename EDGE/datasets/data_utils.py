@@ -25,6 +25,12 @@ def preprocess(g, degree=True, p_uncon = None):
     if hasattr(pyg_data, 'edge_anomalous'):
         del pyg_data.edge_anomalous
         
+    if hasattr(pyg_data, 'ano_label'):
+        del pyg_data.ano_label
+        del pyg_data.str_ano_label
+        del pyg_data.attr_ano_label
+        del pyg_data.weight
+
     row, col = torch.triu_indices(pyg_data.num_nodes, pyg_data.num_nodes,1)
     # Yulia : full_edge_index has shape (2 by N) it is all the possible undirected edges that can be added to a graph with N  = (number of nodes ^ 2 - number of nodes)/2
     # note we are wokring with undirectional graph with no self loops!
@@ -36,7 +42,9 @@ def preprocess(g, degree=True, p_uncon = None):
 
     if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) < p_uncon): # This part is changed by Yulia, based on Algorithm 1 in the thesis 
         # TODO check if the algorithm number is still correct
-        pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.int)
+        # pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.int) # this is for my dataset 
+        # breakpoint()
+        pyg_data.node_attr = torch.full(pyg_data.node_attr.shape, 0, dtype=torch.int) # this is for Cora dataset
 
     if degree:
         # Yulia : these are the degrees for each node in the graph
@@ -52,6 +60,7 @@ def collate_fn(pyg_datas, repeat=1):
     where edges_per_graph is the total possible edges a graph with this many nodes can have
 
     """
+    # breakpoint()
     pyg_datas = sum([[pyg_data.clone() for _ in range(repeat)]for pyg_data in pyg_datas],[])
     batched_data = pyg.data.Batch.from_data_list(pyg_datas)
     batched_data.nodes_per_graph = torch.tensor([pyg_data.num_nodes for pyg_data in pyg_datas])

@@ -15,6 +15,10 @@ np.random.seed(42)
 g = pickle.load(open("GeneratedDataset_interm_graph/Graph_id_theft_2_with_anomalies.pkl", "rb"))
 pyg_data = pyg.utils.from_networkx(g)
 
+all_precision = []
+n_interp_points = 500
+interp_recall = np.linspace(0, 1, n_interp_points)
+
 plt.figure(figsize=(7, 7))
 for run in np.arange(10): 
 
@@ -47,23 +51,34 @@ for run in np.arange(10):
 
     precision, recall, thresholds = precision_recall_curve(true_labels_test, abnormality_score_normed)
     auc_precision_recall = auc(recall, precision)
-    plt.plot(recall, precision, label = f"Iso AUC = {round(auc_precision_recall, 3)}, run = {run}")
+    # plt.plot(recall, precision, label = f"Iso AUC = {round(auc_precision_recall, 3)}, run = {run}")
+    precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
+    
+    all_precision.append(precision_interp)
 
-plt.hlines(true_labels_test.count(1)/len(true_labels_test), xmin=0, xmax=1, label = "Baseline curve", color='red')
+# plt.hlines(true_labels_test.count(1)/len(true_labels_test), xmin=0, xmax=1, label = "Baseline curve", color='red')
+# plt.xlabel("Recall")
+# plt.ylabel("Precision")
+# plt.title(f"Node anomaly Precision - Recall curve using Iso Forest")
+# plt.legend()
+# plt.show()
+
+# Convert to array and compute mean/std
+all_precision = np.vstack(all_precision)
+mean_precision = all_precision.mean(axis=0)
+std_precision = all_precision.std(axis=0)
+
+# Plot mean curve with shaded std area
+plt.figure(figsize=(7, 7))
+plt.plot(interp_recall, mean_precision, label=f"Mean PR curve (AUC = {auc(interp_recall, mean_precision):.3f})", color = "teal")
+plt.fill_between(interp_recall, mean_precision - std_precision, mean_precision + std_precision, alpha=0.3, color = "teal")
+
+# Baseline (random)
+positive_ratio = true_labels_test.count(1) / len(true_labels_test)
+plt.hlines(positive_ratio, xmin=0, xmax=1, color='red', label='Baseline')
+
 plt.xlabel("Recall")
 plt.ylabel("Precision")
-plt.title(f"Node anomaly Precision - Recall curve using Iso Forest")
+plt.title("Node Anomaly\nMean Precision-Recall Curve with Std (Isolation Forest)")
 plt.legend()
 plt.show()
-
-"""
-tn, fp, fn, tp = confusion_matrix(true_labels_shuffled[int(0 * pyg_data.num_nodes):], result).ravel()
-precision = tp / (tp + fp)
-recall = tp / (tp + fn)
-accuracy = (tp + tn) / (tn + fp + fn + tp)
-print('\033[1;36m'+f"We have tn {tn}, fp {fp}, fn {fn}, tp {tp}")
-print("Precision : ", precision)
-print("Recall : ", recall)
-print("Accuracy : ", accuracy)
-print("F1 score : ", (2*tp) / (2*tp + fp + fn), "\033[0m")
-"""

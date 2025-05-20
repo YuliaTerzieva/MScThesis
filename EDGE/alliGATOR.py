@@ -8,6 +8,7 @@ from collections import defaultdict, Counter
 import pickle
 from sklearn.metrics import precision_recall_curve, auc
 from sklearn.metrics import confusion_matrix
+import time
 
 # ---- EDGE functions ----
 from datasets.data import get_data
@@ -16,7 +17,7 @@ from model import get_model
 
 class alliGATOR(object):
 
-    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, anomaly_type = "", node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}):
+    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, anomaly_type = "", node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}, seed = 42):
         
         wandb_model_log = saved_model
         path = wandb_model_log+f"/check/checkpoint_{checkpoint_nb}.pt"
@@ -42,9 +43,9 @@ class alliGATOR(object):
 
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
-            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo) 
-            with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
-                pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
+            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed) 
+            # with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
+            #     pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
             with open(previously_sampled_model_filename, 'rb') as f:
                 self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = pickle.load(f)
@@ -302,7 +303,7 @@ class alliGATOR(object):
         # plt.legend()
         # plt.show()
 
-        return auc_precision_recall
+        return precision, recall, auc_precision_recall
 
                                                  
 #--------------- Plots ---------------
