@@ -253,34 +253,46 @@ class alliGATOR(object):
     def get_id_theft_prediction(self) -> np.array :
 
         anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
-        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
 
         for g_index in range(len(self.sample_numbers)):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
-            gen_edges = self.per_graph_edge_list_counter[g_index]
-            # sum([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])/len(central_node_edges)
-
-            
-            m = len(self.original_graphs_edges[g_index])
-            k = per_graph_node_degree_counter[g_index]
-
-            # to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
-            #                                     for edge in self.original_graphs_edges[g_index]])
-
-            # score_normalised = np.mean([((gen_edges[edge]/self.Monte_Carlo) - # this is W ij
-            #                 ((k[edge[0]] * k[edge[1]]) / (2*m)))
-            #                 /to_norm # this is #
-            #                 for edge in central_node_edges]) 
-            
+            gen_edges = self.per_graph_edge_list_counter[g_index]            
             score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
             
             node_anomaly = 1 - score
-            anomaly_score_per_edge_sub_graph[g_index] = node_anomaly # TODO : however this can be above 1, we should normlaise it! 
+            anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
 
         return anomaly_score_per_edge_sub_graph
 
+#----- > Cora dataset
+    def get_true_anomaly_label_core(self) -> list:
+        labels = np.zeros(len(self.original_graphs))
+
+        for g_index in range(len(self.sample_numbers)):
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            if self.original_graphs[g_index].ano_label[central_node_index].any() :
+                labels[g_index] = 1
+
+        return labels.tolist()
+
+    def get_cora_prediction(self) -> np.array :
+
+        # breakpoint()
+        anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+
+        for g_index in range(len(self.sample_numbers)):
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
+
+            gen_edges = self.per_graph_edge_list_counter[g_index]            
+            score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges]) # TODO : here i need to add 0 for every edge that was not generated!
+            
+            node_anomaly = 1 - score
+            anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
+
+        return anomaly_score_per_edge_sub_graph
 #----- > PR AUC
     def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type) -> float:
 

@@ -94,12 +94,14 @@ def plot_training_loss(dataset) -> None:
 if __name__ == '__main__': 
     
 
-    dataset_name = "Id_theft_2" 
-    plot_graph_freq_wrt_node_edge(dataset_name)
+    # dataset_name = "Id_theft_2" 
+    # plot_graph_freq_wrt_node_edge(dataset_name)
 
-    dataset_name = "Edge_classification" 
-    plot_graph_freq_wrt_node_edge(dataset_name)
+    # dataset_name = "Edge_classification" 
+    # plot_graph_freq_wrt_node_edge(dataset_name)
 
+    dataset_name = "Cora_node" 
+    plot_graph_freq_wrt_node_edge(dataset_name)
     
     # bigger_network_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
     # less_attention_linear = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56"
@@ -107,9 +109,9 @@ if __name__ == '__main__':
     # less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
     # even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
 
-    # edge_cls = "./wandb/Id_theft_2/multinomial_diffusion/multistep/2025-04-27_22-09-16"
+    edge_cls = "./wandb/Cora_node/multinomial_diffusion/multistep/2025-05-20_11-34-25"
 
-    # plot_training_loss([edge_cls])
+    plot_training_loss([edge_cls])
 
     # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
     # anomalies = []
