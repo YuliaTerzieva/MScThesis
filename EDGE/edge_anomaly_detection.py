@@ -33,7 +33,7 @@ plt.xlabel("Recall")
 plt.ylabel("Precision")
 plt.title("Edge anomaly\nMean Precision-Recall Curve with Std (alliGATOR)")
 plt.legend()
-plt.show()
+plt.savefig("GATOR_edge_anomaly_synthetic")
 
 
 # edge_cls_GATOR.plot_active_edges_and_nodes()
