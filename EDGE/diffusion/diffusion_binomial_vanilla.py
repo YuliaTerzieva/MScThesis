@@ -91,7 +91,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
         # log_pred_node = F.log_softmax(out_node, dim=1)
         log_pred_edge = F.log_softmax(out_edge, dim=1)
-        return _, log_pred_edge
+        return log_pred_edge
 
     def _ce_prior(self, batched_graph):
         """
@@ -100,7 +100,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         ones_node = torch.ones(batched_graph.nodes_per_graph.sum(), device=self.device).long()
         ones_edge = torch.ones(batched_graph.edges_per_graph.sum(), device=self.device).long()
 
-        _, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
+        log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
                                                 t_edge=(self.num_timesteps - 1) * ones_edge)
 
         # log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
@@ -125,7 +125,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         ones_node = torch.ones(batched_graph.nodes_per_graph.sum(), device=self.device).long()
         ones_edge = torch.ones(batched_graph.edges_per_graph.sum(), device=self.device).long()
 
-        _, log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
+        log_qxT_prob_edge = self._q_pred(batched_graph, t_node=(self.num_timesteps - 1) * ones_node, 
                                                 t_edge=(self.num_timesteps - 1) * ones_edge)
 
         # log_final_prob_node = self.log_final_prob_node * torch.ones_like(log_qxT_prob_node)
@@ -143,8 +143,8 @@ class BinomialDiffusionVanilla(DiffusionBase):
         return kl_prior
    
     def _compute_MC_KL(self, batched_graph, t_edge, t_node):
-        _, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
-        _, log_true_prob_edge = self._q_pred_one_timestep(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        log_true_prob_edge = self._q_pred_one_timestep(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
 
         # cross_ent_node = -log_categorical(batched_graph.log_node_attr_tmin1, log_model_prob_node)
         cross_ent_edge = -log_categorical(batched_graph.log_full_edge_attr_tmin1, log_model_prob_edge)
@@ -190,7 +190,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         batched_graph.log_node_attr = index_to_log_onehot(batched_graph.node_attr, self.num_node_classes)
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
         
-        _, log_full_edge_attr_t = self.q_sample(batched_graph, t_node, t_edge)
+        log_full_edge_attr_t = self.q_sample(batched_graph, t_node, t_edge)
         
         # batched_graph.log_node_attr_t = log_node_attr_t
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t 
@@ -211,7 +211,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         tmin1_node_clamped = torch.where(tmin1_node < 0, torch.zeros_like(tmin1_node), tmin1_node)
         tmin1_edge_clamped = torch.where(tmin1_edge < 0, torch.zeros_like(tmin1_edge), tmin1_edge)
         
-        _, log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped)
+        log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped)
         # batched_graph.log_node_attr_tmin1 = batched_graph.log_node_attr # i removed it for cora
         batched_graph.log_full_edge_attr_tmin1 = log_full_edge_attr_tmin1
 
@@ -219,7 +219,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         batched_graph.log_full_edge_attr_tmin1[tmin1_edge<0] = batched_graph.log_full_edge_attr[tmin1_edge<0]
 
         # sample A^t given A^t-1
-        _, log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge)
+        log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge)
         # batched_graph.log_node_attr_t = batched_graph.log_node_attr # i removed it for cora
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t
 
@@ -228,7 +228,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         """
         Yulia : I am removing the node probability, because it stays the same in our case
         """
-        _, log_prob_edge = self._q_pred_one_timestep(batched_graph, t_node, t_edge)
+        log_prob_edge = self._q_pred_one_timestep(batched_graph, t_node, t_edge)
 
         # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
 

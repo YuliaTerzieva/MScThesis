@@ -80,7 +80,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             # print("There are no active edge indices ...")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
         
-        _, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
+        log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
 
         # breakpoint()
         assert log_model_prob_edge.size(0) == batched_graph.active_edge_indices.size(0)
@@ -92,7 +92,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
 
         log_out_edge[batched_graph.active_edge_indices] = log_out_edge_active
 
-        return _, log_out_edge
+        return log_out_edge
     
     @torch.no_grad()
     def guided_p_sample(self, batched_graph, t_node, t_edge):
@@ -107,11 +107,11 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             # print("No active nodes :/ ")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
         
-        _, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
+        log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
 
         assert log_model_prob_edge.size(0) == batched_graph.active_edge_indices.size(0)
 
-        return None, log_model_prob_edge # original function had two variables as return, however, we don't do anything with the node features int his thesis. 
+        return log_model_prob_edge # original function had two variables as return, however, we don't do anything with the node features int his thesis. 
     
     def _compute_degree(self, full_edge_attr, full_edge_index, num_nodes):
         degree = scatter(full_edge_attr, full_edge_index[0], dim=0, dim_size=num_nodes) +\
@@ -184,14 +184,14 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         # breakpoint()
         # log_pred_node = F.log_softmax(out_node, dim=1)
         log_pred_edge = F.log_softmax(out_edge, dim=1)
-        return _, log_pred_edge
+        return log_pred_edge
 
     def _compute_MC_KL_joint(self, batched_graph, t, t_node, t_edge):
         """
         Yulia : 
         
         """
-        _, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
 
         active_edge_attr_tmin1 = batched_graph.log_full_edge_attr_tmin1.index_select(0, batched_graph.active_edge_indices)
     
@@ -220,8 +220,8 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         if self.parametrization in ['x0', 'xt']:
             return super(BinomialDiffusionActive, self)._p_pred(batched_graph, t_node, t_edge)
         elif self.parametrization == 'xt_prescribed_st':
-            _, log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge) 
-            return _, log_model_pred_edge
+            log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge) 
+            return log_model_pred_edge
         elif self.parametrization == 'xt_st':
             pass # TODO
 
