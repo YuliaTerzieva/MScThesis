@@ -246,7 +246,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
                 t_node = t.repeat_interleave(batched_graph.nodes_per_graph)
                 t_edge = t.repeat_interleave(batched_graph.edges_per_graph)
 
-                self._q_sample_and_set_xtmin1_xt_given_x0(batched_graph, t_node, t_edge, evaluation = False)
+                self._q_sample_and_set_xtmin1_xt_given_x0(batched_graph, t_node, t_edge)
                 self._q_set_actives(batched_graph)
 
                 kl = self._compute_MC_KL_joint(batched_graph, t, t_node, t_edge)

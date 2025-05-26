@@ -196,7 +196,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t 
         
 
-    def _q_sample_and_set_xtmin1_xt_given_x0(self, batched_graph, t_node, t_edge, evaluation = False):
+    def _q_sample_and_set_xtmin1_xt_given_x0(self, batched_graph, t_node, t_edge):
         """
         Yulia : I am changing this function by remoing the changes to the nodes, because for our paper the nodes stay the same. 
         
@@ -211,7 +211,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         tmin1_node_clamped = torch.where(tmin1_node < 0, torch.zeros_like(tmin1_node), tmin1_node)
         tmin1_edge_clamped = torch.where(tmin1_edge < 0, torch.zeros_like(tmin1_edge), tmin1_edge)
         
-        _, log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped, evaluation = evaluation)
+        _, log_full_edge_attr_tmin1 = self.q_sample(batched_graph, tmin1_node_clamped, tmin1_edge_clamped)
         # batched_graph.log_node_attr_tmin1 = batched_graph.log_node_attr # i removed it for cora
         batched_graph.log_full_edge_attr_tmin1 = log_full_edge_attr_tmin1
 
@@ -219,7 +219,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
         batched_graph.log_full_edge_attr_tmin1[tmin1_edge<0] = batched_graph.log_full_edge_attr[tmin1_edge<0]
 
         # sample A^t given A^t-1
-        _, log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge, evaluation = evaluation)
+        _, log_full_edge_attr_t = self._q_sample_one_timestep(batched_graph, t_node, t_edge)
         # batched_graph.log_node_attr_t = batched_graph.log_node_attr # i removed it for cora
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t
 
