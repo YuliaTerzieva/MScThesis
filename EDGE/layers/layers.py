@@ -568,4 +568,4 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         edge_class = self.final_out(edge_emb)
         
         # breakpoint()
-        return pyg_data.log_node_attr, edge_class
+        return edge_class
