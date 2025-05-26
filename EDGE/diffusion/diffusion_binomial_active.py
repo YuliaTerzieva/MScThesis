@@ -176,7 +176,7 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
     def _predict_xtmin1_given_xt_st(self, batched_graph, t_node, t_edge):
         # print("I'm in diffusion/diffusion_binomial_active _predict_xtmin1_given_xt_st")
 
-        _, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
         
         # assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes

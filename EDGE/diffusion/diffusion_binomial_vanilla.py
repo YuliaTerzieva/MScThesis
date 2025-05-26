@@ -84,7 +84,7 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
     def _predict_x0_or_xtmin1(self, batched_graph, t_node, t_edge):
         print("I'm in diffusion/diffusion_binomial_vanilla _predict_x0_or_xtmin1")
-        _, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
 
         # assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes
