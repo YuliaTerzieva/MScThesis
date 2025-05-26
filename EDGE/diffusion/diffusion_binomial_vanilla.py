@@ -84,14 +84,14 @@ class BinomialDiffusionVanilla(DiffusionBase):
 
     def _predict_x0_or_xtmin1(self, batched_graph, t_node, t_edge):
         print("I'm in diffusion/diffusion_binomial_vanilla _predict_x0_or_xtmin1")
-        out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        _, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
 
-        assert out_node.size(1) == self.num_node_classes
+        # assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes
 
-        log_pred_node = F.log_softmax(out_node, dim=1)
+        # log_pred_node = F.log_softmax(out_node, dim=1)
         log_pred_edge = F.log_softmax(out_edge, dim=1)
-        return log_pred_node, log_pred_edge
+        return _, log_pred_edge
 
     def _ce_prior(self, batched_graph):
         """
@@ -143,24 +143,24 @@ class BinomialDiffusionVanilla(DiffusionBase):
         return kl_prior
    
     def _compute_MC_KL(self, batched_graph, t_edge, t_node):
-        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
-        log_true_prob_node, log_true_prob_edge = self._q_pred_one_timestep(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        _, log_model_prob_edge = self._p_pred(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
+        _, log_true_prob_edge = self._q_pred_one_timestep(batched_graph=batched_graph, t_node=t_node, t_edge=t_edge)
 
-        cross_ent_node = -log_categorical(batched_graph.log_node_attr_tmin1, log_model_prob_node)
+        # cross_ent_node = -log_categorical(batched_graph.log_node_attr_tmin1, log_model_prob_node)
         cross_ent_edge = -log_categorical(batched_graph.log_full_edge_attr_tmin1, log_model_prob_edge)
 
 
-        ent_node = log_categorical(batched_graph.log_node_attr_t, log_true_prob_node).detach()
+        # ent_node = log_categorical(batched_graph.log_node_attr_t, log_true_prob_node).detach()
         ent_edge = log_categorical(batched_graph.log_full_edge_attr_t, log_true_prob_edge).detach()
 
-        loss_node = cross_ent_node + ent_node
+        # loss_node = cross_ent_node + ent_node
         loss_edge = cross_ent_edge + ent_edge
 
-        loss_node = scatter(loss_node, batched_graph.batch, dim=-1, reduce='sum')
+        # loss_node = scatter(loss_node, batched_graph.batch, dim=-1, reduce='sum')
         loss_edge = scatter(loss_edge, batched_graph.batch[batched_graph.full_edge_index[0]], dim=-1, reduce='sum') 
-        loss = loss_node + loss_edge
+        # loss = loss_node + loss_edge
 
-        return loss
+        return loss_edge #was loss
 
     def _compute_RB_KL(self, batched_graph, t, t_edge, t_node):
         log_true_prob_node = self._q_posterior(log_x_start=batched_graph.log_node_attr, 
@@ -190,9 +190,9 @@ class BinomialDiffusionVanilla(DiffusionBase):
         batched_graph.log_node_attr = index_to_log_onehot(batched_graph.node_attr, self.num_node_classes)
         batched_graph.log_full_edge_attr = index_to_log_onehot(batched_graph.full_edge_attr, self.num_edge_classes)
         
-        log_node_attr_t, log_full_edge_attr_t = self.q_sample(batched_graph, t_node, t_edge)
+        _, log_full_edge_attr_t = self.q_sample(batched_graph, t_node, t_edge)
         
-        batched_graph.log_node_attr_t = log_node_attr_t
+        # batched_graph.log_node_attr_t = log_node_attr_t
         batched_graph.log_full_edge_attr_t = log_full_edge_attr_t 
         
 

@@ -80,19 +80,19 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
             # print("There are no active edge indices ...")
             return batched_graph.log_node_attr_t, batched_graph.log_full_edge_attr_t
         
-        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
+        _, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge) # this gives the probability distribution over the possible categories :)
 
         # breakpoint()
         assert log_model_prob_edge.size(0) == batched_graph.active_edge_indices.size(0)
 
-        log_out_node = self.log_sample_categorical(log_model_prob_node, self.num_node_classes)
+        # log_out_node = self.log_sample_categorical(log_model_prob_node, self.num_node_classes)
         log_out_edge_active = self.log_sample_categorical(log_model_prob_edge, self.num_edge_classes)
 
         log_out_edge = batched_graph.log_full_edge_attr_t
 
         log_out_edge[batched_graph.active_edge_indices] = log_out_edge_active
 
-        return log_out_node, log_out_edge
+        return _, log_out_edge
     
     @torch.no_grad()
     def guided_p_sample(self, batched_graph, t_node, t_edge):
@@ -176,15 +176,15 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
     def _predict_xtmin1_given_xt_st(self, batched_graph, t_node, t_edge):
         # print("I'm in diffusion/diffusion_binomial_active _predict_xtmin1_given_xt_st")
 
-        out_node, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
+        _, out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
         
-        assert out_node.size(1) == self.num_node_classes
+        # assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes
 
         # breakpoint()
-        log_pred_node = F.log_softmax(out_node, dim=1)
+        # log_pred_node = F.log_softmax(out_node, dim=1)
         log_pred_edge = F.log_softmax(out_edge, dim=1)
-        return log_pred_node, log_pred_edge
+        return _, log_pred_edge
 
     def _compute_MC_KL_joint(self, batched_graph, t, t_node, t_edge):
         """
@@ -220,8 +220,8 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
         if self.parametrization in ['x0', 'xt']:
             return super(BinomialDiffusionActive, self)._p_pred(batched_graph, t_node, t_edge)
         elif self.parametrization == 'xt_prescribed_st':
-            log_model_pred_node, log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge) 
-            return log_model_pred_node, log_model_pred_edge
+            _, log_model_pred_edge = self._predict_xtmin1_given_xt_st(batched_graph, t_node=t_node, t_edge=t_edge) 
+            return _, log_model_pred_edge
         elif self.parametrization == 'xt_st':
             pass # TODO
 
