@@ -276,6 +276,26 @@ class alliGATOR(object):
                 labels[g_index] = 1
 
         return labels.tolist()
+    
+    def get_true_anomaly_label_core_struc(self) -> list:
+        labels = np.zeros(len(self.original_graphs))
+
+        for g_index in range(len(self.sample_numbers)):
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            if self.original_graphs[g_index].str_ano_label[central_node_index].any() :
+                labels[g_index] = 1
+
+        return labels.tolist()
+    
+    def get_true_anomaly_label_core_attr(self) -> list:
+        labels = np.zeros(len(self.original_graphs))
+
+        for g_index in range(len(self.sample_numbers)):
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            if self.original_graphs[g_index].attr_ano_label[central_node_index].any() :
+                labels[g_index] = 1
+
+        return labels.tolist()
 
     def get_cora_prediction(self) -> np.array :
 
@@ -336,7 +356,7 @@ class alliGATOR(object):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        plt.savefig("Cora - active edges per diffusion step ")
 
         plt.figure(figsize=(10, 5))
         plt.plot(timesteps, vals3s, label='Number of active nodes')
@@ -347,7 +367,7 @@ class alliGATOR(object):
         plt.grid(True)
         plt.legend()
         plt.tight_layout()
-        plt.show()
+        plt.savefig("Cora - active nodes per diffusion step ")
 
         return
 

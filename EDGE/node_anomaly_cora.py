@@ -4,12 +4,12 @@ all_precision = []
 n_interp_points = 500
 interp_recall = np.linspace(0, 1, n_interp_points)
 
-for n in range(10):
+for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Cora_node/multinomial_diffusion/multistep/2025-05-20_11-34-25", 779, MC = 100, name = f"Cora_output", lambda_guidance=4.5, 
-                    sample_numbers=542, seed=n) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Cora_node/multinomial_diffusion/multistep/2025-05-20_11-34-25", 779, MC = 5, name = f"Cora_output", lambda_guidance=4.5, 
+                    sample_numbers=1, previously_sampled_model_filename="./Alligator_Output_node_anomaly/Cora_output_sturc_100_mc100_guidance45.pkl", seed=n) 
 
-    precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_core(), node_anomaly_gator.get_cora_prediction(), title_PR_type="Node Anomaly on Cora dataset")
+    precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_core_struc(), node_anomaly_gator.get_cora_prediction(), title_PR_type="Node Anomaly on Cora dataset")
 
     precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
     
@@ -33,4 +33,18 @@ plt.xlabel("Recall")
 plt.ylabel("Precision")
 plt.title("Node anomaly\nMean Precision-Recall Curve with Std (alliGATOR)")
 plt.legend()
-plt.savefig("Cora_node_anomaly_2025-05-20_11-34-25_779_100_45")
+# plt.savefig("Cora_node_anomaly_2025-05-20_11-34-25_779_100_45")
+plt.show()
+
+node_anomaly_gator.plot_active_edges_and_nodes()
+
+print([c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_core_struc()) if i == 1])
+
+scores = node_anomaly_gator.get_cora_prediction()
+labels = node_anomaly_gator.get_true_anomaly_label_core_struc()
+scores = np.array(scores)
+labels = np.array(labels)
+plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'], label=['Normal', 'Anomalous'])
+plt.title("Node anomaly score distribution")
+plt.legend()
+plt.show()

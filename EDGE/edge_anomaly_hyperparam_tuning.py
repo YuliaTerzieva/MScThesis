@@ -138,19 +138,19 @@ results = []
 # with open(f"Alligator_Output_edge_anomaly/edge_anomaly_experiment.pkl", "wb") as f:
 #     pickle.dump(results, f)
 
-with open(f"Alligator_Output_edge_anomaly/edge_anomaly_experiment.pkl", "rb") as f:
-    results = pickle.load(f)
+# with open(f"Alligator_Output_edge_anomaly/edge_anomaly_experiment.pkl", "rb") as f:
+#     results = pickle.load(f)
 
-sorted_results = sorted(results, key=lambda x: x['pr-auc'], reverse=True)
-best_result = sorted_results[0]
+# sorted_results = sorted(results, key=lambda x: x['pr-auc'], reverse=True)
+# best_result = sorted_results[0]
 
-print(f"Best parameters: {best_result['params']}")
-print(f"Best score (R): {best_result['pr-auc']}")
+# print(f"Best parameters: {best_result['params']}")
+# print(f"Best score (R): {best_result['pr-auc']}")
 
 
-dict_result = {}
-for r in results:
-    dict_result[r["params"]] = r["pr-auc"]
+# dict_result = {}
+# for r in results:
+#     dict_result[r["params"]] = r["pr-auc"]
 
 # how_much_does_mc_affect_the_result(K, DS, A, guidance, dict_result)
 # how_much_does_the_guidance_affect_the_result(K, DS, A, mc_simulation, dict_result)

@@ -516,7 +516,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         '''
         # node_attr_one_hot = safe_one_hot(pyg_data.node_attr, self.num_node_classes)
         # node_attr_one_hot = node_attr_one_hot.to(torch.float32)
-        node_attr_one_hot = pyg_data.node_attr.float()
+        node_attr_one_hot = pyg_data.node_attr.float() # this is for my Cora
 
         # breakpoint()
         nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr_one_hot)], dim=-1)

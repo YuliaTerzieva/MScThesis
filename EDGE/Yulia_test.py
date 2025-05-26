@@ -97,11 +97,11 @@ if __name__ == '__main__':
     # dataset_name = "Id_theft_2" 
     # plot_graph_freq_wrt_node_edge(dataset_name)
 
-    # dataset_name = "Edge_classification" 
-    # plot_graph_freq_wrt_node_edge(dataset_name)
-
-    dataset_name = "Cora_node" 
+    dataset_name = "Edge_classification" 
     plot_graph_freq_wrt_node_edge(dataset_name)
+
+    # dataset_name = "Cora_node" 
+    # plot_graph_freq_wrt_node_edge(dataset_name)
     
     # bigger_network_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
     # less_attention_linear = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56"

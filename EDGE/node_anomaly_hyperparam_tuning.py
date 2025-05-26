@@ -10,8 +10,8 @@ def how_much_does_mc_affect_the_result(K, DS, A, guidance, dict_result):
         if (k == 10 and ds == 15):
             continue
         
-        case_1 = (k, ds, a, g, 100)
-        case_2 = (k, ds, a, g, 1000)
+        case_1 = (k, ds, a, g, 10)
+        case_2 = (k, ds, a, g, 100)
         increase_list.append(dict_result[case_2] - dict_result[case_1])
     
     print(increase_list)
@@ -146,14 +146,14 @@ with open(f"Alligator_Output_node_anomaly/Node_anomaly_experiment.pkl", "wb") as
 
 # ----------------------------------------------------------------------
 
-# with open(f"Alligator_Output/Node_anomaly_experiment.pkl", 'rb') as f:
-#     results = pickle.load(f)
+with open(f"Alligator_Output_node_anomaly/Node_anomaly_experiment.pkl", 'rb') as f:
+    results = pickle.load(f)
 
-# sorted_results = sorted(results, key=lambda x: x['pr-auc'], reverse=True)
-# best_result = sorted_results[0]
+sorted_results = sorted(results, key=lambda x: x['pr-auc'], reverse=True)
+best_result = sorted_results[0]
 
-# print(f"Best parameters: {best_result['params']}")
-# print(f"Best score (R): {best_result['pr-auc']}")
+print(f"Best parameters: {best_result['params']}")
+print(f"Best score (R): {best_result['pr-auc']}")
 
 
 # dict_result = {}
