@@ -46,6 +46,7 @@ class GraphDataset(Dataset):
 def add_data_args(parser):
     # Data params
     parser.add_argument('--dataset', type=str)
+    parser.add_argument('--dim_node_attr', type = int)
     # Train params
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_iter', type=int, default=32)
@@ -61,7 +62,7 @@ def get_data_id(args):
     return '{}'.format(args.dataset)
 
 def get_data(args):
-    num_node_classes = 30 # here I have 3 (blue, orange and gray) or 30 for cora
+    num_node_classes = args.dim_node_attr # here I have 3 (blue, orange and gray) or 30 for cora
     num_edge_classes = 2 # no edge / edge
     num_node_feat = 1 
     

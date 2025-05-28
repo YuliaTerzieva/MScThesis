@@ -6,8 +6,8 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 
 for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Cora_node/multinomial_diffusion/multistep/2025-05-20_11-34-25", 779, MC = 5, name = f"Cora_output", lambda_guidance=4.5, 
-                    sample_numbers=1, previously_sampled_model_filename="./Alligator_Output_node_anomaly/Cora_output_sturc_100_mc100_guidance45.pkl", seed=n) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Cora_PCA30_node/multinomial_diffusion/multistep/2025-05-28_10-32-55/", 379, MC = 100, name = f"Cora_output", anomaly_type="cora", lambda_guidance=4.5, 
+                    sample_numbers=501, previously_sampled_model_filename="./Alligator_Output_cora/Cora_output_mc100_guidance45.pkl", seed=n) 
 
     precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_core_struc(), node_anomaly_gator.get_cora_prediction(), title_PR_type="Node Anomaly on Cora dataset")
 
@@ -25,7 +25,7 @@ plt.plot(interp_recall, mean_precision, label=f"Mean PR curve (AUC = {auc(interp
 plt.fill_between(interp_recall, mean_precision - std_precision, mean_precision + std_precision, alpha=0.3, color = "teal")
 
 # Baseline (random)
-labels = node_anomaly_gator.get_true_anomaly_label_core()
+labels = node_anomaly_gator.get_true_anomaly_label_core_struc()
 positive_ratio = labels.count(1)/len(labels)
 plt.hlines(positive_ratio, xmin=0, xmax=1, color='red', label='Baseline')
 
@@ -36,9 +36,7 @@ plt.legend()
 # plt.savefig("Cora_node_anomaly_2025-05-20_11-34-25_779_100_45")
 plt.show()
 
-node_anomaly_gator.plot_active_edges_and_nodes()
-
-print([c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_core_struc()) if i == 1])
+# node_anomaly_gator.plot_active_edges_and_nodes()
 
 scores = node_anomaly_gator.get_cora_prediction()
 labels = node_anomaly_gator.get_true_anomaly_label_core_struc()
@@ -48,3 +46,8 @@ plt.hist([scores[labels==0], scores[labels==1]], bins=50, color=['blue', 'red'],
 plt.title("Node anomaly score distribution")
 plt.legend()
 plt.show()
+
+anomalous_graphs = [c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_core_struc()) if i == 1]
+for g in [1, 2, 8, 6, 209]:
+    node_anomaly_gator.plot_graph_Cora(g, plot_only_existing_edges=True)
+    node_anomaly_gator.plot_graph_Cora(g, plot_only_existing_edges=False)

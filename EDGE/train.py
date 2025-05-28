@@ -111,7 +111,7 @@ python3 train.py --epochs 50 --num_generation 4 --diffusion_dim 8 --diffusion_st
 
 # THE NEW NEW RELATION DATASET training using importance and linear noise
 """
-python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 8 --device cuda:0 --dataset Id_theft_2 \
+python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 8 --device cuda:0 --dataset Id_theft_2 --dim_node_attr 3\
     --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 1 
@@ -119,7 +119,7 @@ python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion
 
 
 """
-python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 20 --device cuda:0 --dataset Edge_classification \
+python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion_steps 20 --device cuda:0 --dataset Edge_classification --dim_node_attr 3\
     --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 1 
@@ -128,15 +128,23 @@ python3 train.py --epochs 2000 --num_generation 4 --diffusion_dim 16 --diffusion
 
 
 """
-python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 32 --diffusion_steps 8 --device cuda:0 --dataset Cora_node \
+python3 train.py --epochs 1000 --num_generation 4 --diffusion_dim 32 --diffusion_steps 8 --device cuda:0 --dataset Cora_node --dim_node_attr 1443\
     --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 2 1 
 """
 
 """
-python3 train.py --epochs 1 --num_generation 1 --diffusion_dim 64 --diffusion_steps 10 --device cpu --dataset Cora_PCA30_node \
-    --batch_size 1 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+python3 train.py --epochs 1000 --num_generation 1 --diffusion_dim 64 --diffusion_steps 10 --device cuda:0 --dataset Cora_PCA30_node --dim_node_attr 30\
+    --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 4 1 
 """
+
+"""
+python3 train.py --epochs 1000 --num_generation 1 --diffusion_dim 64 --diffusion_steps 10 --device cuda:0 --dataset Cora_inductive_PCA30_node --dim_node_attr 30\
+    --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
+        --sample_time_method uniform --check_every 10 --eval_every 10 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
+            --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 4 1 
+"""
+

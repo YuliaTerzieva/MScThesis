@@ -251,9 +251,8 @@ class DiffusionBase(torch.nn.Module):
             t_node = torch.full((num_nodes,), t, device=self.device, dtype=torch.long)
             t_edge = torch.full((num_edges,), t, device=self.device, dtype=torch.long)
 
-            log_node_attr_tmin1, log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
+            log_full_edge_attr_tmin1 = self.p_sample(batched_graph, t_node, t_edge)
             batched_graph.log_full_edge_attr_t = log_full_edge_attr_tmin1
-            batched_graph.log_node_attr_t = log_node_attr_tmin1
 
         print()
         edge_attr = batched_graph.log_full_edge_attr_t.argmax(-1)
@@ -310,9 +309,9 @@ class DiffusionBase(torch.nn.Module):
                 # Step 1 is sampling the new edge log probabilities 
                 # once with the node features and once without the node features
                 torch.manual_seed(seed+mc_counter+t)# I do this so that both processes have the same radomly changed active edges and each iteration of the loop time it is different 
-                _, log_model_prob_edge_attr_tmin1 = self.guided_p_sample(working_clone, t_node, t_edge) # there are now probabilities, not log of one hot!
+                log_model_prob_edge_attr_tmin1 = self.guided_p_sample(working_clone, t_node, t_edge) # there are now probabilities, not log of one hot!
                 torch.manual_seed(seed+mc_counter+t)
-                _, node_attr_free_log_model_prob_edge_attr_tmin1 = self.guided_p_sample(node_attr_free_working_clone, t_node, t_edge)
+                node_attr_free_log_model_prob_edge_attr_tmin1 = self.guided_p_sample(node_attr_free_working_clone, t_node, t_edge)
 
                 if working_clone.active_edge_indices.size(0) != 0 :
                 # CFG :=> w * (cond - uncond) + cond ----> formula given in Algorithm .. in the paper
@@ -340,8 +339,6 @@ class DiffusionBase(torch.nn.Module):
 
             edge_attr = edge_attr[is_edge_indices]
             working_clone.edge_attr = edge_attr
-
-            working_clone.node_attr = working_clone.log_node_attr_t.argmax(-1)
 
             # preparation for splitting batched graph
             # see https://github.com/pyg-team/pytorch_geometric/blob/259cfa7fb220d9cb504ab9de52bcd9dc5267befe/torch_geometric/data/separate.py#L12

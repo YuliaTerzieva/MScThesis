@@ -44,8 +44,8 @@ class alliGATOR(object):
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
             self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed) 
-            # with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
-            #     pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
+            with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
+                pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
             with open(previously_sampled_model_filename, 'rb') as f:
                 self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = pickle.load(f)
@@ -301,15 +301,23 @@ class alliGATOR(object):
 
         # breakpoint()
         anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
 
         for g_index in range(len(self.sample_numbers)):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
-            gen_edges = self.per_graph_edge_list_counter[g_index]            
-            score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges]) # TODO : here i need to add 0 for every edge that was not generated!
-            
-            node_anomaly = 1 - score
+            gen_edges = self.per_graph_edge_list_counter[g_index]  
+            m = len(self.original_graphs_edges[g_index])
+            k = per_graph_node_degree_counter[g_index]
+
+            to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
+                                                for edge in self.original_graphs_edges[g_index]])
+                  
+            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) / to_norm if edge in gen_edges else 0 for edge in central_node_edges]) # TODO : here i need to add 0 for every edge that was not generated!
+            # if [gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0) > 0:
+            #     print(f"for graph {g_index} there are {[gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0)} edges that were in the original graoh central one, but our model didn't predict them")
+            node_anomaly = 1- score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
 
         return anomaly_score_per_edge_sub_graph
@@ -547,6 +555,55 @@ class alliGATOR(object):
 
         central_node_index = np.where(self.original_graphs[graph_id].central_node == 1)[0]
         axes[0].set_title(f"Original graph with central node {central_node_index}")
+        axes[1].set_title(f"Edge probability over {self.Monte_Carlo} generated graphs")
+        plt.tight_layout()
+        plt.show() 
+
+    def plot_graph_Cora(self, graph_id, plot_only_existing_edges):
+
+        original_graph = self.original_graphs[graph_id] # this is pyg data object
+        generated_graph = self.generated_graphs[graph_id]
+        generated_edges = self.per_graph_edge_list_counter[graph_id]
+
+        original_graph_nx = pyg.utils.to_networkx(original_graph, to_undirected=True)
+
+        # generated edges/graph
+        generated_graph_nx = pyg.utils.to_networkx(generated_graph, to_undirected=True)
+        generated_graph_nx.clear_edges()
+        # ------  Probabilities ------
+        edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo}) for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
+        # ------  END of Probabilities ------
+
+        # ------  Adjusted probabilities ------
+        # per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
+        # m = len(self.original_graphs_edges[graph_id])
+        # k = per_graph_node_degree_counter[graph_id]
+        # edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
+        #                               'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m**2)}) 
+        #                        for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
+        # print(edges_with_weights)
+        # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
+        # ------  END of Adjusted probabilities ------
+
+
+        generated_graph_nx.add_edges_from(edges_with_weights)
+        edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
+
+        fig, axes = plt.subplots(1, 2)
+
+        node_colors = ["red" if is_anomaly else "blue" for is_anomaly in self.original_graphs[graph_id].str_ano_label]
+        # plot the original graph and add red to the anomalous edges
+        pos = nx.circular_layout(original_graph_nx)
+        nx.draw(original_graph_nx, pos, ax=axes[0], with_labels=True, node_color = node_colors)
+
+        # plot the generated graph 
+        pos = nx.circular_layout(generated_graph_nx)
+        nx.draw(generated_graph_nx, pos, ax=axes[1], with_labels=True, node_color = node_colors)
+        nx.draw_networkx_edge_labels(generated_graph_nx, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
+        
+
+        central_node_index = np.where(self.original_graphs[graph_id].central_node == 1)[0]
+        axes[0].set_title(f"Original graph with central node {central_node_index} (anomaly ? {self.original_graphs[graph_id].str_ano_label[central_node_index].item()}")
         axes[1].set_title(f"Edge probability over {self.Monte_Carlo} generated graphs")
         plt.tight_layout()
         plt.show() 
