@@ -62,7 +62,7 @@ def get_data_id(args):
     return '{}'.format(args.dataset)
 
 def get_data(args):
-    num_node_classes = args.dim_node_attr # here I have 3 (blue, orange and gray) or 30 for cora
+    num_node_classes = 30#args.dim_node_attr # here I have 3 (blue, orange and gray) or 30 for cora
     num_edge_classes = 2 # no edge / edge
     num_node_feat = 1 
     

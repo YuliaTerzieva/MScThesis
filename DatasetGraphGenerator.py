@@ -327,8 +327,12 @@ def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
 def generate_ego_graph(G, K) -> list[nx.Graph]:
     
     ego_graphs = []
+    count = 0
 
     for node in G.nodes:
+        if len([edge for edge in G.edges() if edge[0] == node or edge[1]==node]) == 0:
+            count+=1
+            continue
         ppr = nx.pagerank(G, personalization={node: 1.0})
         top_k_nodes = sorted((n for n in ppr if n != node), key=ppr.get, reverse=True)[:K]
         ego_subgraph = G.subgraph([node] + top_k_nodes).copy()
@@ -338,11 +342,12 @@ def generate_ego_graph(G, K) -> list[nx.Graph]:
         ego_subgraph.nodes[node]['central_node'] = 1
         ego_graphs.append(ego_subgraph)
 
+    print(count, "those are the isolated nodes out of ", len(G.nodes))
     return ego_graphs
 
 # ----------------------------------------------------------------------------
 
-def Generate_EDGE_cls_dataset() -> None :
+def generate_edge_anomaly_dataset() -> None :
     N = 3 # B, O, G
     N_total_nodes = 5000
     NC_perc = np.array([0.25, 0.35, 0.4]) 
@@ -418,15 +423,15 @@ def Generate_EDGE_cls_dataset() -> None :
         with open(f"GeneratedDataset/Edge_classification_K7_{name}", "wb") as f:
             pickle.dump(data, f)
 
-def Generate_Identity_Theft_dataset() -> None:
+def generate_node_anomaly_dataset() -> None:
     N = 3 # B, O, G
     N_total_nodes = 5000
     NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 2), None, ("R", 0.0005), # BB, BO, BG  # 0.0005 for 5000!
-         None, None, ("BA", 1), # OB, OO, OG
-         None, ("Uni", 2), None] # GB, GO, GG
+    R = [("BA", 3), None, ("R", 0.001), # BB, BO, BG  # 0.0005 for 5000!
+         None, None, ("BA", 2), # OB, OO, OG
+         None, ("Uni", 4), None] # GB, GO, GG
     K = 10
 
     reproducibility_seed = 42
@@ -446,7 +451,7 @@ def Generate_Identity_Theft_dataset() -> None:
     
     end_time = time.time()
     print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ")
-    with open("GeneratedDataset_interm_graph/Graph_id_theft_K10.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Synthetic_node.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     
     # """
@@ -455,7 +460,6 @@ def Generate_Identity_Theft_dataset() -> None:
     start_time = time.time()
 
     # We want 2% of the nodes to be anomalous, so 
-    print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
     N_anomalous_nodes = int(0.02 * N_total_nodes) 
     
     Final_Graph_witn_anomalies = add_anomalous_nodes(N_anomalous_nodes, Final_Graph.copy())
@@ -463,40 +467,112 @@ def Generate_Identity_Theft_dataset() -> None:
     end_time = time.time()
     print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ")
 
-    with open("GeneratedDataset_interm_graph/Graph_id_theft_K10_with_anomalies.pkl", 'wb') as f:
+    with open("GeneratedDataset_interm_graph/Synthetic_node_with_anomalies.pkl", 'wb') as f:
         pickle.dump(Final_Graph_witn_anomalies, f)
     # """
     # ------------------------------------------------------------
     # """
-    start_time = time.time()
-    ego_net_list = generate_ego_graph(Final_Graph_witn_anomalies, K = K)
-    end_time = time.time()
-    print(f"Time it took to get the ego networks is { end_time - start_time } seconds ")
 
-    
-    random.shuffle(ego_net_list)
-    
-    with open("GeneratedDataset_interm_graph/Graph_id_theft_K10_ego_list_with_anomalies.pkl", "wb") as f:
-        pickle.dump(ego_net_list, f)
+    nodes = Final_Graph_witn_anomalies.nodes
+    attrs = np.array([nodes[n]['node_attr'] for n in nodes])
+    one_hot = np.eye(attrs.max() + 1)[attrs]
+    nx.set_node_attributes(Final_Graph_witn_anomalies, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
 
-    # """
-    # ------------------------------------------------------------
-    
-    # I have a 70% 10% 20% split
+    random_samples = np.random.rand(N_total_nodes)
 
-    l = len(ego_net_list)
-    train, evaluation = int(0.7 * l), int(0.8 * l)
+    train_mask = random_samples < 0.7
+    eval_mask = (random_samples >= 0.7) & (random_samples < 0.8)
+    tune_mask = (random_samples >= 0.8) & (random_samples < 0.9)
+    test_mask = random_samples >= 0.9
 
-    for name, data in zip(
-        ["train", "eval", "test"],
-        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
+    nodes = list(Final_Graph_witn_anomalies.nodes)
+
+    train_nodes = [nodes[i] for i, keep in enumerate(train_mask) if keep]
+    eval_nodes = [nodes[i] for i, keep in enumerate(eval_mask) if keep]
+    tune_nodes = [nodes[i] for i, keep in enumerate(tune_mask) if keep]
+    test_nodes = [nodes[i] for i, keep in enumerate(test_mask) if keep]
+
+    train_graph = Final_Graph_witn_anomalies.copy()
+    train_graph = train_graph.subgraph(train_nodes).copy()
+
+    eval_graph = Final_Graph_witn_anomalies.copy()
+    eval_graph = eval_graph.subgraph(eval_nodes).copy()
+
+    tune_graph = Final_Graph_witn_anomalies.copy()
+    tune_graph = tune_graph.subgraph(tune_nodes).copy()
+
+    test_graph = Final_Graph_witn_anomalies.copy()
+    test_graph = test_graph.subgraph(test_nodes).copy()
+
+
+    for name, graph in zip(
+        ["train", "eval", "tune", "test"],
+        [train_graph,eval_graph, tune_graph, test_graph]
     ):
-        with open(f"GeneratedDataset/Id_theft_K10_{name}", "wb") as f:
-            pickle.dump(data, f)
+        with open(f"GeneratedDataset/Synthetic_K{K}_node_{name}", "wb") as f:
+            ego_net_list = generate_ego_graph(graph, K)
+            pickle.dump(ego_net_list, f)
 
 # ----------------------------------------------------------------------------
+
+def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
+    # mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
+    # map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
+
+    train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train', 'rb'))
+    eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval', 'rb'))
+    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune', 'rb'))
+    test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test', 'rb'))
+
+    print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
+    print("The number of graphs in the eval is ", len(eval_graph))
+    print("The number of graphs in the tune is ", len(tune_graph))
+    print("The number of graphs in the testing is ", len(test_graph))
+    print('\033[1;30m')
+
+    train_number_of_nodes = [len(n.nodes) for n in train_graph]
+    plt.hist(train_number_of_nodes, alpha = 0.5, label = "train")
+    print("The training number of nodes have mean and std : ", np.mean(train_number_of_nodes), np.std(train_number_of_nodes))
+
+    eval_number_of_nodes = [len(n.nodes) for n in eval_graph]
+    plt.hist(eval_number_of_nodes, alpha = 0.5, label = "eval")
+
+    tune_number_of_nodes = [len(n.nodes) for n in tune_graph]
+    plt.hist(tune_number_of_nodes, alpha = 0.5, label = "tune")
+
+    test_number_of_nodes = [len(n.nodes) for n in test_graph]
+    plt.hist(test_number_of_nodes, alpha = 0.5, label = "test")
+    plt.legend()
+    plt.xlabel("Number of nodes")
+    plt.ylabel("Number of graphs")
+    plt.title(f"Dataset {dataset_name}")
+    plt.show()
+
+    # ---- EDGEs now
+
+    train_number_of_edges = [len(n.edges) for n in train_graph]
+    plt.hist(train_number_of_edges, alpha = 0.5, label = "train")
+    print("The training number of eges have mean and std : ", np.mean(train_number_of_edges), np.std(train_number_of_edges))
+
+    eval_number_of_edges = [len(n.edges) for n in eval_graph]
+    plt.hist(eval_number_of_edges, alpha = 0.5, label = "eval")
+
+    tune_number_of_edges = [len(n.edges) for n in tune_graph]
+    plt.hist(tune_number_of_edges, alpha = 0.5, label = "tune")
+
+    test_number_of_edges = [len(n.edges) for n in test_graph]
+    plt.hist(test_number_of_edges, alpha = 0.5, label = "test")
+    plt.legend()
+    plt.xlabel("Number of edges")
+    plt.ylabel("Number of graphs")
+    plt.title(f"Dataset {dataset_name}")
+    plt.show()
+
 if __name__ == '__main__':
     
-    Generate_EDGE_cls_dataset()
-    # Generate_Identity_Theft_dataset()
+    # generate_edge_anomaly_dataset()
+    # generate_node_anomaly_dataset()
+
+    dataset_name = "Synthetic_K10_node" 
+    plot_graph_freq_wrt_node_edge(dataset_name)
     

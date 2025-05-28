@@ -41,10 +41,7 @@ def preprocess(g, degree=True, p_uncon = None):
     pyg_data.full_edge_attr = adj[pyg_data.full_edge_index[0], pyg_data.full_edge_index[1]]
 
     if not hasattr(pyg_data, 'node_attr') or (p_uncon is not None and torch.rand(1) < p_uncon): # This part is changed by Yulia, based on Algorithm 1 in the thesis 
-        # TODO check if the algorithm number is still correct
-        # pyg_data.node_attr = torch.full([pyg_data.num_nodes], -1, dtype=torch.int) # this is for my dataset 
-        # breakpoint()
-        pyg_data.node_attr = torch.full(pyg_data.node_attr.shape, 0, dtype=torch.int) # this is for Cora dataset
+        pyg_data.node_attr = torch.full(pyg_data.node_attr.shape, 0, dtype=torch.int)
 
     if degree:
         # Yulia : these are the degrees for each node in the graph
@@ -70,10 +67,10 @@ def collate_fn(pyg_datas, repeat=1):
 
 class EmptyGraphGeneratorWithNodeAttributes:
 
-    def __init__(self, file_path):
+    def __init__(self, file_path_hyper_param_tuning, file_path_testing):
 
-        self.testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path}", 'rb'))
-        # self.testing_graphs = [preprocess(graph, degree=True) for graph in testing_graphs_nx]
+        self.param_tuning_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path_hyper_param_tuning}", 'rb'))
+        self.testing_graphs_nx = pkl.load(open(f"../GeneratedDataset/{file_path_testing}", 'rb'))
 
     def _fill_needed_features(self, graphs):
         """
@@ -89,7 +86,7 @@ class EmptyGraphGeneratorWithNodeAttributes:
         
         return batched_data
 
-    def sample(self, num_samples):
+    def sample(self, num_samples, tune = False):
         """
         This function samples "num_samples" from a list of graphs.
         The list is created from graphs in the test section of the dataset
@@ -105,12 +102,15 @@ class EmptyGraphGeneratorWithNodeAttributes:
             - nodes_per_graph is added
             - edges_per_graph is added
         """
-        if num_samples == len(self.testing_graphs_nx):
-            sampled_graphs = self.testing_graphs_nx
-        elif type(num_samples) == int:
-            sampled_graphs = random.choices(self.testing_graphs_nx, k=num_samples)
-        else : # if case the num_samples are a list of indices as in sample_and_MC
-            sampled_graphs = [self.testing_graphs_nx[i] for i in num_samples]
+        if tune : 
+            sampled_graphs = self.param_tuning_graphs_nx
+        else:
+            if num_samples == len(self.testing_graphs_nx):
+                sampled_graphs = self.testing_graphs_nx
+            elif type(num_samples) == int:
+                sampled_graphs = random.choices(self.testing_graphs_nx, k=num_samples)
+            else : # if case the num_samples are a list of indices as in sample_and_MC
+                sampled_graphs = [self.testing_graphs_nx[i] for i in num_samples]
         
         # I first sample, then I clone
         # the original sampled graphs don't need to be preprocessed, only truened into pygeometric

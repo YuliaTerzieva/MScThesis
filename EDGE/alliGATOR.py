@@ -311,13 +311,16 @@ class alliGATOR(object):
             m = len(self.original_graphs_edges[g_index])
             k = per_graph_node_degree_counter[g_index]
 
-            to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
-                                                for edge in self.original_graphs_edges[g_index]])
+            to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
                   
-            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) / to_norm if edge in gen_edges else 0 for edge in central_node_edges]) # TODO : here i need to add 0 for every edge that was not generated!
+            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+            
+            
+            # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges])
+            
             # if [gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0) > 0:
             #     print(f"for graph {g_index} there are {[gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0)} edges that were in the original graoh central one, but our model didn't predict them")
-            node_anomaly = 1- score
+            node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
 
         return anomaly_score_per_edge_sub_graph
