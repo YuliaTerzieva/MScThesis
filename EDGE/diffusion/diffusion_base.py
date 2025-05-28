@@ -204,25 +204,18 @@ class DiffusionBase(torch.nn.Module):
         Given the calculated probability, new edges are selected and returned
         """
 
-        _, log_prob_edge = self._q_pred(batched_graph, t_node, t_edge)
-
-        # sample nodes
-        # log_out_node = self.log_sample_categorical(log_prob_node, self.num_node_classes)
-
-
+        log_prob_edge = self._q_pred(batched_graph, t_node, t_edge)
         log_out_edge = self.log_sample_categorical(log_prob_edge, self.num_edge_classes)
 
-        return None , log_out_edge 
+        return log_out_edge 
     
     @torch.no_grad()
     def p_sample(self, batched_graph, t_node, t_edge):
         # p_sample is always one step prediction!
-        log_model_prob_node, log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge)
+        log_model_prob_edge = self._p_pred(batched_graph, t_node, t_edge)
         
-        log_out_node = self.log_sample_categorical(log_model_prob_node, self.num_node_classes)
-
         log_out_edge = self.log_sample_categorical(log_model_prob_edge, self.num_edge_classes)
-        return log_out_node, log_out_edge
+        return log_out_edge
 
     def log_sample_categorical(self, logits, num_classes):
         """

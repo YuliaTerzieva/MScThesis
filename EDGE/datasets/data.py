@@ -61,103 +61,36 @@ def get_data_id(args):
     return '{}'.format(args.dataset)
 
 def get_data(args):
-    """
-    Yulia comments on original code: 
-        They load the graphd from pickels
-        For ego and community networks, the test section overlap with the traning and evaluation sections
-    """
-    if args.dataset in ['cora', 'polblogs', 'Homo_sapiens']:
-        repeat = 1
-        num_node_classes = None
-        num_edge_classes = 2
-        num_node_feat = None
-        nx_graph = pkl.load(open(f'graphs/{args.dataset}.pkl','rb'))
-        pyg_graph = preprocess(nx_graph, degree=args.degree)
-        max_degree = max([d for _, d in nx_graph.degree()]) 
-        train_set = NetworkDataset(pyg_graph, num_iter=args.num_iter * args.batch_size, transform=None)
-        test_set = eval_set = NetworkDataset(pyg_graph, num_iter=100, transform=None)
-        initial_graph_sampler = EmpiricalEmptyGraphGenerator([train_set[0]], degree=args.degree, augment_features=args.augmented_features)
-        # eval_evaluator = test_evaluator = NetworkEvaluator(nx_graph)
-        monitoring_statistics = ['nmae/assortativity','nmae/triangle_count', 'nmae/clustering_coefficient']
- 
-    elif args.dataset in ['community',  'Ego']:
-        repeat = 64 
-        num_node_classes = None
-        num_edge_classes = 2
-        num_node_feat = None
-        nx_graphs = pkl.load(open(f"graphs/{args.dataset}.pkl", 'rb'))
-        random.shuffle(nx_graphs)
-        l = len(nx_graphs)
-        train_nx_graphs = nx_graphs[:int(0.8*l)]
-        eval_nx_graphs = nx_graphs[:int(0.2*l)]
-        test_nx_graphs = nx_graphs[int(0.8*l):] 
+    num_node_classes = 30 # here I have 3 (blue, orange and gray) or 30 for cora
+    num_edge_classes = 2 # no edge / edge
+    num_node_feat = 1 
+    
+    train_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_train", 'rb'))
+    eval_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_eval", 'rb'))
 
-        train_pygraphs = []
-        eval_pygraphs = []
-        test_pygraphs = []
+    max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
 
-        max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
-        for nx_graph in train_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree) # Yulia: so this preprocessing is to turn the data from nx library to a pyg object
-            train_pygraphs.append(pyg_data)
+    train_pygraphs = []
+    eval_pygraphs = []
 
-        for nx_graph in eval_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
-            eval_pygraphs.append(pyg_data)
+    for nx_graph in train_nx_graphs:
+        # Yulia: This preprocessing is to turn the data from networkx object to a pyg object
+        pyg_data = preprocess(nx_graph, degree=args.degree, p_uncon = args.p_uncon)
+        train_pygraphs.append(pyg_data)
 
-        for nx_graph in test_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
-            test_pygraphs.append(pyg_data)
-            
-        train_set = ConcatDataset([GraphDataset(train_pygraphs) for _ in range(repeat)])
-        eval_set = GraphDataset(eval_pygraphs)
-        test_set = GraphDataset(test_pygraphs)
-
-        if args.empty_graph_sampler == 'empirical':
-            initial_graph_sampler = EmpiricalEmptyGraphGenerator(train_pygraphs, degree=args.degree)
-        elif args.empty_graph_sampler == 'neural':
-            neural_attr_sampler = torch.load(f'graphs/{args.dataset}_degree_sampler.pt', map_location=args.device)
-            initial_graph_sampler = NeuralEmptyGraphGenerator(train_pygraphs, neural_attr_sampler, degree=args.degree, device=args.device)
-
-        # eval_evaluator = GenericGraphEvaluator(eval_nx_graphs, device=args.device)
-        # test_evaluator = GenericGraphEvaluator(test_nx_graphs, device=args.device)
-
-        monitoring_statistics = ['clustering_mmd', 'orbits_mmd', 'spectral_mmd', 'degree_mmd', 'mmd_linear', 'mmd_rbf']
-
-    else:
-        """
-        This else is implemented by Yulia, to match the datasets for her thesis
-        """
-        num_node_classes = 30#3 # here I should have 3 (blue, orange and gray)
-        num_edge_classes = 2 # no edge / edge
-        num_node_feat = 1 
+    for nx_graph in eval_nx_graphs:
+        pyg_data = preprocess(nx_graph, degree=args.degree)
+        eval_pygraphs.append(pyg_data)
         
-        train_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_train", 'rb'))
-        eval_nx_graphs = pkl.load(open(f"../GeneratedDataset/{args.dataset}_eval", 'rb'))
+    train_set = GraphDataset(train_pygraphs)
+    eval_set = GraphDataset(eval_pygraphs)
+    
+    if args.empty_graph_sampler == 'file':
+        initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
+    else : 
+        raise NotImplementedError
 
-        max_degree = max([max([d for n, d in train_nx_graph.degree()]) for train_nx_graph in train_nx_graphs])
-
-        train_pygraphs = []
-        eval_pygraphs = []
-
-        for nx_graph in train_nx_graphs:
-            # Yulia: This preprocessing is to turn the data from networkx object to a pyg object
-            pyg_data = preprocess(nx_graph, degree=args.degree, p_uncon = args.p_uncon)
-            train_pygraphs.append(pyg_data)
-
-        for nx_graph in eval_nx_graphs:
-            pyg_data = preprocess(nx_graph, degree=args.degree)
-            eval_pygraphs.append(pyg_data)
-            
-        train_set = GraphDataset(train_pygraphs)
-        eval_set = GraphDataset(eval_pygraphs)
-        
-        if args.empty_graph_sampler == 'file':
-            initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
-        else : 
-            raise NotImplementedError
-
-        monitoring_statistics = ['bpd']
+    monitoring_statistics = ['bpd']
 
     augmented_feature_dict = {}
 

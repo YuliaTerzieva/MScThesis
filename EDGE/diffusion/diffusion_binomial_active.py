@@ -178,11 +178,8 @@ class BinomialDiffusionActive(BinomialDiffusionVanilla):
 
         out_edge = self._denoise_fn(batched_graph, t_node, t_edge)
         
-        # assert out_node.size(1) == self.num_node_classes
         assert out_edge.size(1) == self.num_edge_classes
 
-        # breakpoint()
-        # log_pred_node = F.log_softmax(out_node, dim=1)
         log_pred_edge = F.log_softmax(out_edge, dim=1)
         return log_pred_edge
 
