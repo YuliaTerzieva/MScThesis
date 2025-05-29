@@ -6,8 +6,8 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 
 for n in range(1):
 
-    node_anomaly_gator = alliGATOR("./wandb/Cora_inductive_PCA30_node/multinomial_diffusion/multistep/2025-05-28_16-34-42", 19, MC = 100, name = f"Cora_inductive_output", anomaly_type="cora", lambda_guidance=4.5, 
-                    sample_numbers=288, seed=n) 
+    node_anomaly_gator = alliGATOR("./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_17-35-05", 5, MC = 100, name = f"Cora_inductive_output", anomaly_type="cora", lambda_guidance=4.5, 
+                    sample_numbers=3853, seed=n,) 
 
     precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_core_struc(), node_anomaly_gator.get_cora_prediction(), title_PR_type="Node Anomaly on Cora dataset")
 

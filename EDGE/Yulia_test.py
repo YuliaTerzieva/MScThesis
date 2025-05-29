@@ -55,7 +55,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     plt.title(f"Dataset {dataset_name}")
     plt.show()
 
-def plot_training_loss(dataset) -> None:
+def plot_training_loss(dataset, eval_every_int) -> None:
     
     f, ax = plt.subplots(2, 2, figsize=(10, 8))
     for i, run in enumerate(dataset) :
@@ -69,17 +69,17 @@ def plot_training_loss(dataset) -> None:
         min_train_bpd = min(training_loss['bpd'])
 
         min_eval_idx = np.argmin(eval_loss['bpd'])
-        min_eval_epoch = min_eval_idx * 10
+        min_eval_epoch = min_eval_idx * eval_every_int
         min_eval_bpd = eval_loss['bpd'][min_eval_idx]
 
         
         print('\033[1;36m' + "For Dataset ", run[8:-52], '\033[0;36m')
         print("The epoch with the lowest training bpd is ", min_train_idx)
-        print("The epoch with the lowest evaluation bpd is", min_eval_idx*10)
+        print("The epoch with the lowest evaluation bpd is", min_eval_idx*eval_every_int)
         print("Lowest BPD of the evaluation is: ", round(min_eval_bpd, 4), "\n" + '\033[0;30m')
 
         _ax.plot(np.arange(1, len(training_loss['bpd'])+1), training_loss['bpd'], label = "training BPD")
-        _ax.plot(np.arange(1, len(training_loss['bpd'])+1,10), eval_loss['bpd'], label = "evaluation BPD")
+        _ax.plot(np.arange(1, len(training_loss['bpd'])+1,eval_every_int)[:len(eval_loss['bpd'])], eval_loss['bpd'], label = "evaluation BPD")
         _ax.set_xlabel("Epoch")
 
         _ax.scatter(min_train_idx + 1, min_train_bpd, color='blue', label=f'Min Training BPD = {round(min_train_bpd, 3)}', zorder=5)
@@ -111,9 +111,9 @@ if __name__ == '__main__':
 
     # first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
     # second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
-    thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_11-17-11"
+    thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_17-35-05"
 
-    plot_training_loss([thrid])
+    plot_training_loss([thrid], 3)
 
     # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
     # anomalies = []

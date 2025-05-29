@@ -107,10 +107,13 @@ def log_onehot_to_index(log_x):
 
 
 def linear_beta_schedule(timesteps):
-    scale =  1000 / timesteps
-    beta_start = scale * 0.0001
-    beta_end = scale * 0.02
-    alphas = 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
+    i_overall = np.array([(i-1) / (timesteps - 1) for i in range(0, timesteps)])
+    # scale =  1000 / timesteps
+    # beta_start = scale * 0.0001
+    # beta_end = scale * 0.02
+    # alphas = 1 - (0.001*(1-i_overall) + 0.02 * i_overall)
+    alphas = 1 - torch.linspace(1e-6, 1.3, timesteps)#torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
+    # alphas = 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
     alphas = np.clip(alphas, a_min=0.001, a_max=1.)
     return alphas
 
@@ -130,7 +133,7 @@ def cosine_beta_schedule(timesteps, s = 0.008):
     # Yulia : I removed the following 
     # Use sqrt of this, so the alpha in our paper is the alpha_sqrt from the
     # Gaussian diffusion in Ho et al.
-    alphas = np.sqrt(alphas)
+    # alphas = np.sqrt(alphas)
     return alphas
 
 def Tt1_beta_schedule(timesteps):

@@ -300,7 +300,7 @@ def plot_graph(graph) -> None:
 def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
     # , 80 is from O to G 
     # M is from G to O this should be bigger because this is a bigger anomaly! 
-
+    print(f"Injecting {N_nodes} anomalous nodes")
     M = int(0.8 * N_nodes)
     N = N_nodes - M
 
@@ -356,7 +356,7 @@ def generate_ego_graph(G, K) -> list[nx.Graph]:
 def inductive_edge_split_and_save(
     graph: nx.Graph,
     K: int,
-    split_ratios=(0.7, 0.1, 0.1, 0.1),
+    split_ratios=(0.25, 0.25, 0.25, 0.25),
     seed=42,
     dataset_name="Synthetic"
 ):
@@ -401,6 +401,31 @@ def inductive_edge_split_and_save(
 
         print(f"In {name} number of isolated nodes is :", list(nx.isolates(subgraph)))
         subgraph.remove_nodes_from(list(nx.isolates(subgraph)))
+
+        N_anomalous_nodes = int(0.02 * len(subgraph.nodes)) 
+        add_anomalous_nodes(N_anomalous_nodes, subgraph)
+
+        # """
+        attrs = [0, 1, 2]
+        degrees = {a: [d for n, d in subgraph.degree() if subgraph.nodes[n].get('node_attr') == a] for a in attrs}
+
+        colors = ["blue", "orange", "gray"]
+        plt.figure()
+        for a in attrs:
+            plt.hist(degrees[a], bins=range(max(degrees[a])+2), alpha=0.3, label=f'Attr {a}', color=colors[a])
+        plt.legend()
+        plt.xlabel('Degree')
+        plt.ylabel('Count')
+        plt.title(f'{name} subgraph Degree Distribution by node attr')
+        plt.savefig(f'{name} subgraph Degree Distribution by node attr')
+        plt.show()
+        
+        # """
+        
+        nodes = subgraph.nodes
+        attrs = np.array([nodes[n]['node_attr'] for n in nodes])
+        one_hot = np.eye(attrs.max() + 1)[attrs]
+        nx.set_node_attributes(subgraph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
 
         ego_net_list = generate_ego_graph(subgraph, K)
 
@@ -490,8 +515,8 @@ def generate_node_anomaly_dataset() -> None:
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
     R = [("BA", 4), None, ("R", 0.01), # BB, BO, BG  # 0.0005 for 5000!
-         None, None, ("BA", 4), # OB, OO, OG
-         None, ("Uni", 6), None] # GB, GO, GG
+         None, None, ("BA", 5), # OB, OO, OG
+         None, ("Uni", 7), None] # GB, GO, GG
     K = 10
 
     reproducibility_seed = 42
@@ -517,59 +542,8 @@ def generate_node_anomaly_dataset() -> None:
     # """
     # ------------------------------------------------------------
     # """
-
-    N_anomalous_nodes = int(0.05 * len(Final_Graph.nodes)) 
-    add_anomalous_nodes(N_anomalous_nodes, Final_Graph)
-    
-    nodes = Final_Graph.nodes
-    attrs = np.array([nodes[n]['node_attr'] for n in nodes])
-    one_hot = np.eye(attrs.max() + 1)[attrs]
-    nx.set_node_attributes(Final_Graph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
-
-    # """
-    # ------------------------------------------------------------
-    # """
     
     inductive_edge_split_and_save(Final_Graph, K)
-
-    # random_samples = np.random.rand(N_total_nodes)
-
-    # train_mask = random_samples < 0.7
-    # eval_mask = (random_samples >= 0.7) & (random_samples < 0.8)
-    # tune_mask = (random_samples >= 0.8) & (random_samples < 0.9)
-    # test_mask = random_samples >= 0.9
-
-    # nodes = list(Final_Graph.nodes)
-
-    # train_nodes = [nodes[i] for i, keep in enumerate(train_mask) if keep]
-    # eval_nodes = [nodes[i] for i, keep in enumerate(eval_mask) if keep]
-    # tune_nodes = [nodes[i] for i, keep in enumerate(tune_mask) if keep]
-    # test_nodes = [nodes[i] for i, keep in enumerate(test_mask) if keep]
-
-    # train_graph = Final_Graph.copy()
-    # train_graph = train_graph.subgraph(train_nodes).copy()
-
-    # eval_graph = Final_Graph.copy()
-    # eval_graph = eval_graph.subgraph(eval_nodes).copy()
-
-    # tune_graph = Final_Graph.copy()
-    # tune_graph = tune_graph.subgraph(tune_nodes).copy()
-
-    # test_graph = Final_Graph.copy()
-    # test_graph = test_graph.subgraph(test_nodes).copy()
-
-    # # for graph in [train_graph,eval_graph, tune_graph, test_graph]:
-        
-
-
-    # for name, graph in zip(
-    #     ["train", "eval", "tune", "test"],
-    #     [train_graph,eval_graph, tune_graph, test_graph]
-    # ):
-    #     with open(f"GeneratedDataset/Synthetic_K{K}_node_{name}", "wb") as f:
-    #         ego_net_list = generate_ego_graph(graph, K)
-    #         pickle.dump(ego_net_list, f)
-
 # ----------------------------------------------------------------------------
 
 def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
@@ -587,6 +561,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     print("The number of graphs in the testing is ", len(test_graph))
     print('\033[1;30m')
 
+    plt.figure()
     train_number_of_nodes = [len(n.nodes) for n in train_graph]
     plt.hist(train_number_of_nodes, alpha = 0.5, label = "train")
     print("The training number of nodes have mean and std : ", np.mean(train_number_of_nodes), np.std(train_number_of_nodes))

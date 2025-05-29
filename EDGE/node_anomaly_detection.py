@@ -7,34 +7,34 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 
 for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_11-17-11", 19, MC = 100, name = f"K{10}DS{8}A{1}", lambda_guidance=4.5, 
-                    sample_numbers=457, anomaly_type="node_anomaly", seed=n, tuning = True) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_17-35-05", 68, MC = 100, name = f"K{10}DS{8}A{31}", lambda_guidance=4.5, 
+                    sample_numbers=3853, anomaly_type="node_anomaly", seed=n, tuning = True) 
 
     precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
 
-    # precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
+    precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
     
-    # all_precision.append(precision_interp)
+    all_precision.append(precision_interp)
 
-# all_precision = np.vstack(all_precision)
-# mean_precision = all_precision.mean(axis=0)
-# std_precision = all_precision.std(axis=0)
+all_precision = np.vstack(all_precision)
+mean_precision = all_precision.mean(axis=0)
+std_precision = all_precision.std(axis=0)
 
-# # Plot mean curve with shaded std area
-# plt.figure(figsize=(7, 7))
-# plt.plot(interp_recall, mean_precision, label=f"Mean PR curve (AUC = {auc(interp_recall, mean_precision):.3f})", color = "teal")
-# plt.fill_between(interp_recall, mean_precision - std_precision, mean_precision + std_precision, alpha=0.3, color = "teal")
+# Plot mean curve with shaded std area
+plt.figure(figsize=(7, 7))
+plt.plot(interp_recall, mean_precision, label=f"Mean PR curve (AUC = {auc(interp_recall, mean_precision):.3f})", color = "teal")
+plt.fill_between(interp_recall, mean_precision - std_precision, mean_precision + std_precision, alpha=0.3, color = "teal")
 
-# # Baseline (random)
-# labels = node_anomaly_gator.get_true_anomaly_label_tf_theft()
-# positive_ratio = labels.count(1)/len(labels)
-# plt.hlines(positive_ratio, xmin=0, xmax=1, color='red', label='Baseline')
+# Baseline (random)
+labels = node_anomaly_gator.get_true_anomaly_label_tf_theft()
+positive_ratio = labels.count(1)/len(labels)
+plt.hlines(positive_ratio, xmin=0, xmax=1, color='red', label='Baseline')
 
-# plt.xlabel("Recall")
-# plt.ylabel("Precision")
-# plt.title("Node anomaly\nMean Precision-Recall Curve with Std (alliGATOR)")
-# plt.legend()
-# plt.show()
+plt.xlabel("Recall")
+plt.ylabel("Precision")
+plt.title("Node anomaly\nMean Precision-Recall Curve with Std (alliGATOR)")
+plt.legend()
+plt.show()
 #------------------------->>>
 
 # node_anomaly_gator = alliGATOR("./wandb/Id_theft/multinomial_diffusion/multistep/2025-04-27_19-36-11", 319, MC = 100, name = "id_theft", lambda_guidance=4.5, 
@@ -62,10 +62,11 @@ for n in range(1):
 # --------->  which are the anomalous graphs?
 
 print([c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_tf_theft()) if i == 1])
+print("The ratio of anomalous nodes to all is", positive_ratio)
 
 # breakpoint()
 # #--------->  Plot graphs
-for i in [26, 67, 68, 107]: 
+for i in [9, 15, 23, 65, 79, 122]: 
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = True)
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = False)
     

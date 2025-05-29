@@ -253,13 +253,23 @@ class alliGATOR(object):
     def get_id_theft_prediction(self) -> np.array :
 
         anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
-
+        per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         for g_index in range(len(self.sample_numbers)):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
-            gen_edges = self.per_graph_edge_list_counter[g_index]            
-            score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges])
+            gen_edges = self.per_graph_edge_list_counter[g_index]   
+            # score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
+            # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
+             
+            m = len(self.original_graphs_edges[g_index])
+            k = per_graph_node_degree_counter[g_index]
+
+            to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
+                  
+            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+                   
+            
             
             node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
