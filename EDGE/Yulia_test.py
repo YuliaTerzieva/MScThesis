@@ -109,10 +109,11 @@ if __name__ == '__main__':
     # less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
     # even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
 
-    first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
-    second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
+    # first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
+    # second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
+    thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_11-17-11"
 
-    plot_training_loss([first, second])
+    plot_training_loss([thrid])
 
     # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
     # anomalies = []

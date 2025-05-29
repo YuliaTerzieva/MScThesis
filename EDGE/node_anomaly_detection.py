@@ -7,8 +7,8 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 
 for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42", 59, MC = 100, name = f"K{10}DS{8}A{1}", lambda_guidance=4.5, 
-                    sample_numbers=275, anomaly_type="node_anomaly", seed=n, tuning = True) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_11-17-11", 19, MC = 100, name = f"K{10}DS{8}A{1}", lambda_guidance=4.5, 
+                    sample_numbers=457, anomaly_type="node_anomaly", seed=n, tuning = True) 
 
     precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
 
@@ -65,7 +65,7 @@ print([c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_tf_thef
 
 # breakpoint()
 # #--------->  Plot graphs
-for i in [135, 136, 207, 217, 233]: 
+for i in [26, 67, 68, 107]: 
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = True)
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = False)
     

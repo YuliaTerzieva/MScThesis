@@ -349,6 +349,60 @@ def generate_ego_graph(G, K) -> list[nx.Graph]:
 
 # ----------------------------------------------------------------------------
 
+def inductive_edge_split_and_save(
+    graph: nx.Graph,
+    K: int,
+    split_ratios=(0.7, 0.1, 0.1, 0.1),
+    seed=42,
+    dataset_name="Synthetic"
+):
+    """
+    Performs inductive 4-way edge split on a graph, generates ego-graphs, and saves them to disk.
+    
+    Parameters:
+        graph (nx.Graph): Input undirected graph with attributes.
+        K (int): Hop size for ego-graph generation.
+        generate_ego_graph (function): Function that takes (graph, K) and returns a list of ego-graphs.
+        split_ratios (tuple): Four-way split, e.g., (0.7, 0.1, 0.1, 0.1).
+        seed (int): Random seed for reproducibility.
+        output_dir (str): Directory to save the ego-net pickle files.
+        dataset_name (str): Prefix for output filenames.
+    """
+
+    edges = list(graph.edges)
+    random.Random(seed).shuffle(edges)
+    n_total = len(edges)
+
+    split_1 = round(split_ratios[0] * n_total)
+    split_2 = round((split_ratios[0] + split_ratios[1]) * n_total)
+    split_3 = round((split_ratios[0] + split_ratios[1] + split_ratios[2]) * n_total)
+
+    edge_splits = {
+        'train': edges[:split_1],
+        'eval': edges[split_1:split_2],
+        'tune': edges[split_2:split_3],
+        'test': edges[split_3:]
+    }
+
+    for name, edge_list in edge_splits.items():
+        subgraph = nx.Graph()
+        subgraph.add_edges_from(edge_list)
+
+        for node in subgraph.nodes():
+            if node in graph.nodes:
+                subgraph.nodes[node].update(graph.nodes[node])
+            else :
+                print("This is impossible so there is a mistake")
+                breakpoint()
+
+        print(f"In {name} number of isolated nodes is :", list(nx.isolates(subgraph)))
+        subgraph.remove_nodes_from(list(nx.isolates(subgraph)))
+
+        ego_net_list = generate_ego_graph(subgraph, K)
+
+        with open(f"GeneratedDataset/{dataset_name}_K{K}_node_{name}.pkl", "wb") as f:
+            pickle.dump(ego_net_list, f)
+
 def generate_edge_anomaly_dataset() -> None :
     N = 3 # B, O, G
     N_total_nodes = 5000
@@ -460,49 +514,57 @@ def generate_node_anomaly_dataset() -> None:
     # ------------------------------------------------------------
     # """
 
-    random_samples = np.random.rand(N_total_nodes)
+    N_anomalous_nodes = int(0.05 * len(Final_Graph.nodes)) 
+    add_anomalous_nodes(N_anomalous_nodes, Final_Graph)
+    
+    nodes = Final_Graph.nodes
+    attrs = np.array([nodes[n]['node_attr'] for n in nodes])
+    one_hot = np.eye(attrs.max() + 1)[attrs]
+    nx.set_node_attributes(Final_Graph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
 
-    train_mask = random_samples < 0.7
-    eval_mask = (random_samples >= 0.7) & (random_samples < 0.8)
-    tune_mask = (random_samples >= 0.8) & (random_samples < 0.9)
-    test_mask = random_samples >= 0.9
+    # """
+    # ------------------------------------------------------------
+    # """
+    
+    inductive_edge_split_and_save(Final_Graph, K)
 
-    nodes = list(Final_Graph.nodes)
+    # random_samples = np.random.rand(N_total_nodes)
 
-    train_nodes = [nodes[i] for i, keep in enumerate(train_mask) if keep]
-    eval_nodes = [nodes[i] for i, keep in enumerate(eval_mask) if keep]
-    tune_nodes = [nodes[i] for i, keep in enumerate(tune_mask) if keep]
-    test_nodes = [nodes[i] for i, keep in enumerate(test_mask) if keep]
+    # train_mask = random_samples < 0.7
+    # eval_mask = (random_samples >= 0.7) & (random_samples < 0.8)
+    # tune_mask = (random_samples >= 0.8) & (random_samples < 0.9)
+    # test_mask = random_samples >= 0.9
 
-    train_graph = Final_Graph.copy()
-    train_graph = train_graph.subgraph(train_nodes).copy()
+    # nodes = list(Final_Graph.nodes)
 
-    eval_graph = Final_Graph.copy()
-    eval_graph = eval_graph.subgraph(eval_nodes).copy()
+    # train_nodes = [nodes[i] for i, keep in enumerate(train_mask) if keep]
+    # eval_nodes = [nodes[i] for i, keep in enumerate(eval_mask) if keep]
+    # tune_nodes = [nodes[i] for i, keep in enumerate(tune_mask) if keep]
+    # test_nodes = [nodes[i] for i, keep in enumerate(test_mask) if keep]
 
-    tune_graph = Final_Graph.copy()
-    tune_graph = tune_graph.subgraph(tune_nodes).copy()
+    # train_graph = Final_Graph.copy()
+    # train_graph = train_graph.subgraph(train_nodes).copy()
 
-    test_graph = Final_Graph.copy()
-    test_graph = test_graph.subgraph(test_nodes).copy()
+    # eval_graph = Final_Graph.copy()
+    # eval_graph = eval_graph.subgraph(eval_nodes).copy()
 
-    for graph in [train_graph,eval_graph, tune_graph, test_graph]:
-        N_anomalous_nodes = int(0.05 * len(graph.nodes)) 
-        add_anomalous_nodes(N_anomalous_nodes, graph)
+    # tune_graph = Final_Graph.copy()
+    # tune_graph = tune_graph.subgraph(tune_nodes).copy()
+
+    # test_graph = Final_Graph.copy()
+    # test_graph = test_graph.subgraph(test_nodes).copy()
+
+    # # for graph in [train_graph,eval_graph, tune_graph, test_graph]:
         
-        nodes = graph.nodes
-        attrs = np.array([nodes[n]['node_attr'] for n in nodes])
-        one_hot = np.eye(attrs.max() + 1)[attrs]
-        nx.set_node_attributes(graph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
 
 
-    for name, graph in zip(
-        ["train", "eval", "tune", "test"],
-        [train_graph,eval_graph, tune_graph, test_graph]
-    ):
-        with open(f"GeneratedDataset/Synthetic_K{K}_node_{name}", "wb") as f:
-            ego_net_list = generate_ego_graph(graph, K)
-            pickle.dump(ego_net_list, f)
+    # for name, graph in zip(
+    #     ["train", "eval", "tune", "test"],
+    #     [train_graph,eval_graph, tune_graph, test_graph]
+    # ):
+    #     with open(f"GeneratedDataset/Synthetic_K{K}_node_{name}", "wb") as f:
+    #         ego_net_list = generate_ego_graph(graph, K)
+    #         pickle.dump(ego_net_list, f)
 
 # ----------------------------------------------------------------------------
 
@@ -510,10 +572,10 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     # mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
     # map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-    train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train', 'rb'))
-    eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval', 'rb'))
-    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune', 'rb'))
-    test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test', 'rb'))
+    train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train.pkl', 'rb'))
+    eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval.pkl', 'rb'))
+    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune.pkl', 'rb'))
+    test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test.pkl', 'rb'))
 
     print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
     print("The number of graphs in the eval is ", len(eval_graph))
@@ -562,7 +624,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
 if __name__ == '__main__':
     
     # generate_edge_anomaly_dataset()
-    generate_node_anomaly_dataset()
+    # generate_node_anomaly_dataset()
 
     dataset_name = "Synthetic_K10_node" 
     plot_graph_freq_wrt_node_edge(dataset_name)
