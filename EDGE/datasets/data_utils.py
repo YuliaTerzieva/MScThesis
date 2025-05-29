@@ -86,7 +86,7 @@ class EmptyGraphGeneratorWithNodeAttributes:
         
         return batched_data
 
-    def sample(self, num_samples, tune = False):
+    def sample(self, num_samples, tuning = False):
         """
         This function samples "num_samples" from a list of graphs.
         The list is created from graphs in the test section of the dataset
@@ -102,7 +102,7 @@ class EmptyGraphGeneratorWithNodeAttributes:
             - nodes_per_graph is added
             - edges_per_graph is added
         """
-        if tune : 
+        if tuning : 
             sampled_graphs = self.param_tuning_graphs_nx
         else:
             if num_samples == len(self.testing_graphs_nx):

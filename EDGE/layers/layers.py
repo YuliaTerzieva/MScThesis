@@ -555,7 +555,7 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         row = pyg_data.full_edge_index[0].index_select(0, pyg_data.active_edge_indices)
         col = pyg_data.full_edge_index[1].index_select(0, pyg_data.active_edge_indices)
 
-        nodes = torch.cat([nodes, self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr_one_hot)], dim=-1)
+        nodes = torch.cat([nodes, self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr)], dim=-1)
         nodes = self.node_out_mlp(nodes)
 
         edge_emb = nodes[row] + nodes[col]

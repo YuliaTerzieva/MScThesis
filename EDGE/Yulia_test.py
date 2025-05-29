@@ -100,8 +100,8 @@ if __name__ == '__main__':
     # dataset_name = "Cor" 
     # plot_graph_freq_wrt_node_edge(dataset_name)
 
-    dataset_name = "Cora_inductive_PCA30_node" 
-    plot_graph_freq_wrt_node_edge(dataset_name)
+    # dataset_name = "Syn" 
+    # plot_graph_freq_wrt_node_edge(dataset_name)
     
     # bigger_network_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
     # less_attention_linear = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56"
@@ -109,9 +109,10 @@ if __name__ == '__main__':
     # less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
     # even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
 
-    edge_cls = "./wandb/Cora_inductive_PCA30_node/multinomial_diffusion/multistep/2025-05-28_16-34-42/"
+    first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
+    second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
 
-    plot_training_loss([edge_cls])
+    plot_training_loss([first, second])
 
     # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
     # anomalies = []

@@ -62,7 +62,7 @@ def get_data_id(args):
     return '{}'.format(args.dataset)
 
 def get_data(args):
-    num_node_classes = 30#args.dim_node_attr # here I have 3 (blue, orange and gray) or 30 for cora
+    num_node_classes = args.dim_node_attr # here I have 3 (blue, orange and gray) or 30 for cora
     num_edge_classes = 2 # no edge / edge
     num_node_feat = 1 
     
@@ -87,7 +87,7 @@ def get_data(args):
     eval_set = GraphDataset(eval_pygraphs)
     
     if args.empty_graph_sampler == 'file':
-        initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(file_path = args.dataset + "_test") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
+        initial_graph_sampler = EmptyGraphGeneratorWithNodeAttributes(args.dataset + "_tune", args.dataset + "_test") # TODO : Yulia : add parameter empty_graphs_file_name to get from the arguments and pass here!
     else : 
         raise NotImplementedError
 

@@ -17,7 +17,7 @@ from model import get_model
 
 class alliGATOR(object):
 
-    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, anomaly_type = "", node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}, seed = 42):
+    def __init__(self, saved_model, checkpoint_nb, MC, name, lambda_guidance = 4.5, previously_sampled_model_filename = None, sample_numbers = 1, tuning = False, anomaly_type = "", node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}, seed = 42):
         
         wandb_model_log = saved_model
         path = wandb_model_log+f"/check/checkpoint_{checkpoint_nb}.pt"
@@ -43,7 +43,7 @@ class alliGATOR(object):
 
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
-            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed) 
+            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed, tuning= tuning) 
             with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
                 pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
@@ -259,7 +259,7 @@ class alliGATOR(object):
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
             gen_edges = self.per_graph_edge_list_counter[g_index]            
-            score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
+            score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges])
             
             node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
@@ -517,12 +517,12 @@ class alliGATOR(object):
         generated_graph = self.generated_graphs[graph_id]
         generated_edges = self.per_graph_edge_list_counter[graph_id]
 
-
-        original_node_colors = [self.node_color[node_class.item()] for node_class in original_graph.node_attr]
+        # breakpoint()
+        original_node_colors = [self.node_color[int(np.argmax(node_class))] for node_class in original_graph.node_attr]
         original_graph_nx = pyg.utils.to_networkx(original_graph, to_undirected=True)
 
         # generated edges/graph
-        generated_node_colors = [self.node_color[node_class.item()] for node_class in generated_graph.node_attr]
+        generated_node_colors = [self.node_color[int(np.argmax(node_class))] for node_class in generated_graph.node_attr]
         generated_graph_nx = pyg.utils.to_networkx(generated_graph, to_undirected=True)
         generated_graph_nx.clear_edges()
         # ------  Probabilities ------

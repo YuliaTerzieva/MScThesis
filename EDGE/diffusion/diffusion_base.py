@@ -279,8 +279,8 @@ class DiffusionBase(torch.nn.Module):
         return batched_graph 
     
     
-    def sample_and_MC(self, num_samples, lambda_guidance = torch.tensor(0), MC = 100, seed = 42): 
-        original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples)
+    def sample_and_MC(self, num_samples, lambda_guidance = torch.tensor(0), MC = 100, seed = 42, tuning = False): 
+        original_graphs, batched_graph = self.initial_graph_sampler.sample(num_samples, tuning)
         # breakpoint()
         batched_graph.to(self.device)
 
