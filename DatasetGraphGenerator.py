@@ -340,6 +340,10 @@ def generate_ego_graph(G, K) -> list[nx.Graph]:
         ego_subgraph = G.subgraph([node] + top_k_nodes).copy()
         ego_subgraph.remove_nodes_from(list(nx.isolates(ego_subgraph)))
 
+        if len(ego_subgraph.edges) <=5 : 
+            count+=1
+            continue
+
         nx.set_node_attributes(ego_subgraph, 0, 'central_node')
         ego_subgraph.nodes[node]['central_node'] = 1
         ego_graphs.append(ego_subgraph)
@@ -400,7 +404,7 @@ def inductive_edge_split_and_save(
 
         ego_net_list = generate_ego_graph(subgraph, K)
 
-        with open(f"GeneratedDataset/{dataset_name}_K{K}_node_{name}.pkl", "wb") as f:
+        with open(f"GeneratedDataset/{dataset_name}_K{K}_node_{name}", "wb") as f:
             pickle.dump(ego_net_list, f)
 
 def generate_edge_anomaly_dataset() -> None :
@@ -572,10 +576,10 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     # mapping = {0: 'blue', 1: 'orange',2: 'grey'} # the reason why i have this and not one-hot-encoming is
     # map_color = lambda color: ([mapping[c] for c in color] if isinstance(color, list) else mapping[color])
 
-    train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train.pkl', 'rb'))
-    eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval.pkl', 'rb'))
-    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune.pkl', 'rb'))
-    test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test.pkl', 'rb'))
+    train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train', 'rb'))
+    eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval', 'rb'))
+    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune', 'rb'))
+    test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test', 'rb'))
 
     print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
     print("The number of graphs in the eval is ", len(eval_graph))
@@ -624,7 +628,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
 if __name__ == '__main__':
     
     # generate_edge_anomaly_dataset()
-    # generate_node_anomaly_dataset()
+    generate_node_anomaly_dataset()
 
     dataset_name = "Synthetic_K10_node" 
     plot_graph_freq_wrt_node_edge(dataset_name)
