@@ -402,10 +402,10 @@ def inductive_edge_split_and_save(
         print(f"In {name} number of isolated nodes is :", list(nx.isolates(subgraph)))
         subgraph.remove_nodes_from(list(nx.isolates(subgraph)))
 
-        N_anomalous_nodes = int(0.02 * len(subgraph.nodes)) 
+        N_anomalous_nodes = int(0.04 * len(subgraph.nodes)) 
         add_anomalous_nodes(N_anomalous_nodes, subgraph)
 
-        # """
+        # """ Plotting
         attrs = [0, 1, 2]
         degrees = {a: [d for n, d in subgraph.degree() if subgraph.nodes[n].get('node_attr') == a] for a in attrs}
 
@@ -510,14 +510,14 @@ def generate_edge_anomaly_dataset() -> None :
 
 def generate_node_anomaly_dataset() -> None:
     N = 3 # B, O, G
-    N_total_nodes = 5000
+    N_total_nodes = 1000
     NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 4), None, ("R", 0.01), # BB, BO, BG  # 0.0005 for 5000!
-         None, None, ("BA", 5), # OB, OO, OG
-         None, ("Uni", 7), None] # GB, GO, GG
-    K = 10
+    R = [("BA", 3), None, ("R", 0.01), # BB, BO, BG  # 0.0005 for 5000!
+         None, None, ("Uni", 7), # OB, OO, OG
+         None, ("BA", 8), None] # GB, GO, GG
+    K = 15
 
     reproducibility_seed = 42
     random.seed(reproducibility_seed)
@@ -552,12 +552,12 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
 
     train_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_train', 'rb'))
     eval_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_eval', 'rb'))
-    tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune', 'rb'))
+    # tune_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_tune', 'rb'))
     test_graph = pickle.load(open(f'GeneratedDataset/{dataset_name}_test', 'rb'))
 
     print('\033[95m' + "The number of graphs in the training is ", len(train_graph))
     print("The number of graphs in the eval is ", len(eval_graph))
-    print("The number of graphs in the tune is ", len(tune_graph))
+    # print("The number of graphs in the tune is ", len(tune_graph))
     print("The number of graphs in the testing is ", len(test_graph))
     print('\033[1;30m')
 
@@ -569,8 +569,8 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     eval_number_of_nodes = [len(n.nodes) for n in eval_graph]
     plt.hist(eval_number_of_nodes, alpha = 0.5, label = "eval")
 
-    tune_number_of_nodes = [len(n.nodes) for n in tune_graph]
-    plt.hist(tune_number_of_nodes, alpha = 0.5, label = "tune")
+    # tune_number_of_nodes = [len(n.nodes) for n in tune_graph]
+    # plt.hist(tune_number_of_nodes, alpha = 0.5, label = "tune")
 
     test_number_of_nodes = [len(n.nodes) for n in test_graph]
     plt.hist(test_number_of_nodes, alpha = 0.5, label = "test")
@@ -589,8 +589,8 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     eval_number_of_edges = [len(n.edges) for n in eval_graph]
     plt.hist(eval_number_of_edges, alpha = 0.5, label = "eval")
 
-    tune_number_of_edges = [len(n.edges) for n in tune_graph]
-    plt.hist(tune_number_of_edges, alpha = 0.5, label = "tune")
+    # tune_number_of_edges = [len(n.edges) for n in tune_graph]
+    # plt.hist(tune_number_of_edges, alpha = 0.5, label = "tune")
 
     test_number_of_edges = [len(n.edges) for n in test_graph]
     plt.hist(test_number_of_edges, alpha = 0.5, label = "test")
@@ -600,11 +600,68 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     plt.title(f"Dataset {dataset_name}")
     plt.show()
 
+def plot_example_graphs(dataset_name):
+
+    graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
+    node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+    np.random.shuffle(graphs)
+
+    fig, axes = plt.subplots(5, 3, figsize=(15, 10))
+    axes = axes.flatten() 
+
+    anomalous_gs = [g for g in graphs if nx.get_node_attributes(g, "anomalous")[next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)] == 1]
+    nomal_gs = [g for g in graphs if g not in anomalous_gs]
+
+    for i, g in enumerate(nomal_gs[:9]):
+        ax = axes[i]
+
+        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
+
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+
+        anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
+
+        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
+
+    for i, g in enumerate(anomalous_gs[:6]):
+        ax = axes[i+9]
+
+        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
+
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+
+        anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
+
+        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
+
+def plot_max_degree(dataset_names):
+    for dataset_name in dataset_names:
+        graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
+        max_node_degree_for_all_graphs = [np.max([d for n, d in G.degree()]) for G in graphs]
+        plt.bar(*np.unique(max_node_degree_for_all_graphs, return_counts=True), alpha = 0.4, label = f"{dataset_name}")
+
+    plt.title(f"DIstibution of max node degree in subgraphs")
+    plt.legend()
+    plt.show()
+
 if __name__ == '__main__':
     
     # generate_edge_anomaly_dataset()
-    generate_node_anomaly_dataset()
+    # generate_node_anomaly_dataset()
 
-    dataset_name = "Synthetic_K10_node" 
+    K = 15
+    dataset_name = f"Synthetic_K{K}_node" 
     plot_graph_freq_wrt_node_edge(dataset_name)
+
+    plot_max_degree([f"Synthetic_K{K}_node_train", f"Synthetic_K{K}_node_eval", f"Synthetic_K{K}_node_tune", f"Synthetic_K{K}_node_test"])
+    plot_example_graphs(f"Synthetic_K{K}_node_train")
+    plot_example_graphs(f"Synthetic_K{K}_node_eval")
+    plot_example_graphs(f"Synthetic_K{K}_node_tune")
+    plot_example_graphs(f"Synthetic_K{K}_node_test")
+
     

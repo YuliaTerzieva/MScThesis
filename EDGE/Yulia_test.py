@@ -111,17 +111,30 @@ if __name__ == '__main__':
 
     # first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
     # second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
-    thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_17-35-05"
+    # thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_22-16-25"
 
-    plot_training_loss([thrid], 3)
+    # plot_training_loss([thrid], 3)
 
-    # graph = pickle.load(open("../GeneratedDataset/Id_theft_test", "rb"))
-    # anomalies = []
-    # for g in graph :
-    #     anomalies.append([v for v in nx.get_node_attributes(g, "anomalous").values()].count(1))
-    # print(anomalies)
+    graphs = pickle.load(open("../GeneratedDataset/Synthetic_K10_node_eval", "rb"))
+    node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+    np.random.shuffle(graphs)
+    fig, axes = plt.subplots(5, 3, figsize=(15, 10))
+    axes = axes.flatten() 
 
+    for i, g in enumerate(graphs[:15]):
+        ax = axes[i]
 
+        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
+
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+
+        anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
+
+        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
+
+    plt.tight_layout()
+    plt.show()
 # ------------------------------------------------------------------------------------------------------------------------
 # THE FOLLOWING IS SOME TEST CODE I HAVE TO DELETE 
 """

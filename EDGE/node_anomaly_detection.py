@@ -7,8 +7,8 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 
 for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_17-35-05", 68, MC = 100, name = f"K{10}DS{8}A{31}", lambda_guidance=4.5, 
-                    sample_numbers=3853, anomaly_type="node_anomaly", seed=n, tuning = True) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_22-16-25", 44, MC = 100, name = f"K{10}DS{8}A{31}", lambda_guidance=4.5, 
+                    sample_numbers=4925, previously_sampled_model_filename="./Alligator_Output_node_anomaly/K10DS8A31_mc100_guidance45.pkl", anomaly_type="node_anomaly", seed=n, tuning = True) 
 
     precision, recall, auc_precision_recall = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
 
@@ -53,7 +53,7 @@ plt.show()
 
 # node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
 
-# node_anomaly_gator.plot_active_edges_and_nodes()
+node_anomaly_gator.plot_active_edges_and_nodes()
 # node_anomaly_gator.plot_edge_distribution_violin_boxplots(node_anomaly_gator.get_per_edge_type_probability_list(only_originla_edges=True), "original edges only")
 # node_anomaly_gator.plot_edge_distribution_violin_boxplots(node_anomaly_gator.get_per_edge_type_probability_list(only_originla_edges=True, node_degree_adjusted=True), "original edges only")
 # node_anomaly_gator.plot_edge_distribution_violin_boxplots(node_anomaly_gator.get_per_edge_type_probability_list(only_originla_edges=False), "all generated edges")
@@ -66,7 +66,7 @@ print("The ratio of anomalous nodes to all is", positive_ratio)
 
 # breakpoint()
 # #--------->  Plot graphs
-for i in [9, 15, 23, 65, 79, 122]: 
+for i in [8, 76, 80, 98]: 
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = True)
     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = False)
     

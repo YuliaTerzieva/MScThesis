@@ -117,6 +117,14 @@ def linear_beta_schedule(timesteps):
     alphas = np.clip(alphas, a_min=0.001, a_max=1.)
     return alphas
 
+# def linear_beta_schedule(timesteps):
+#     scale = 1000 / timesteps
+#     beta_start = scale * 0.0001
+#     beta_end = scale * 0.02
+#     alphas = 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
+#    # alphas = np.clip(alphas, a_min=0.001, a_max=1.) this was not in their original code!
+#     return alphas
+
 def cosine_beta_schedule(timesteps, s = 0.008):
     """
     cosine schedule

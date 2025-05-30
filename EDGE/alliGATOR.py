@@ -260,14 +260,14 @@ class alliGATOR(object):
 
             gen_edges = self.per_graph_edge_list_counter[g_index]   
             # score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
-            # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
+            score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
              
-            m = len(self.original_graphs_edges[g_index])
-            k = per_graph_node_degree_counter[g_index]
+            # m = len(self.original_graphs_edges[g_index])
+            # k = per_graph_node_degree_counter[g_index]
 
-            to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
+            # to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
                   
-            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+            # score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
                    
             
             
@@ -544,7 +544,7 @@ class alliGATOR(object):
         m = len(self.original_graphs_edges[graph_id])
         k = per_graph_node_degree_counter[graph_id]
         edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
-                                      'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m**2)}) 
+                                      'adjusted_prob': count / self.Monte_Carlo}) 
                                for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
         # print(edges_with_weights)
         # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
@@ -552,6 +552,7 @@ class alliGATOR(object):
 
 
         generated_graph_nx.add_edges_from(edges_with_weights)
+        # edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
         edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
 
         fig, axes = plt.subplots(1, 2)
