@@ -101,7 +101,7 @@ if  __name__ == '__main__': # Yulia : I added this because otherwise I get a mul
 
 
 """
-python3 train.py --epochs 1000 --num_generation 1 --diffusion_dim 16 --diffusion_steps 4 --device cpu --dataset Synthetic_K15_node --dim_node_attr 3\
+python3 train.py --epochs 1000 --num_generation 1 --diffusion_dim 16 --diffusion_steps 5 --device cpu --dataset Synthetic_K7_edge --dim_node_attr 3\
     --batch_size 32 --num_workers 0 --clip_value 1 --lr 1e-3 --p_uncon 0.2 --optimizer adam --final_prob_edge 1 0 \
         --sample_time_method uniform --check_every 3 --eval_every 3 --noise_schedule linear --dp_rate 0.1 --loss_type vb_ce_xt_prescribred_st \
             --arch TGNN_degree_and_node_guided --parametrization xt_prescribed_st --empty_graph_sampler file --degree --num_heads 3 1 

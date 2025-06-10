@@ -112,7 +112,7 @@ def linear_beta_schedule(timesteps):
     # beta_start = scale * 0.0001
     # beta_end = scale * 0.02
     # alphas = 1 - (0.001*(1-i_overall) + 0.02 * i_overall)
-    alphas = 1 - torch.linspace(1e-6, 1.3, timesteps)#torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
+    alphas = 1 - torch.linspace(1e-6, 1.3, timesteps, dtype = torch.float64).numpy()#torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
     # alphas = 1 - torch.linspace(beta_start, beta_end, timesteps, dtype = torch.float64).numpy()
     alphas = np.clip(alphas, a_min=0.001, a_max=1.)
     return alphas
@@ -305,7 +305,7 @@ class DiffusionBase(torch.nn.Module):
         batched_graph = self._prepare_data_for_sampling(batched_graph)
         node_attr_free_batched_graph = self._prepare_data_for_sampling(node_attr_free_batched_graph)
         
-        batched_graph_mc_edge_index_and_count = [Counter() for _ in range(len(num_samples))]
+        batched_graph_mc_edge_index_and_count = [Counter() for _ in range(num_samples)]
         active_edges = defaultdict()
 
         for mc_counter in range(MC): # one loop takes on average 1.2 seconds

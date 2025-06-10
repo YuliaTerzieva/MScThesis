@@ -538,6 +538,10 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
             nodes = self.dropout(nodes)
 
             ### gru update ###
+
+            breakpoint()
+            print(self.gru)
+            breakpoint()
             nodes, h = self.gru(nodes.unsqueeze(0).contiguous(), h.contiguous())
             h = self.dropout(h)
             nodes = nodes.squeeze(0)

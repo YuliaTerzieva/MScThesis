@@ -10,16 +10,16 @@ from functools import partial
 
 def add_model_args(parser):
     # Model params
-    parser.add_argument('--loss_type', type=str, default='vb_kl')
+    parser.add_argument('--loss_type', type=str, default='vb_ce_xt_prescribred_st ')
     parser.add_argument('--diffusion_steps', type=int, default=1000)
     parser.add_argument('--diffusion_dim', type=int, default=64)
     parser.add_argument('--dp_rate', type=float, default=0.)
     parser.add_argument('--num_heads', type=int, nargs="*", default=[8, 8, 8, 8, 1])
     parser.add_argument('--final_prob_node', type=float, nargs="*", default=None)
     parser.add_argument('--final_prob_edge', type=float, nargs="*", default=[1-1e-12, 1e-12])
-    parser.add_argument('--parametrization', type=str, default='x0')
+    parser.add_argument('--parametrization', type=str, default='xt_prescribed_st')
     parser.add_argument('--sample_time_method', type=str, default='importance')
-    parser.add_argument('--arch', type=str, help='GAT | TGNN')
+    parser.add_argument('--arch', type=str, help='GAT | TGNN', default = "TGNN_degree_and_node_guided")
     parser.add_argument('--noise_schedule', type=str, default='cosine', help='cosine | linear')
     parser.add_argument('--norm', type=str, default='None', help='None | BN' )
     

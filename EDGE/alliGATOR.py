@@ -7,7 +7,7 @@ import matplotlib.colors as mcolors
 from collections import defaultdict, Counter
 import pickle
 from sklearn.metrics import precision_recall_curve, auc
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import average_precision_score
 import time
 
 # ---- EDGE functions ----
@@ -28,8 +28,8 @@ class alliGATOR(object):
         _, _, _, _, _, _, _, _, initial_graph_sampler, _, _, _ = get_data(args)
         self.number_diffusion_steps = args.diffusion_steps
 
-        self.sample_numbers = np.arange(sample_numbers).tolist() # for the classification we have 2186, for the id theft we have 1000
         self.Monte_Carlo = MC
+        self.sample_numbers = sample_numbers
 
         self.node_color = node_color_mapping
 
@@ -43,7 +43,7 @@ class alliGATOR(object):
 
         if previously_sampled_model_filename == None:
             # 0 only conditioned, >0 subtracks the unconditioned, actively reducing the probability of generating samples that ignore the conditioning
-            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(self.sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed, tuning= tuning) 
+            self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges = self.model.sample_and_MC(sample_numbers, lambda_guidance, self.Monte_Carlo, seed = seed, tuning= tuning) 
             with open(f"Alligator_Output_{anomaly_type}/{name}_mc{self.Monte_Carlo}_guidance{int(lambda_guidance*10)}.pkl", "wb") as f:
                 pickle.dump([self.original_graphs, self.generated_graphs, self.per_graph_edge_list_counter, self.active_edges], f)
         else :
@@ -124,9 +124,9 @@ class alliGATOR(object):
     #     """
     #     The anomaly score of a graph is 1 - min(edge probabilities of G_c)
     #     """
-    #     anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+    #     anomaly_score_per_graph = np.zeros(self.sample_numbers)
 
-    #     for g_index in range(len(self.sample_numbers)):
+    #     for g_index in range(self.sample_numbers):
 
     #         generated_edges_prob = self.per_graph_edge_list_counter[g_index]
     #         anomaly_score_per_graph[g_index] = 1 - min([generated_edges_prob[edge] / self.Monte_Carlo  for edge in self.original_graphs_edges[g_index] if edge in generated_edges_prob.keys()])
@@ -139,10 +139,10 @@ class alliGATOR(object):
 
     #     this is following the formula by Ioana, but i am not sure it is correctly implemented
     #     """
-    #     anomaly_score_per_graph = np.zeros(len(self.sample_numbers))
+    #     anomaly_score_per_graph = np.zeros(self.sample_numbers)
     #     per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         
-    #     for g_index in range(len(self.sample_numbers)):
+    #     for g_index in range(self.sample_numbers):
     #         generated_edges_prob = self.per_graph_edge_list_counter[g_index]
     #         m = len(self.original_graphs_edges[g_index])
     #         node_degree_counter = per_graph_node_degree_counter[g_index]
@@ -197,7 +197,7 @@ class alliGATOR(object):
 
         labels = np.zeros(len(self.original_graphs))
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_edge_index = np.where(self.original_graphs[g_index]['central_edge'] == 1)[0]
             if self.original_graphs[g_index].anomalous[central_edge_index].any() :
                 labels[g_index] = 1
@@ -206,11 +206,11 @@ class alliGATOR(object):
 
     def get_edge_cls_anomaly(self) -> np.array :
 
-        anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+        anomaly_score_per_edge_sub_graph = np.zeros(self.sample_numbers)
         central_edge_list = self.get_central_edge_per_graph()
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_edge = central_edge_list[g_index]
             m = len(self.original_graphs_edges[g_index])
             k = per_graph_node_degree_counter[g_index]
@@ -218,7 +218,7 @@ class alliGATOR(object):
             # to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
             #                                     for edge in self.original_graphs_edges[g_index]])
         
-            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo #- ((k[central_edge[0]] * k[central_edge[1]]) / (2*m))) / to_norm
+            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo #- ((k[central_edge[0]] * k[central_edge[1]]) / (2*m))
 
             anomaly_score_per_edge_sub_graph[g_index] = 1 - generated_prob_central_edge
 
@@ -228,7 +228,7 @@ class alliGATOR(object):
 
         central_edge_list = []
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
 
             central_edge_index = (np.where(self.original_graphs[g_index]['central_edge'] == 1)[0][0], np.where(self.original_graphs[g_index]['central_edge'] == 1)[0][1])
             central_edge = tuple(sorted((self.original_graphs[g_index].edge_index[0][central_edge_index[0]].item(), self.original_graphs[g_index].edge_index[0][central_edge_index[1]].item())))
@@ -241,79 +241,74 @@ class alliGATOR(object):
 #----- > Id Theft
     def get_true_anomaly_label_tf_theft(self) -> list:
         labels = np.zeros(len(self.original_graphs))
-
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             if self.original_graphs[g_index].anomalous[central_node_index].any() :
-                # breakpoint() 
                 labels[g_index] = 1
 
         return labels.tolist()
     
     def get_id_theft_prediction(self) -> np.array :
 
-        anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+        anomaly_score_per_edge_sub_graph = np.zeros(self.sample_numbers)
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
             gen_edges = self.per_graph_edge_list_counter[g_index]   
             # score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
-            score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
+            # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
              
-            # m = len(self.original_graphs_edges[g_index])
-            # k = per_graph_node_degree_counter[g_index]
+            m = len(self.original_graphs_edges[g_index])
+            k = per_graph_node_degree_counter[g_index]
 
-            # to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
+            to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
                   
-            # score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
                    
-            
-            
             node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
 
         return anomaly_score_per_edge_sub_graph
 
 #----- > Cora dataset
-    def get_true_anomaly_label_core(self) -> list:
+    def get_true_anomaly_label_cora(self) -> list:
         labels = np.zeros(len(self.original_graphs))
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
-            if self.original_graphs[g_index].ano_label[central_node_index].any() :
+            if self.original_graphs[g_index].contextual_anomaly[central_node_index].any() or self.original_graphs[g_index].struc_anomaly[central_node_index].any():
                 labels[g_index] = 1
 
         return labels.tolist()
     
-    def get_true_anomaly_label_core_struc(self) -> list:
+    def get_true_anomaly_label_cora_struc(self) -> list:
         labels = np.zeros(len(self.original_graphs))
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
-            if self.original_graphs[g_index].str_ano_label[central_node_index].any() :
+            if self.original_graphs[g_index].struc_anomaly[central_node_index].any() :
                 labels[g_index] = 1
 
         return labels.tolist()
     
-    def get_true_anomaly_label_core_attr(self) -> list:
+    def get_true_anomaly_label_cora_attr(self) -> list:
         labels = np.zeros(len(self.original_graphs))
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
-            if self.original_graphs[g_index].attr_ano_label[central_node_index].any() :
+            if self.original_graphs[g_index].contextual_anomaly[central_node_index].any() :
                 labels[g_index] = 1
 
         return labels.tolist()
 
     def get_cora_prediction(self) -> np.array :
 
-        # breakpoint()
-        anomaly_score_per_edge_sub_graph = np.zeros(len(self.sample_numbers))
+        anomaly_score_per_edge_sub_graph = np.zeros(self.sample_numbers)
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
 
-        for g_index in range(len(self.sample_numbers)):
+        for g_index in range(self.sample_numbers):
             central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
@@ -323,10 +318,9 @@ class alliGATOR(object):
 
             to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
                   
-            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+            # score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
             
-            
-            # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges])
+            score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges])
             
             # if [gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0) > 0:
             #     print(f"for graph {g_index} there are {[gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges].count(0)} edges that were in the original graoh central one, but our model didn't predict them")
@@ -337,13 +331,14 @@ class alliGATOR(object):
 #----- > PR AUC
     def get_PR_AUC(self, true_labels, predicted_labels, title_PR_type) -> float:
 
-        # Data to plot precision - recall curve
-        precision, recall, thresholds = precision_recall_curve(true_labels, predicted_labels)
-        # breakpoint()
-        # print("Tresholds : ", thresholds)
-        # Use AUC function to calculate the area under the curve of precision recall curve
+        precision, recall, thresholds = precision_recall_curve(true_labels, predicted_labels, drop_intermediate = True)
         auc_precision_recall = auc(recall, precision)
-        print('\033[1;36m'+f"The ACU using {title_PR_type} of a graph is {round(auc_precision_recall, 5)}\n"+'\033[0;36m')
+        average_precision = average_precision_score(true_labels, predicted_labels)
+
+        print('\033[1;36m'+f"The ACU using {title_PR_type} of a graph is {auc_precision_recall}\n" +
+              f"the average precision is {average_precision}"+'\033[0;36m')
+
+        
 
         # plt.figure(figsize=(7, 7))
         # plt.plot(recall, precision, label = f"Alligator with AUC = {round(auc_precision_recall, 3)}", color='green')
@@ -356,7 +351,7 @@ class alliGATOR(object):
         # plt.legend()
         # plt.show()
 
-        return precision, recall, auc_precision_recall
+        return precision, recall, auc_precision_recall, average_precision
 
                                                  
 #--------------- Plots ---------------
@@ -368,27 +363,25 @@ class alliGATOR(object):
         val1s, val2s, vals3s = zip(*vals)
 
         # Plot in one go without separate variable assignment
-        plt.figure(figsize=(10, 5))
-        plt.plot(timesteps, val1s, label='Number of active edges')
-        plt.plot(timesteps, val2s, label='Number of added edges')
-        plt.title('Values over Timesteps')
+        plt.figure(figsize=(3, 3))
+        plt.plot(timesteps, val1s, label='Number of active edges', color = "#4A21A8" )
+        plt.plot(timesteps, val2s, label='Number of added edges', color = "#7DC3F6")
         plt.xlabel('Timestep (t)')
-        plt.ylabel('Values')
-        plt.grid(True)
+        plt.ylabel('Number of edges')
+        plt.xticks(timesteps)
         plt.legend()
         plt.tight_layout()
-        plt.savefig("Cora - active edges per diffusion step ")
+        plt.savefig("Synthetic edges per diffusion step ")
 
-        plt.figure(figsize=(10, 5))
-        plt.plot(timesteps, vals3s, label='Number of active nodes')
-        plt.hlines(self.generated_graphs.num_nodes, timesteps[0], timesteps[-1], label='Total number of nodes')
-        plt.title('Values over Timesteps')
+        plt.figure(figsize=(3, 3))
+        plt.plot(timesteps, vals3s, label='Number of active nodes', color =  "#4A21A8")
+        plt.hlines(self.generated_graphs.num_nodes, timesteps[0], timesteps[-1], label='Total number of nodes', color = "#F1993A")
         plt.xlabel('Timestep (t)')
-        plt.ylabel('Values')
-        plt.grid(True)
+        plt.ylabel('Number of nodes')
+        plt.xticks(timesteps)
         plt.legend()
         plt.tight_layout()
-        plt.savefig("Cora - active nodes per diffusion step ")
+        plt.savefig("Synthetic nodes per diffusion step ")
 
         return
 
@@ -477,12 +470,12 @@ class alliGATOR(object):
         # breakpoint()
 
         # from pyg to networkx original graph : 
-        original_node_colors = [self.node_color[node_class.item()] for node_class in original_graph.node_attr]
+        original_node_colors = [self.node_color[int(np.argmax(node_class))] for node_class in original_graph.node_attr]
         original_anomalous_edges = [(u.item(), v.item()) for (u, v), is_anom in zip(zip(original_graph.edge_index[0], original_graph.edge_index[1]), original_graph.anomalous) if is_anom]
         original_graph_nx = pyg.utils.to_networkx(original_graph, to_undirected=True)
 
         # generated edges/graph
-        generated_node_colors = [self.node_color[node_class.item()] for node_class in generated_graph.node_attr]
+        generated_node_colors = [self.node_color[int(np.argmax(node_class))] for node_class in generated_graph.node_attr]
         generated_graph_nx = pyg.utils.to_networkx(generated_graph, to_undirected=True)
         generated_graph_nx.clear_edges()
         # ------  Probabilities ------
@@ -493,8 +486,8 @@ class alliGATOR(object):
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         m = len(self.original_graphs_edges[graph_id])
         k = per_graph_node_degree_counter[graph_id]
-        edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
-                                      'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m)}) 
+        edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo}) 
+                                    #   'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m)}) 
                                for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
         # print(edges_with_weights)
         # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
@@ -502,7 +495,8 @@ class alliGATOR(object):
 
 
         generated_graph_nx.add_edges_from(edges_with_weights)
-        edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
+        # edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
+        edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
 
         fig, axes = plt.subplots(1, 2)
 
@@ -558,11 +552,11 @@ class alliGATOR(object):
         fig, axes = plt.subplots(1, 2)
 
         # plot the original graph and add red to the anomalous edges
-        pos = nx.circular_layout(original_graph_nx)
+        pos = nx.spring_layout(original_graph_nx)
         nx.draw(original_graph_nx, pos, ax=axes[0], with_labels=True, node_color=original_node_colors)
 
         # plot the generated graph 
-        pos = nx.circular_layout(generated_graph_nx)
+        # pos = nx.circular_layout(generated_graph_nx)
         nx.draw(generated_graph_nx, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
         nx.draw_networkx_edge_labels(generated_graph_nx, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
         
@@ -573,7 +567,7 @@ class alliGATOR(object):
         plt.tight_layout()
         plt.show() 
 
-    def plot_graph_Cora(self, graph_id, plot_only_existing_edges):
+    def plot_graph_Cora(self, graph_id, plot_only_existing_edges, anomaly_type):
 
         original_graph = self.original_graphs[graph_id] # this is pyg data object
         generated_graph = self.generated_graphs[graph_id]
@@ -605,7 +599,7 @@ class alliGATOR(object):
 
         fig, axes = plt.subplots(1, 2)
 
-        node_colors = ["red" if is_anomaly else "blue" for is_anomaly in self.original_graphs[graph_id].str_ano_label]
+        node_colors = ["red" if is_anomaly else "blue" for is_anomaly in self.original_graphs[graph_id][anomaly_type]]
         # plot the original graph and add red to the anomalous edges
         pos = nx.circular_layout(original_graph_nx)
         nx.draw(original_graph_nx, pos, ax=axes[0], with_labels=True, node_color = node_colors)
@@ -617,7 +611,7 @@ class alliGATOR(object):
         
 
         central_node_index = np.where(self.original_graphs[graph_id].central_node == 1)[0]
-        axes[0].set_title(f"Original graph with central node {central_node_index} (anomaly ? {self.original_graphs[graph_id].str_ano_label[central_node_index].item()}")
+        axes[0].set_title(f"Original graph with central node {central_node_index} (anomaly {self.original_graphs[graph_id][anomaly_type][central_node_index].item()})")
         axes[1].set_title(f"Edge probability over {self.Monte_Carlo} generated graphs")
         plt.tight_layout()
         plt.show() 

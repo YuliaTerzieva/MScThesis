@@ -5,6 +5,15 @@
 **/.DS_Store
 
 ### weights and biases
+./EDGE/wandb/*
+
+## the datasets 
+GeneratedDataset/*
+GeneratedDataset_interm_graph/*
+
+## alliGATOR sampled
+EDGE/Alligator_Output_edge_anomaly/*
+EDGE/Alligator_Output_node_anomaly/*
 
 ### Python ###
 # Byte-compiled / optimized / DLL files

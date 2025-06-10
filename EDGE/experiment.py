@@ -15,9 +15,9 @@ from diffusion.experiment import add_exp_args as add_exp_args_parent
 
 def add_exp_args(parser):
     add_exp_args_parent(parser)
-    parser.add_argument('--clip_value', type=float, default=None)
+    parser.add_argument('--clip_value', type=float, default=1)
     parser.add_argument('--clip_norm', type=float, default=None)
-    parser.add_argument('--num_generation', type=int, default=64) # Yulia : I think this is how many graphs to be generated at the end and saved in EDGE/wandb/Ego/multinomial_diffusion/multistep/.../eval/sample0.png
+    parser.add_argument('--num_generation', type=int, default=0) # Yulia : I think this is how many graphs to be generated at the end and saved in EDGE/wandb/Ego/multinomial_diffusion/multistep/.../eval/sample0.png
 
 class GraphExperiment(DiffusionExperiment):
     def train_fn(self, epoch):

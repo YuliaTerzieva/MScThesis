@@ -50,10 +50,10 @@ def add_data_args(parser):
     # Train params
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--num_iter', type=int, default=32)
-    parser.add_argument('--num_workers', type=int, default=8)
+    parser.add_argument('--num_workers', type=int, default=0)
     parser.add_argument('--pin_memory', type=eval, default=True)
 
-    parser.add_argument('--empty_graph_sampler', type=str, default='empirical', help='empirical | neural') 
+    parser.add_argument('--empty_graph_sampler', type=str, default='file', help='empirical | neural | file') 
     parser.add_argument('--degree', action='store_true') # Yulia : this means that if the --degree flag is provided, the argument will be set to True; otherwise False
     parser.add_argument('--augmented_features', type=str, nargs="*", default=[])
     parser.add_argument('--p_uncon', type=float,  default=0.5, help="the probability of dropping the node features during training") # Added by Yulia

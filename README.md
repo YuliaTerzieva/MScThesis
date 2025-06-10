@@ -1,32 +1,50 @@
 # MScThesis
 
-## Generating new data
-To generate a dataset with custom requirements, add a new configuration to "configurations.json" and call DataGeneration.py as such:
+## Generating dataset
+To generate a dataset with custom requirements consult the [DatasetGraphGenerator.py](DatasetGraphGenerator.py) file.
+After the code is run, it generates the whole graphs in [GeneratedDataset_interm_graph](GeneratedDataset_interm_graph) and then precomputes the subgraphs around each instance on interest and saves them in [GeneratedDataset](GeneratedDataset)
 
-```
-python3 DataGeneration.py --setting "_the_name_of_your_configuration_"
-```
-
-Currently, the code can generate 3 types of datasets :
-
-#### Dataset type 1
-Based on a circular pattern of blue nodes. Each blue node is also connected to an orange node, which in turn has a grey node connected to t. Each grey node is connected to two orange nodes, that are connected to two neighbouring blue nodes. Below is an example of such a graph. After the pattern is repeated _"pattern_number"_ of times, there are _"new_connections"_ number of new edges added between the patterns randomly.
-
-#### Dataset type 2
-Based on a pattern of 6 nodes: 4 blue nodes pointing to a single orange, which points to another orange node. After the pattern is repeated _"pattern_number"_ of times, there are _"new_connections"_ number of new edges added between the patterns randomly. The nodes that become connected and noted/flagged as anomalies. The last step of the data generation is injecting _"number_random"_ number gray nodes that are connected to the rest of the nodes randomly. The degree of those nodes are drawn from a Gaussian distribution with _"mu"_ and _"std"_.
-
-Calling the python file as shown above would create 4 files in the GeneratedDataset folder: two CSV files with nodes and edges, respectively, and two pickles with a list of networkx ego graphs in each. One is with 90% of the ego networks and can be used for training; the other one is with the other 10% of the ego networks and can be used for testing. Although the Big network is directed, the ego_networks that are saved in the pickle are **undirected**
-
-For all the datasets typed, hop is the number of hops used when creating the ego networks. 
-
-#### Dataset type 3
-_In the making ..._
-
-## Training the EDGE model using the generated data:
+## Training the node-guided topology reconstructor (adapted EDGE) model using the generated data:
 **Note**: Don't forget to cd to the EDGE folder before you move on. 
-In EDGE/train.py I have commented a few examples of how to train a model with my datasets
 
-I've made the following changes to the original EDGE code:
-- The code can now work with my datasets; for this, I have changed EDGE/datasets/data.py and EDGE/datasets/data_utils.py. 
-- I have added a new _empty_graph_sampler_ called **EmptyGraphGeneratorWithNodeAttributes**, which samples graphs from the testing dataset pickle (created in DataGeneration.py)
-- _to be continued_
+The node-guided topology reonstructor is built on the EDGE model by Chen et al. 
+
+To train a new reconstructor run [EDGE/train.py](EDGE/train.py) with parameters of choice. 
+An example is presented below for the edge experiment :
+
+```
+python3 train.py
+    --epochs 1000  
+    --diffusion_dim 16 
+    --diffusion_steps 5 
+    --device cpu 
+    --dataset Synthetic_K7_edge 
+    --dim_node_attr 3
+    --batch_size 32 
+    --lr 1e-3 
+    --p_uncon 0.2 
+    --optimizer adam 
+    --final_prob_edge 1 0 
+    --sample_time_method uniform 
+    --check_every 3 
+    --eval_every 3 
+    --noise_schedule linear 
+    --dp_rate 0.1 
+    --degree 
+    --num_heads 3 1 
+```
+
+The trained model will be saved in [EDGE/wandb](EDGE/wandb)
+
+## Using the alliGATOR model
+After the model is trained, use the alliGATOR model (implemented in [EDGE/alliGATOR.py](EDGE/alliGATOR.py)) by running 
+[EDGE/node_anomaly_detection.py](EDGE/node_anomaly_detection.py) for node anomaly detection, and [EDGE/edge_anomaly_detection.py](EDGE/edge_anomaly_detection.py) for edge anomaly detection. 
+
+Hyperparameter tuning is possible after the individual topology reconstructors are trained. 
+For node anomaly hyperparameter tuning consult [EDGE/node_anomaly_hyperparam_tuning.py](EDGE/node_anomaly_hyperparam_tuning.py). 
+for edge anomaly hyperparameter tuning consult [EDGE/edge_anomaly_hyperparam_tuning.py](EDGE/edge_anomaly_hyperparam_tuning.py).
+
+## The Isolation forest
+
+The experiment for Isolation forest are presented in [Isolation forest](<Isolation forest>) -- [ for node anomaly](<Isolation forest/isolation_forest_node_anomaly.py>) and [for edge anomaly](<Isolation forest/isolation_forest_edge_cls.py>)
+

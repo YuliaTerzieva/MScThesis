@@ -244,7 +244,7 @@ def generate_whole_graph(N, NC, R, reproducibility_seed) -> nx.Graph:
     plot_degree_distribution(Final_Graph)
     return Final_Graph
 
-def add_anomalous_relations(N, nb_anomalous_relations, graph) -> nx.Graph:
+def add_anomalous_relations(N :int , nb_anomalous_relations : list[int], graph: nx.Graph) -> nx.Graph:
 
     assert len(nb_anomalous_relations) == N*N
 
@@ -287,7 +287,6 @@ def generate_edge_ego_graphs(big_graph, K) -> list[nx.Graph]:
         ego_subgraph[edge[0]][edge[1]]['central_edge'] = 1
         edge_ego_graphs.append(ego_subgraph)
 
-
     return edge_ego_graphs
 
 def plot_graph(graph) -> None:
@@ -298,7 +297,7 @@ def plot_graph(graph) -> None:
     plt.show()
 
 def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
-    # , 80 is from O to G 
+    # 80 is from O to G 
     # M is from G to O this should be bigger because this is a bigger anomaly! 
     print(f"Injecting {N_nodes} anomalous nodes")
     M = int(0.8 * N_nodes)
@@ -325,7 +324,7 @@ def add_anomalous_nodes(N_nodes, G) -> nx.Graph:
         G.nodes[nodes[i]]['anomalous'] = 1
 
     return G
-
+    
 def generate_ego_graph(G, K) -> list[nx.Graph]:
     
     ego_graphs = []
@@ -353,7 +352,7 @@ def generate_ego_graph(G, K) -> list[nx.Graph]:
 
 # ----------------------------------------------------------------------------
 
-def inductive_edge_split_and_save(
+def inductive_edge_split_and_save_node_anomaly(
     graph: nx.Graph,
     K: int,
     split_ratios=(0.25, 0.25, 0.25, 0.25),
@@ -366,10 +365,8 @@ def inductive_edge_split_and_save(
     Parameters:
         graph (nx.Graph): Input undirected graph with attributes.
         K (int): Hop size for ego-graph generation.
-        generate_ego_graph (function): Function that takes (graph, K) and returns a list of ego-graphs.
-        split_ratios (tuple): Four-way split, e.g., (0.7, 0.1, 0.1, 0.1).
+        split_ratios (tuple): Four-way split
         seed (int): Random seed for reproducibility.
-        output_dir (str): Directory to save the ego-net pickle files.
         dataset_name (str): Prefix for output filenames.
     """
 
@@ -382,10 +379,10 @@ def inductive_edge_split_and_save(
     split_3 = round((split_ratios[0] + split_ratios[1] + split_ratios[2]) * n_total)
 
     edge_splits = {
-        'train': edges[:split_1],
-        'eval': edges[split_1:split_2],
-        'tune': edges[split_2:split_3],
-        'test': edges[split_3:]
+        'Training': edges[:split_1],
+        'Validation 1': edges[split_1:split_2],
+        'Validation 2': edges[split_2:split_3],
+        'Testing': edges[split_3:]
     }
 
     for name, edge_list in edge_splits.items():
@@ -409,104 +406,168 @@ def inductive_edge_split_and_save(
         attrs = [0, 1, 2]
         degrees = {a: [d for n, d in subgraph.degree() if subgraph.nodes[n].get('node_attr') == a] for a in attrs}
 
+        # Determine the full range of degrees
+        all_degrees = np.arange(0, 21)
+        counts = {}
+
+        # Build a consistent count array for each attribute
+        for a in attrs:
+            unique, count = np.unique(degrees[a], return_counts=True)
+            count_dict = dict(zip(unique, count))
+            counts[a] = np.array([count_dict.get(deg, 0) for deg in all_degrees])
+
         colors = ["blue", "orange", "gray"]
+        bottom = np.zeros_like(all_degrees)
         plt.figure()
         for a in attrs:
-            plt.hist(degrees[a], bins=range(max(degrees[a])+2), alpha=0.3, label=f'Attr {a}', color=colors[a])
+            plt.bar(all_degrees, counts[a], bottom=bottom, label=f'Node type {colors[a]}', color=colors[a], alpha=0.4)
+            bottom += counts[a]
+            # plt.bar(*np.unique(degrees[a], return_counts=True), alpha=0.4, label=f'Node type {colors[a]}', color=colors[a])
+
+        # Styling
         plt.legend()
-        plt.xlabel('Degree')
-        plt.ylabel('Count')
-        plt.title(f'{name} subgraph Degree Distribution by node attr')
-        plt.savefig(f'{name} subgraph Degree Distribution by node attr')
+        plt.xticks(np.arange(0, 21, 1))
+        plt.xlim([0, 20])
+        plt.ylim([0, 210])
+        plt.xlabel('Node Degree')
+        plt.ylabel('Number of nodes')
+        plt.title(f'Node degree distribution of {name} subgraph')
+        plt.savefig(f'Node degree distribution of {name} subgraph')
         plt.show()
-        
+
         # """
-        
+        continue
+
         nodes = subgraph.nodes
         attrs = np.array([nodes[n]['node_attr'] for n in nodes])
         one_hot = np.eye(attrs.max() + 1)[attrs]
         nx.set_node_attributes(subgraph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
 
+        # with open(f"GeneratedDataset_interm_graph/{dataset_name}_K{K}_node_{name}", "wb") as f:
+        #     pickle.dump(subgraph, f)
+
+        # continue
         ego_net_list = generate_ego_graph(subgraph, K)
 
         with open(f"GeneratedDataset/{dataset_name}_K{K}_node_{name}", "wb") as f:
             pickle.dump(ego_net_list, f)
 
+def inductive_edge_split_and_save_edge_anomaly(
+        graph: nx.Graph, 
+        K :int, 
+        split_ratios = (0.25, 0.25, 0.25, 0.25),
+        seed = 42, 
+        dataset_name = "Synthetic"
+):
+    """
+    Performs inductive 4-way edge split on a graph, generates ego-graphs, and saves them to disk.
+    
+    Parameters:
+        graph (nx.Graph): Input undirected graph with attributes.
+        K (int): Hop size for ego-graph generation.
+        split_ratios (tuple): Four-way split
+        seed (int): Random seed for reproducibility.
+        dataset_name (str): Prefix for output filenames.
+    """
+
+    edges = list(graph.edges)
+    random.Random(seed).shuffle(edges)
+    n_total = len(edges)
+
+    split_1 = round(split_ratios[0] * n_total)
+    split_2 = round((split_ratios[0] + split_ratios[1]) * n_total)
+    split_3 = round((split_ratios[0] + split_ratios[1] + split_ratios[2]) * n_total)
+
+    edge_splits = {
+        'Training': edges[:split_1],
+        'Validation 1': edges[split_1:split_2],
+        'Validation 2': edges[split_2:split_3],
+        'Testing': edges[split_3:]
+    }
+
+    for name, edge_list in edge_splits.items():
+        subgraph = nx.Graph()
+        subgraph.add_edges_from(edge_list)
+
+        for node in subgraph.nodes():
+            if node in graph.nodes:
+                subgraph.nodes[node].update(graph.nodes[node])
+            else :
+                print("This is impossible so there is a mistake")
+                breakpoint()
+
+        print(f"In {name} number of isolated nodes is :", list(nx.isolates(subgraph)))
+        subgraph.remove_nodes_from(list(nx.isolates(subgraph)))
+
+        print(f"Total number on edges in the {name} graph before anomalies : {subgraph.number_of_edges()}")
+        N_anomalous_relations = round(0.04 * subgraph.number_of_edges()) 
+        anomalous_R_perc = np.array([0, 0.33, 0, 
+                                    0, 0.33, 0, 
+                                    0, 0, 0.34])
+        nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
+        # print((nb_anomalous_relations).astype(int).tolist())
+        assert sum(nb_anomalous_relations) == N_anomalous_relations
+
+        print(f"Adding the following number of edges per relation type {nb_anomalous_relations}")
+
+        add_anomalous_relations(3, (nb_anomalous_relations).astype(int).tolist(), subgraph)
+
+        # """ Plotting
+        attrs = [0, 1, 2]
+        degrees = {a: [d for n, d in subgraph.degree() if subgraph.nodes[n].get('node_attr') == a] for a in attrs}
+
+        # Determine the full range of degrees
+        all_degrees = np.arange(0, 21)
+        counts = {}
+
+        # Build a consistent count array for each attribute
+        for a in attrs:
+            unique, count = np.unique(degrees[a], return_counts=True)
+            count_dict = dict(zip(unique, count))
+            counts[a] = np.array([count_dict.get(deg, 0) for deg in all_degrees])
+
+        colors = ["blue", "orange", "gray"]
+        bottom = np.zeros_like(all_degrees)
+        plt.figure()
+        for a in attrs:
+            plt.bar(all_degrees, counts[a], bottom=bottom, label=f'Node type {colors[a]}', color=colors[a], alpha=0.4)
+            bottom += counts[a]
+
+        # Styling
+        plt.legend()
+        plt.xticks(np.arange(0, 21, 1))
+        plt.xlim([0, 20])
+        plt.ylim([0, 210])
+        plt.xlabel('Node Degree')
+        plt.ylabel('Number of nodes')
+        plt.title(f'Node degree distribution of {name} subgraph')
+        plt.savefig(f'Node degree distribution of {name} subgraph -> edge anomaly detection')
+        plt.show()
+
+        continue
+
+        # """
+    
+        nodes = subgraph.nodes
+        attrs = np.array([nodes[n]['node_attr'] for n in nodes])
+        one_hot = np.eye(attrs.max() + 1)[attrs]
+        nx.set_node_attributes(subgraph, {n: v for n, v in zip(nodes, one_hot)}, 'node_attr')
+
+        with open(f"GeneratedDataset_interm_graph/{dataset_name}_K{K}_edge_{name}", "wb") as f:
+            pickle.dump(subgraph, f)
+
+        ego_net_list = generate_edge_ego_graphs(subgraph, K = K)
+    
+        with open(f"GeneratedDataset/{dataset_name}_K{K}_edge_{name}", "wb") as f:
+            pickle.dump(ego_net_list, f)
+
 def generate_edge_anomaly_dataset() -> None :
-    N = 3 # B, O, G
-    N_total_nodes = 5000
-    NC_perc = np.array([0.25, 0.35, 0.4]) 
-    NC = (NC_perc * N_total_nodes).astype(int).tolist()
-    print(f"The node class cardinality is {NC}")
-    R = [("BA", 3), None, ("R", 0.0005), # BB, BO, BG 
-         None, None, ("BA", 1), # OB, OO, OG
-         None, ("Uni", 2), None] # GB, GO, GG
+
+    with open("GeneratedDataset_interm_graph/Synthetic_node.pkl", 'rb') as f:
+        Final_Graph = pickle.load(f)
+    
     K = 7
-
-    reproducibility_seed = 42
-    random.seed(reproducibility_seed)
-    np.random.seed(reproducibility_seed)
-
-    # ------------------------------------------------------------
-    # """
-    start_time = time.time()
-
-    Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
-    end_time = time.time()
-    print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
-
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7.pkl", 'wb') as f:
-        pickle.dump(Final_Graph, f)
-    # """
-    # ------------------------------------------------------------
-    # """
-    start_time = time.time()
-
-    # We want 2% of the relations to be anomalous, so 
-    print(f"Total number on edges in the graph before anomalies : {Final_Graph.number_of_edges()}")
-    N_anomalous_relations = round(0.02 * Final_Graph.number_of_edges()) 
-    anomalous_R_perc = np.array([0, 0.33, 0, 
-                                 0, 0.33, 0, 
-                                 0, 0, 0.34])
-    nb_anomalous_relations = anomalous_R_perc * N_anomalous_relations
-    print((nb_anomalous_relations).astype(int).tolist())
-    assert sum(nb_anomalous_relations) == N_anomalous_relations
-
-    Final_Graph_witn_anomalies = add_anomalous_relations(N, (nb_anomalous_relations).astype(int).tolist(), Final_Graph)
-
-    end_time = time.time()
-    print(f"Time it took to generate the anomalies is { end_time - start_time } seconds ") # Time that took to generate 10000 nodes is 0.04338574409484863 seconds 
-
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7_with_anomalies.pkl", 'wb') as f:
-        pickle.dump(Final_Graph_witn_anomalies, f)
-    # """
-    # ------------------------------------------------------------
-    # """
-    start_time = time.time()
-    ego_net_list = generate_edge_ego_graphs(Final_Graph_witn_anomalies, K = K)
-    end_time = time.time()
-    print(f"Time it took to get the ego networks of {Final_Graph.number_of_edges()} edges is { end_time - start_time } seconds ") # Time it took to get the ego networks of 10000 nodes is 245.056871175766 (~ 4 minutes) seconds with 15 K
-
-    
-    random.shuffle(ego_net_list)
-
-    with open("GeneratedDataset_interm_graph/Graph_edge_cls_K7_edge_ego_list_with_anomalies.pkl", "wb") as f:
-        pickle.dump(ego_net_list, f)
-
-    # """
-    # ------------------------------------------------------------
-    
-    # I have a 70% 10% 20% split
-
-    l = len(ego_net_list)
-    train, evaluation = int(0.7 * l), int(0.8 * l)
-
-    for name, data in zip(
-        ["train", "eval", "test"],
-        [ego_net_list[:train], ego_net_list[train:evaluation], ego_net_list[evaluation:]]
-    ):
-        with open(f"GeneratedDataset/Edge_classification_K7_{name}", "wb") as f:
-            pickle.dump(data, f)
+    inductive_edge_split_and_save_edge_anomaly(Final_Graph, K)
 
 def generate_node_anomaly_dataset() -> None:
     N = 3 # B, O, G
@@ -514,7 +575,7 @@ def generate_node_anomaly_dataset() -> None:
     NC_perc = np.array([0.25, 0.35, 0.4]) 
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 3), None, ("R", 0.01), # BB, BO, BG  # 0.0005 for 5000!
+    R = [("BA", 3), None, ("R", 0.01), # BB, BO, BG
          None, None, ("Uni", 7), # OB, OO, OG
          None, ("BA", 8), None] # GB, GO, GG
     K = 15
@@ -523,9 +584,6 @@ def generate_node_anomaly_dataset() -> None:
     random.seed(reproducibility_seed)
     np.random.seed(reproducibility_seed)
 
-    # ------------------------------------------------------------
-    # """
-    start_time = time.time()
 
     Final_Graph = generate_whole_graph(N, NC, R, reproducibility_seed)
     
@@ -534,8 +592,6 @@ def generate_node_anomaly_dataset() -> None:
     # nx.draw(Final_Graph,  node_color=original_node_colors, node_size = 50, alpha = 0.7) 
     # plt.show()
     
-    end_time = time.time()
-    print(f"Time it took to generate {sum(NC)} nodes is { end_time - start_time } seconds ")
     with open("GeneratedDataset_interm_graph/Synthetic_node.pkl", 'wb') as f:
         pickle.dump(Final_Graph, f)
     
@@ -543,7 +599,7 @@ def generate_node_anomaly_dataset() -> None:
     # ------------------------------------------------------------
     # """
     
-    inductive_edge_split_and_save(Final_Graph, K)
+    inductive_edge_split_and_save_node_anomaly(Final_Graph, K)
 # ----------------------------------------------------------------------------
 
 def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
@@ -577,7 +633,7 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     plt.legend()
     plt.xlabel("Number of nodes")
     plt.ylabel("Number of graphs")
-    plt.title(f"Dataset {dataset_name}")
+    plt.title(f"Ego-induced subgraphs from {dataset_name[:-8]} dataset")
     plt.show()
 
     # ---- EDGEs now
@@ -597,22 +653,22 @@ def plot_graph_freq_wrt_node_edge(dataset_name) -> None:
     plt.legend()
     plt.xlabel("Number of edges")
     plt.ylabel("Number of graphs")
-    plt.title(f"Dataset {dataset_name}")
+    plt.title(f"Ego-induced subgraphs from {dataset_name[:-8]} dataset")
     plt.show()
 
-def plot_example_graphs(dataset_name):
+def plot_example_graphs_node(dataset_name):
 
     graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
     node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
     np.random.shuffle(graphs)
 
-    fig, axes = plt.subplots(5, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
     axes = axes.flatten() 
 
     anomalous_gs = [g for g in graphs if nx.get_node_attributes(g, "anomalous")[next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)] == 1]
     nomal_gs = [g for g in graphs if g not in anomalous_gs]
 
-    for i, g in enumerate(nomal_gs[:9]):
+    for i, g in enumerate(nomal_gs[:3]):
         ax = axes[i]
 
         node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
@@ -621,11 +677,11 @@ def plot_example_graphs(dataset_name):
 
         anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
 
-        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
-        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id}\n({anomalous})", fontsize=10)
 
-    for i, g in enumerate(anomalous_gs[:6]):
-        ax = axes[i+9]
+    for i, g in enumerate(anomalous_gs[:3]):
+        ax = axes[i+3]
 
         node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
 
@@ -633,35 +689,133 @@ def plot_example_graphs(dataset_name):
 
         anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
 
-        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
-        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id}\n({anomalous})", fontsize=10)
 
+    # fig.suptitle("Example of subgraphs for node anomaly detection\n(input to node-guided topology reconstructor)")
+    plt.tight_layout()
+    plt.show()
+
+def plot_example_graphs_edge(dataset_name):
+
+    graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
+    node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
+    np.random.shuffle(graphs)
+
+    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    axes = axes.flatten() 
+
+    anomalous_gs = [G for G in graphs if any(d.get('central_edge') == 1 and d.get('anomalous') == 1 for _, _, d in G.edges(data=True))]
+    nomal_gs = [g for g in graphs if g not in anomalous_gs]
+
+    for i, g in enumerate(nomal_gs[:3]):
+        ax = axes[i]
+
+        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
+
+        central_edge = next((n1, n2) for n1, n2, d in g.edges(data=True) if d.get('central_edge') == 1)
+
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_edge}\n(not anomalous)", fontsize=10)
+
+    for i, g in enumerate(anomalous_gs[:3]):
+        ax = axes[i+3]
+
+        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
+
+        central_edge = next((n1, n2) for n1, n2, d in g.edges(data=True) if d.get('central_edge') == 1)
+
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_edge}\n(anomalous)", fontsize=10)
+
+    # fig.suptitle("Example of subgraphs for node anomaly detection\n(input to node-guided topology reconstructor)")
+    plt.tight_layout()
+    plt.show()
+
+def plot_example_subgraphs_cora(dataset_name):
+
+    graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
+    np.random.shuffle(graphs)
+
+    fig, axes = plt.subplots(3, 3, figsize=(15, 10))
+    axes = axes.flatten() 
+
+    struc_anomalous_gs = [g for g in graphs if nx.get_node_attributes(g, "struc_anomaly")[next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)] == 1]
+    contextual_anomalous_gs = [g for g in graphs if nx.get_node_attributes(g, "contextual_anomaly")[next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)] == 1]
+    nomal_gs = [g for g in graphs if (g not in struc_anomalous_gs) and (g not in contextual_anomalous_gs)]
+
+    for i, g in enumerate(nomal_gs[:3]):
+        ax = axes[i]
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+        nx.draw(g, with_labels=True, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id}\n(normal)", fontsize=10)
+
+    for i, g in enumerate(struc_anomalous_gs[:3]):
+        ax = axes[i+3]
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+        nx.draw(g, with_labels=True, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id}\n(structural anomaly)", fontsize=10)
+
+    for i, g in enumerate(contextual_anomalous_gs[:3]):
+        ax = axes[i+6]
+        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
+        nx.draw(g, with_labels=True, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        ax.set_title(f"Central: {central_node_id}\n(Contextual anomaly)", fontsize=10)
+    
     plt.tight_layout()
     plt.show()
 
 def plot_max_degree(dataset_names):
+    bar_width = 0.2
+    all_x_vals = set()
+    datasets_names = ["Training", "Validation 1", "Validation 2", "Testing"]
+
+    colors = ["#F1993A", "#4A21A8" , "#7DC3F6" , "#D6A5F1"] 
+
+    degree_counts_list = []
     for dataset_name in dataset_names:
         graphs = pickle.load(open(f"GeneratedDataset/{dataset_name}", "rb"))
-        max_node_degree_for_all_graphs = [np.max([d for n, d in G.degree()]) for G in graphs]
-        plt.bar(*np.unique(max_node_degree_for_all_graphs, return_counts=True), alpha = 0.4, label = f"{dataset_name}")
+        max_node_degrees = [np.max([d for n, d in G.degree()]) for G in graphs]
+        unique, counts = np.unique(max_node_degrees, return_counts=True)
+        degree_counts_list.append((unique, counts))
+        all_x_vals.update(unique)
 
-    plt.title(f"DIstibution of max node degree in subgraphs")
+    all_x_vals = sorted(list(all_x_vals))
+    x_indices = {x: i for i, x in enumerate(all_x_vals)}  # map degree -> index
+
+    # Plot
+    plt.figure()
+    for i, (unique, counts) in enumerate(degree_counts_list):
+        y_vals = np.zeros(len(all_x_vals))
+        for u, c in zip(unique, counts):
+            y_vals[x_indices[u]] = c
+        x = np.arange(len(all_x_vals)) + i * bar_width
+        label = f"{datasets_names[i]}"
+        plt.bar(x, y_vals, width=bar_width, alpha=1, label=label, color=colors[i % len(colors)])
+
+    plt.xticks(np.arange(len(all_x_vals)) + bar_width * (len(dataset_names) - 1) / 2, all_x_vals)
+    plt.title("Distribution of highest node degree \nof subgraphs for edge anomaly detection\n(input to node-guided topology reconstructor)")
+    plt.xlabel("Highest node degree")
+    plt.ylabel("Number of subgraphs")
     plt.legend()
+    plt.tight_layout()
     plt.show()
 
 if __name__ == '__main__':
     
-    # generate_edge_anomaly_dataset()
-    # generate_node_anomaly_dataset()
+    generate_node_anomaly_dataset()
+    generate_edge_anomaly_dataset()
+    
+
 
     K = 15
     dataset_name = f"Synthetic_K{K}_node" 
     plot_graph_freq_wrt_node_edge(dataset_name)
 
-    plot_max_degree([f"Synthetic_K{K}_node_train", f"Synthetic_K{K}_node_eval", f"Synthetic_K{K}_node_tune", f"Synthetic_K{K}_node_test"])
-    plot_example_graphs(f"Synthetic_K{K}_node_train")
-    plot_example_graphs(f"Synthetic_K{K}_node_eval")
-    plot_example_graphs(f"Synthetic_K{K}_node_tune")
-    plot_example_graphs(f"Synthetic_K{K}_node_test")
+    plot_max_degree([f"{dataset_name}_train", f"{dataset_name}_eval", f"{dataset_name}_tune", f"{dataset_name}_test"])
+    plot_example_graphs_node(f"{dataset_name}_train")
+    plot_example_graphs_node(f"{dataset_name}_eval")
+    plot_example_graphs_node(f"{dataset_name}_tune")
+    plot_example_graphs_node(f"{dataset_name}_test")
 
     

@@ -91,50 +91,59 @@ def plot_training_loss(dataset, eval_every_int) -> None:
     plt.tight_layout()
     plt.show()
 
-if __name__ == '__main__': 
+def plot_single_training_loss(dataset, eval_every_int) -> None :
+    training_loss = pkl.load(open(dataset+"/metrics_train.pickle", "rb"))
+    eval_loss = pkl.load(open(dataset+"/metrics_eval.pickle", "rb"))
+
+    min_train_idx = np.argmin(training_loss['bpd'])
+    min_train_bpd = min(training_loss['bpd'])
+
+    min_eval_idx = np.argmin(eval_loss['bpd'])
+    min_eval_epoch = min_eval_idx * eval_every_int
+    min_eval_bpd = eval_loss['bpd'][min_eval_idx]
+
     
+    print('\033[1;36m' + "For Dataset ", dataset[8:-52], '\033[0;36m')
+    print("The epoch with the lowest training bpd is ", min_train_idx)
+    print("The epoch with the lowest validation bpd is", min_eval_idx*eval_every_int)
+    print("Lowest BPD of the validation is: ", round(min_eval_bpd, 4), "\n" + '\033[0;30m')
 
-    # dataset_name = "Id_theft_2" 
-    # plot_graph_freq_wrt_node_edge(dataset_name)
+    plt.figure(figsize=(5, 5))
+    plt.plot(np.arange(1, len(training_loss['bpd'])+1), training_loss['bpd'], label = "training BPD", color = "#4A21A8")
+    plt.plot(np.arange(1, len(training_loss['bpd'])+1,eval_every_int)[:len(eval_loss['bpd'])], eval_loss['bpd'], label = "validation BPD", color = "#F1993A")
+    plt.xlabel("Epoch")
+    plt.ylabel("Bits per dimentions")
 
-    # dataset_name = "Cor" 
-    # plot_graph_freq_wrt_node_edge(dataset_name)
+    plt.scatter(min_train_idx + 1, min_train_bpd, color="#4A21A8", label=f'Min Training BPD = {round(min_train_bpd, 3)}', zorder=5)
+    plt.scatter(min_eval_epoch + 1, min_eval_bpd, color = "#F1993A", label=f'Min Validation BPD = {round(min_eval_bpd, 3)}', zorder=5)
 
-    # dataset_name = "Syn" 
-    # plot_graph_freq_wrt_node_edge(dataset_name)
-    
-    # bigger_network_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-08_19-14-10"
-    # less_attention_linear = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_17-27-56"
-    # more_diffusion_steps = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_19-21-20"
-    # less_diffusion_cosine = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-13_21-01-43"
-    # even_less_attention = "./wandb/RelationalDataset_with_anomaly/multinomial_diffusion/multistep/2025-04-16_19-32-30"
-
-    # first = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_00-25-33"
-    # second = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_01-17-42"
-    # thrid = "./wandb/Synthetic_K10_node/multinomial_diffusion/multistep/2025-05-29_22-16-25"
-
-    # plot_training_loss([thrid], 3)
-
-    graphs = pickle.load(open("../GeneratedDataset/Synthetic_K10_node_eval", "rb"))
-    node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
-    np.random.shuffle(graphs)
-    fig, axes = plt.subplots(5, 3, figsize=(15, 10))
-    axes = axes.flatten() 
-
-    for i, g in enumerate(graphs[:15]):
-        ax = axes[i]
-
-        node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
-
-        central_node_id = next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)
-
-        anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
-
-        nx.draw(g, with_labels=True, node_color=node_color, ax=ax, node_size=300, font_size=8)
-        ax.set_title(f"Central: {central_node_id} ({anomalous})", fontsize=10)
-
-    plt.tight_layout()
+    plt.title("Loss")
+    plt.legend()
+    plt.savefig("Loss-NAD")
     plt.show()
+    
+if __name__ == '__main__': 
+
+    NAD_Synthetic_DS4A1 = "EDGE/wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A1"
+    NAD_Synthetic_DS4A31 = "EDGE/wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A31"
+    NAD_Synthetic_DS4A331 = "EDGE/wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A331"
+
+    NAD_Synthetic_DS3A31 = "EDGE/wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS3A31"
+    NAD_Synthetic_DS5A31 = "EDGE/wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS5A31"
+
+    EAD_Synthetic_DS5A1 = "EDGE/wandb/Synthetic_K7_edge/multinomial_diffusion/multistep/DS5A1"
+    EAD_Synthetic_DS5A31 = "EDGE/wandb/Synthetic_K7_edge/multinomial_diffusion/multistep/DS5A31"
+    EAD_Synthetic_DS5A331 = "EDGE/wandb/Synthetic_K7_edge/multinomial_diffusion/multistep/DS5A331"
+
+    Cora = "EDGE/wandb/Cora_K15_node/multinomial_diffusion/multistep/DD32A71"
+    Cora_771 = "EDGE/wandb/Cora_K15_node/multinomial_diffusion/multistep/DD64A771"
+
+    Cora_full_A1 = "EDGE/wandb/Cora_full__K15_node/multinomial_diffusion/multistep/DD64A1"
+    Cora_full_A71 = "EDGE/wandb/Cora_full__K15_node/multinomial_diffusion/multistep/DD64A71"
+    Cora_full_A1001 = "EDGE/wandb/Cora_full__K15_node/multinomial_diffusion/multistep/DD64A1001"
+
+    plot_single_training_loss(NAD_Synthetic_DS4A31, 3)
+
 # ------------------------------------------------------------------------------------------------------------------------
 # THE FOLLOWING IS SOME TEST CODE I HAVE TO DELETE 
 """
