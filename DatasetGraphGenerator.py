@@ -662,13 +662,13 @@ def plot_example_graphs_node(dataset_name):
     node_color_mapping = {0: 'blue', 1: 'orange', 2: 'grey'}
     np.random.shuffle(graphs)
 
-    fig, axes = plt.subplots(2, 3, figsize=(15, 10))
+    fig, axes = plt.subplots(1, 2, figsize=(10, 5))
     axes = axes.flatten() 
 
     anomalous_gs = [g for g in graphs if nx.get_node_attributes(g, "anomalous")[next(n for n, d in g.nodes(data=True) if d.get('central_node') == 1)] == 1]
     nomal_gs = [g for g in graphs if g not in anomalous_gs]
 
-    for i, g in enumerate(nomal_gs[:3]):
+    for i, g in enumerate(nomal_gs[:1]):
         ax = axes[i]
 
         node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
@@ -677,11 +677,11 @@ def plot_example_graphs_node(dataset_name):
 
         anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
 
-        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 1, ax=ax, node_size=300, font_size=8)
         ax.set_title(f"Central: {central_node_id}\n({anomalous})", fontsize=10)
 
-    for i, g in enumerate(anomalous_gs[:3]):
-        ax = axes[i+3]
+    for i, g in enumerate(anomalous_gs[:1]):
+        ax = axes[i+1]
 
         node_color = [node_color_mapping[int(np.argmax(data['node_attr']))] for _, data in g.nodes(data=True)]
 
@@ -689,7 +689,7 @@ def plot_example_graphs_node(dataset_name):
 
         anomalous = "anomalous" if g.nodes[central_node_id].get('anomalous', 0) == 1 else "not anomalous"
 
-        nx.draw(g, with_labels=True, node_color=node_color, alpha = 0.7, ax=ax, node_size=300, font_size=8)
+        nx.draw(g, with_labels=True, node_color=node_color, alpha = 1, ax=ax, node_size=300, font_size=8)
         ax.set_title(f"Central: {central_node_id}\n({anomalous})", fontsize=10)
 
     # fig.suptitle("Example of subgraphs for node anomaly detection\n(input to node-guided topology reconstructor)")
@@ -803,19 +803,23 @@ def plot_max_degree(dataset_names):
 
 if __name__ == '__main__':
     
-    generate_node_anomaly_dataset()
-    generate_edge_anomaly_dataset()
+    # generate_node_anomaly_dataset()
+    # generate_edge_anomaly_dataset()
     
 
 
     K = 15
     dataset_name = f"Synthetic_K{K}_node" 
-    plot_graph_freq_wrt_node_edge(dataset_name)
+    # plot_graph_freq_wrt_node_edge(dataset_name)
 
-    plot_max_degree([f"{dataset_name}_train", f"{dataset_name}_eval", f"{dataset_name}_tune", f"{dataset_name}_test"])
-    plot_example_graphs_node(f"{dataset_name}_train")
-    plot_example_graphs_node(f"{dataset_name}_eval")
-    plot_example_graphs_node(f"{dataset_name}_tune")
-    plot_example_graphs_node(f"{dataset_name}_test")
+    # plot_max_degree([f"{dataset_name}_train", f"{dataset_name}_eval", f"{dataset_name}_tune", f"{dataset_name}_test"])
+    # plot_example_graphs_node(f"{dataset_name}_train")
+    # plot_example_graphs_node(f"{dataset_name}_eval")
+    # plot_example_graphs_node(f"{dataset_name}_tune")
+    # plot_example_graphs_node(f"{dataset_name}_test")
 
+
+    #------- how many edges in the graph?
+    graph = pickle.load(open("GeneratedDataset_interm_graph/Synthetic_K15_node_test", "rb"))
+    breakpoint()
     

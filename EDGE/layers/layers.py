@@ -431,10 +431,14 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         self.embedding_0 = torch.nn.Linear(1, dim)      # new wrt TGNN
         self.embedding_sel = torch.nn.Embedding(2, dim) # new wrt TGNN
         self.embedding_node_class = torch.nn.Linear(num_node_classes, dim)      # new wrt TGNN_degree_guided
+        # self.node_in = torch.torch.nn.Sequential(
+        #     torch.nn.Linear(dim * 4, dim), # 4 = embedding_t + embedding_0 + embedding_sel + embedding_node_class
+        #     torch.nn.SiLU()
+        # )                                           # new wrt TGNN
         self.node_in = torch.torch.nn.Sequential(
-            torch.nn.Linear(dim * 4, dim), # 4 = embedding_t + embedding_0 + embedding_sel + embedding_node_class
+            torch.nn.Linear(dim * 2, dim), # 4 = embedding_t + embedding_node_class
             torch.nn.SiLU()
-        )                                               # new wrt TGNN
+        )                                           # new wrt TGNN
         self.time_pos_emb = SinusoidalPosEmb(dim, num_steps=num_steps)
         self.layers = torch.nn.ModuleDict()
         self.norm = norm
@@ -501,19 +505,19 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
 
         
         nodes_t = pyg.utils.degree(edge_index[0],num_nodes=pyg_data.num_nodes).clamp(max=self.max_degree+1).long()
-        node_selection = torch.zeros_like(nodes_t)
+        # node_selection = torch.zeros_like(nodes_t)
 
         # Yulia : nodes_t[..., None] this is done to add on edimention to the object. for example from (1, 2, 3) to have shape (1, 2, 3, 1)
         nodes_t = nodes_t[..., None] / self.max_degree  # I prefer to make it embedding later 
-        nodes_0 = pyg_data.degree[..., None] / self.max_degree
+        # nodes_0 = pyg_data.degree[..., None] / self.max_degree
 
-        node_selection[pyg_data.active_node_indices] = 1
-        node_selection = node_selection.long()
+        # node_selection[pyg_data.active_node_indices] = 1
+        # node_selection = node_selection.long()
 
         node_attr = pyg_data.node_attr.float()
 
         #breakpoint()
-        nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_0(nodes_0), self.embedding_sel(node_selection), self.embedding_node_class(node_attr)], dim=-1)
+        nodes = torch.cat([self.embedding_t(nodes_t), self.embedding_node_class(node_attr)], dim=-1)
         nodes = self.node_in(nodes)
 
         t = self.time_pos_emb(t_node)
@@ -538,10 +542,6 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
             nodes = self.dropout(nodes)
 
             ### gru update ###
-
-            breakpoint()
-            print(self.gru)
-            breakpoint()
             nodes, h = self.gru(nodes.unsqueeze(0).contiguous(), h.contiguous())
             h = self.dropout(h)
             nodes = nodes.squeeze(0)
@@ -567,3 +567,5 @@ class TGNN_degree_and_node_guided(torch.nn.Module):
         
         # breakpoint()
         return edge_class
+
+

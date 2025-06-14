@@ -9,12 +9,12 @@ all_avg_precision = []
 
 for n in range(10):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A1", 218, MC = 10, name = f"DS{4}A{1}-sense-analisys", lambda_guidance=0, 
+    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A1", 218, MC = 100, name = f"DS{4}A{31}", lambda_guidance=0.5, 
                     sample_numbers=945, anomaly_type="node_anomaly", seed = n, tuning = False) 
 
     precision, recall, auc_precision_recall, avg_precision = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
-    # plt.plot(recall, precision, ".-")
-    # plt.show()
+    plt.plot(recall, precision, ".-")
+    plt.show()
     precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
     
     all_precision.append(precision_interp)
@@ -38,7 +38,7 @@ plt.xlabel("Recall")
 plt.ylabel("Precision")
 plt.title("Node anomaly on Synthetic dataset \nMean Precision-Recall Curve with Std (alliGATOR)")
 plt.legend()
-plt.savefig("sense-analysis-NAD-Gator-AUPRC")
+# plt.savefig("NAD-Gator-AUPRC")
 plt.show()
 #------------------------->>>
 
@@ -70,10 +70,12 @@ plt.show()
 # print("The ratio of anomalous nodes to all is", positive_ratio)
 
 # breakpoint()
-# #--------->  Plot graphs
-# for i in [9, 10]: 
-#     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = True)
-#     node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = False)
+#--------->  Plot graphs
+# for i in [c for c, i in enumerate(node_anomaly_gator.get_true_anomaly_label_tf_theft()) if i == 1]: 
+#     if node_anomaly_gator.get_id_theft_prediction()[i] <0.9 :
+#         print(f"Showing central node {i}")
+#         node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = True)
+#         node_anomaly_gator.plot_graph_IDT(i, plot_only_existing_edges = False)
     
 
 #--------->  IMPOSSIBLE EDGES
@@ -90,17 +92,20 @@ plt.show()
 # plt.show()
 
 plt.figure(figsize=(5, 5))
-scores = node_anomaly_gator.get_id_theft_prediction()
+# scores = node_anomaly_gator.get_id_theft_prediction()
+scores = node_anomaly_gator.do_edges_sum_to_degrees()
+print(np.mean(scores), np.std(scores))
 labels = node_anomaly_gator.get_true_anomaly_label_tf_theft()
 scores = np.array(scores)
 labels = np.array(labels)
 plt.hist([scores[labels==0], scores[labels==1]], bins = 50, color=["#D6A5F1", "#4A21A8"], label=['Normal', 'Anomalous'])
 plt.title("Node anomaly score distribution\nalliGATOR")
+# plt.title(r'Difference between central node degree and sum of MC probabilities $d_c^0 - W_c$')
 plt.xticks(np.arange(min(scores), max(scores), 0.2))
 plt.xlabel("Anomaly score")
 plt.ylabel("Number of graphs")
 plt.yscale('log')
 plt.legend()
-plt.savefig("sense-analysis-NAD-GATOR-score-dist")
+# plt.savefig("NAD-GATOR-score-dist")
 plt.show()
 

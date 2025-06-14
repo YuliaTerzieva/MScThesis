@@ -218,7 +218,7 @@ class alliGATOR(object):
             # to_norm = 1 - (1/(2*m**2)) * np.sum([(k[edge[0]] * k[edge[1]])
             #                                     for edge in self.original_graphs_edges[g_index]])
         
-            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo #- ((k[central_edge[0]] * k[central_edge[1]]) / (2*m))
+            generated_prob_central_edge = self.per_graph_edge_list_counter[g_index][central_edge] / self.Monte_Carlo - ((k[central_edge[0]] * k[central_edge[1]]) / (2*m))
 
             anomaly_score_per_edge_sub_graph[g_index] = 1 - generated_prob_central_edge
 
@@ -257,20 +257,35 @@ class alliGATOR(object):
             central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
 
             gen_edges = self.per_graph_edge_list_counter[g_index]   
-            # score = np.mean([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
+            score = np.min([gen_edges[edge]/self.Monte_Carlo for edge in central_node_edges])
             # score = np.mean([gen_edges[edge]/self.Monte_Carlo if edge in gen_edges else 0 for edge in central_node_edges]) 
              
             m = len(self.original_graphs_edges[g_index])
             k = per_graph_node_degree_counter[g_index]
 
-            to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
+            # to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
                   
-            score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
-                   
+            # score = np.mean([(gen_edges[edge]/self.Monte_Carlo - ((k[edge[0]] * k[edge[1]]) / (2*m))) if edge in gen_edges else 0 for edge in central_node_edges]) / to_norm
+                        
             node_anomaly = 1 - score
             anomaly_score_per_edge_sub_graph[g_index] = node_anomaly
 
         return anomaly_score_per_edge_sub_graph
+
+    def do_edges_sum_to_degrees(self) -> np.array:
+
+        difference_between_degree_and_sum_of_prob = np.zeros(self.sample_numbers)
+        for g_index in range(self.sample_numbers):
+            
+            central_node_index = np.where(self.original_graphs[g_index].central_node == 1)[0]
+            central_node_edges = [edge for edge in self.original_graphs_edges[g_index] if central_node_index in edge]
+
+            gen_edges = self.per_graph_edge_list_counter[g_index]  
+
+            sum_of_pred_edge_probs = [gen_edges[edge]/self.Monte_Carlo for edge in gen_edges if (edge[0] == central_node_index or edge[1] == central_node_index)]
+            difference_between_degree_and_sum_of_prob[g_index] = len(central_node_edges) - sum(sum_of_pred_edge_probs)
+
+        return difference_between_degree_and_sum_of_prob
 
 #----- > Cora dataset
     def get_true_anomaly_label_cora(self) -> list:
@@ -486,8 +501,8 @@ class alliGATOR(object):
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         m = len(self.original_graphs_edges[graph_id])
         k = per_graph_node_degree_counter[graph_id]
-        edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo}) 
-                                    #   'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m)}) 
+        edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo,
+                                      'adjusted_prob': count / self.Monte_Carlo - (k[u] * k[v]) / (2*m)})
                                for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
         # print(edges_with_weights)
         # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
@@ -495,8 +510,8 @@ class alliGATOR(object):
 
 
         generated_graph_nx.add_edges_from(edges_with_weights)
-        # edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
-        edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
+        edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
+        # edge_labels = {(u, v): f"{data['probability']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
 
         fig, axes = plt.subplots(1, 2)
 
@@ -537,32 +552,43 @@ class alliGATOR(object):
         per_graph_node_degree_counter = self.get_per_graph_node_degree_counter()
         m = len(self.original_graphs_edges[graph_id])
         k = per_graph_node_degree_counter[graph_id]
+
+        central_node_index = np.where(self.original_graphs[graph_id].central_node == 1)[0]
+        central_node_edges = [edge for edge in self.original_graphs_edges[graph_id] if central_node_index in edge]
+        to_norm = 1 - np.mean([((k[edge[0]] * k[edge[1]]) / (2*m)) for edge in central_node_edges])
+                          
+        # edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
+        #                               'adjusted_prob': 
+        #                               (count / self.Monte_Carlo - ((k[u] * k[v]) / (2*m))) / to_norm if (u, v) in central_node_edges else 0}) 
+        #                        for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
+        
         edges_with_weights = [(u, v, {'probability': count / self.Monte_Carlo, 
-                                      'adjusted_prob': count / self.Monte_Carlo}) 
-                               for (u, v), count in generated_edges.items() if not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id]]
-        # print(edges_with_weights)
-        # print(f"M is {m}, and the ks are {per_graph_node_degree_counter[graph_id]}")
+                                      'adjusted_prob': 
+                                      (count / self.Monte_Carlo - ((k[u] * k[v]) / (2*m))) / to_norm if (u == central_node_index or v == central_node_index) else 0}) 
+                               for (u, v), count in generated_edges.items() if (u == central_node_index or v == central_node_index) and (not plot_only_existing_edges or (u, v) in self.original_graphs_edges[graph_id])]
+        
+        
         # ------  END of Adjusted probabilities ------
 
 
         generated_graph_nx.add_edges_from(edges_with_weights)
-        # edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
         edge_labels = {(u, v): f"{data['probability']:.2f} -> {data['adjusted_prob']:.2f}" for u, v, data in generated_graph_nx.edges(data=True)}
 
         fig, axes = plt.subplots(1, 2)
 
         # plot the original graph and add red to the anomalous edges
-        pos = nx.spring_layout(original_graph_nx)
+        # pos = nx.spring_layout(original_graph_nx)
+        pos = nx.circular_layout(original_graph_nx)
         nx.draw(original_graph_nx, pos, ax=axes[0], with_labels=True, node_color=original_node_colors)
 
         # plot the generated graph 
-        # pos = nx.circular_layout(generated_graph_nx)
+        pos = nx.circular_layout(generated_graph_nx)
         nx.draw(generated_graph_nx, pos, ax=axes[1], with_labels=True, node_color=generated_node_colors)
         nx.draw_networkx_edge_labels(generated_graph_nx, pos, ax=axes[1], edge_labels=edge_labels, font_color='gray')
         
 
         central_node_index = np.where(self.original_graphs[graph_id].central_node == 1)[0]
-        axes[0].set_title(f"Original graph with central node {central_node_index}")
+        axes[0].set_title(f"Original graph with central node {central_node_index}, anomaly_score of {self.get_id_theft_prediction()[graph_id]}")
         axes[1].set_title(f"Edge probability over {self.Monte_Carlo} generated graphs")
         plt.tight_layout()
         plt.show() 
