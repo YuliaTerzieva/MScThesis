@@ -23,8 +23,8 @@ We evaluate the alliGATOR model on a custom synthetic dataset designed to simula
 behaviour, and compare its performance to the Isolation Forest baseline. Experimental results show
 that alliGATOR is robust and successfully identifies both node and edge anomalies.
 
-This work establishes a foundation for applying generative diffusion models to graph anomaly de-
-tection, and it can support researchers, financial institutions, banks, and governments in developing
+This work establishes a foundation for applying generative diffusion models to graph anomaly detection, 
+and it can support researchers, financial institutions, banks, and governments in developing 
 personalised autonomous anomaly detection systems.
 
 ## In this repository you can find
