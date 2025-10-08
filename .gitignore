@@ -2,7 +2,8 @@
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,visualstudiocode
 
 ###
-**/.DS_Store
+.DS_Store
+.pyproject.toml
 
 ### weights and biases
 ./EDGE/wandb/*

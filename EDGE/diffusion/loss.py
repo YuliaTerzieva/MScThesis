@@ -9,7 +9,6 @@ def loglik_nats(model, x):
 
 def loglik_bpd(model, x):
     """Compute the log-likelihood in bits per dim."""
-    breakpoint()
     return -model.log_prob(x).sum() / (math.log(2) * x.num_entries)
     # return - model.log_prob(x).sum() / (math.log(2) * x.shape.numel())
 

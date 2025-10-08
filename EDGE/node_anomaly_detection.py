@@ -7,14 +7,14 @@ interp_recall = np.linspace(0, 1, n_interp_points)
 all_avg_precision = []
 
 
-for n in range(10):
+for n in range(1):
 
-    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K15_node/multinomial_diffusion/multistep/DS4A1", 218, MC = 100, name = f"DS{4}A{31}", lambda_guidance=0.5, 
-                    sample_numbers=945, anomaly_type="node_anomaly", seed = n, tuning = False) 
+    node_anomaly_gator = alliGATOR(f"./wandb/Synthetic_K15_node/multinomial_diffusion/multistep/2025-06-14_23-42-37", 197, MC = 100, name = f"DS{4}A{31}_no_dtst_", lambda_guidance=4.5, 
+                    sample_numbers=945, previously_sampled_model_filename="./Alligator_Output_node_anomaly/DS4A31_no_dtst__mc100_guidance45.pkl", anomaly_type="node_anomaly", seed = n, tuning = False) 
 
     precision, recall, auc_precision_recall, avg_precision = node_anomaly_gator.get_PR_AUC(node_anomaly_gator.get_true_anomaly_label_tf_theft(), node_anomaly_gator.get_id_theft_prediction(), title_PR_type="Node Anomaly")
-    plt.plot(recall, precision, ".-")
-    plt.show()
+    # plt.plot(recall, precision, ".-")
+    # plt.show()
     precision_interp = np.interp(interp_recall, recall[::-1], precision[::-1], left=1.0)
     
     all_precision.append(precision_interp)

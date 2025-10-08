@@ -78,7 +78,7 @@ plt.xlabel("Anomaly score")
 plt.ylabel("Number of nodes")
 plt.yscale('log')
 plt.legend()
-plt.savefig(f"Plots_Isolation_Forest_NAD/{reduction_function}-NAD-ISOFOREST-score-dist")
+plt.savefig(f"Plots/Plots_Isolation_Forest_NAD/{reduction_function}-NAD-ISOFOREST-score-dist")
 plt.show()
 
 
@@ -101,7 +101,7 @@ plt.ylabel("Precision")
 plt.title("Node anomaly on Synthetic dataset \nMean Precision-Recall Curve with Std (IsolationForest)")
 plt.legend()
 plt.ylim([0, 1.05])
-plt.savefig(f"Plots_Isolation_Forest_NAD/{reduction_function}-NAD-ISOFOREST-AUPRC")
+plt.savefig(f"Plots/Plots_Isolation_Forest_NAD/{reduction_function}-NAD-ISOFOREST-AUPRC")
 plt.show()
 
 

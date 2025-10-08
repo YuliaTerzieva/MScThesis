@@ -570,15 +570,36 @@ def generate_edge_anomaly_dataset() -> None :
     inductive_edge_split_and_save_edge_anomaly(Final_Graph, K)
 
 def generate_node_anomaly_dataset() -> None:
-    N = 3 # B, O, G
-    N_total_nodes = 1000
-    NC_perc = np.array([0.25, 0.35, 0.4]) 
+    # N = 3 # B, O, G
+    # N_total_nodes = 1000
+    # NC_perc = np.array([0.25, 0.35, 0.4]) 
+    # NC = (NC_perc * N_total_nodes).astype(int).tolist()
+    # print(f"The node class cardinality is {NC}")
+    # R = [("BA", 3), None, ("R", 0.01), # BB, BO, BG
+    #      None, None, ("Uni", 7), # OB, OO, OG
+    #      None, ("BA", 8), None] # GB, GO, GG
+    # K = 15
+    N = 10
+    N_total_nodes = 5000
+    NC_perc = np.array([0.2, 0.1, 0.39, 0.1, 0.09, 
+                        0.01, 0.05, 0.05, 0.07, 0.11]) 
+    print("This is the sum of the percentages for every node type, it should be 1 : ", sum(NC_perc))
     NC = (NC_perc * N_total_nodes).astype(int).tolist()
     print(f"The node class cardinality is {NC}")
-    R = [("BA", 3), None, ("R", 0.01), # BB, BO, BG
-         None, None, ("Uni", 7), # OB, OO, OG
-         None, ("BA", 8), None] # GB, GO, GG
+    #   [0.2, 0.1, 0.39, 0.1, 0.09, 0.01, 0.05, 0.05, 0.07, 0.11]
+    R = [("BA", 3), None, ("Uni", 6), ("BA", 3), None, ("R", 0.01), ("BA", 3), None, ("R", 0.01), None,
+         None, None, None, None, None, None, None, None, None, None, 
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None, 
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None,
+         None, None, None, None, None, None, None, None, None, None] 
+         
     K = 15
+
 
     reproducibility_seed = 42
     random.seed(reproducibility_seed)
@@ -803,13 +824,13 @@ def plot_max_degree(dataset_names):
 
 if __name__ == '__main__':
     
-    # generate_node_anomaly_dataset()
+    generate_node_anomaly_dataset()
     # generate_edge_anomaly_dataset()
     
 
 
-    K = 15
-    dataset_name = f"Synthetic_K{K}_node" 
+    # K = 15
+    # dataset_name = f"Synthetic_K{K}_node" 
     # plot_graph_freq_wrt_node_edge(dataset_name)
 
     # plot_max_degree([f"{dataset_name}_train", f"{dataset_name}_eval", f"{dataset_name}_tune", f"{dataset_name}_test"])
@@ -820,6 +841,6 @@ if __name__ == '__main__':
 
 
     #------- how many edges in the graph?
-    graph = pickle.load(open("GeneratedDataset_interm_graph/Synthetic_K15_node_test", "rb"))
-    breakpoint()
+    # graph = pickle.load(open("GeneratedDataset_interm_graph/Synthetic_K15_node_test", "rb"))
+    # breakpoint()
     
